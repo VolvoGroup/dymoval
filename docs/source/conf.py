@@ -39,6 +39,7 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx_autodoc_typehints",
     "sphinx_toolbox.confval",
+    "sphinx.ext.githubpages", 
 ]
 
 add_module_names = False
