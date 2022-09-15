@@ -37,7 +37,7 @@ jobs:
           python -m pip install furo
           python -m pip install sphinx-toolbox
           python -m pip install sphinx-autodoc-typehints
-          python -m pip install -e .
+          python -m pip install .
       
       - name: Make the sphinx docs
         run: |
