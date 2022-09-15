@@ -1,6 +1,0 @@
-How validation metrics are computed?
-====================================
-
-bla bla bla
-
-   
