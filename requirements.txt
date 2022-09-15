@@ -5,5 +5,3 @@ pandas
 matplotlib
 control
 typing
-pathlib
-warnings
