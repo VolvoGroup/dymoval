@@ -43,6 +43,7 @@ jobs:
       
       - name: Make the sphinx docs
         run: |
+          pwd
           cd docs
           make clean
           sphinx-apidoc -f -n -o ./docs/source ../src/dymoval/
