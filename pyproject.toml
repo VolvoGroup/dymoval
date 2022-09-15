@@ -14,13 +14,13 @@ license = { file="LICENSE" }
 requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: BSD-3 License",
+    "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/pypa/sampleproject"
-"Bug Tracker" = "https://github.com/pypa/sampleproject/issues"
+"Homepage" = "https://github.com/VolvoGroup/dymoval"
+"Bug Tracker" = "https://github.com/VolvoGroup/dymoval/issues"
 
 [tool.mypy]
 python_version = "3.9"
