@@ -53,7 +53,6 @@ jobs:
           
       - name: Init new repo in dist folder and commit generated files
         run: |
-          git config --global --add safe.directory /github/workspace/docs/build/html
           cd docs/build/html/
           git init
           touch .nojekyll
@@ -63,7 +62,7 @@ jobs:
           git commit -m "deploy"
         
       - name: Force push to destination branch
-        uses: ad-m/github-push-action@v0.5.0
+        uses: ad-m/github-push-action@v0.6.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN}}
           branch: gh-pages
