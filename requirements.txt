@@ -4,7 +4,6 @@ scipy
 pandas
 matplotlib
 control
-copy
 typing
 pathlib
 warnings
