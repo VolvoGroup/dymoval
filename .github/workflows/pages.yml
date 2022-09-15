@@ -42,9 +42,11 @@ jobs:
       
       - name: Make the sphinx docs
         run: |
-          make -C docs clean
-          sphinx-apidoc -f -n -o ./docs/source ./src/dymoval/
-          make -C docs html
+          cd docs
+          make clean
+          sphinx-apidoc -f -n -o ./docs/source ../src/dymoval/
+          make html
+          cd ..
           
       - name: Init new repo in dist folder and commit generated files
         run: |
