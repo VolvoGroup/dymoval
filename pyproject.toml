@@ -6,12 +6,11 @@ build-backend = "hatchling.build"
 name = "dymoval"
 version = "0.1"
 authors = [
-  { name="Ubaldo Tiberi", email="ubaldo.tiberi@gmail.com" },
+  { name="Ubaldo Tiberi", email="ubaldo.tiberi@volvo.com" },
 ]
-description = "A small example package"
+description = "Dymoval is a Python package for validating models and analyzing datasets"
 readme = "README.md"
 license = { file="LICENSE" }
-requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: BSD License",
