@@ -24,7 +24,7 @@ classifiers = [
 [tool.black]
 target-version = ['py39']
 line-length = 80
-
+exclude = ["scripts", "docs", "tests"]
 
 [tool.mypy]
 python_version = "3.9"
