@@ -186,9 +186,7 @@ class TestFixSamplingPeriod:
         ]
 
         # Assert
-        actual_resampled, actual_excluded = dmv.fix_sampling_periods(
-            signal_list
-        )
+        actual_resampled, actual_excluded = dmv.fix_sampling_periods(signal_list)
         actual_resampled = [s["name"] for s in actual_resampled]
         assert sorted(actual_excluded) == sorted(expected_excluded)
         assert sorted(actual_resampled) == sorted(expected_resampled)
@@ -233,9 +231,7 @@ class TestFixSamplingPeriod:
         "test_input, expected",
         [("potato", Exception), (-0.1, Exception)],
     )
-    def test_excluded_signals_exception(
-        self, good_signals, test_input, expected
-    ):
+    def test_excluded_signals_exception(self, good_signals, test_input, expected):
         # Nominal values
         signal_list, _, _, _ = good_signals
         with pytest.raises(expected):

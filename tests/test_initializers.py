@@ -53,8 +53,7 @@ class TestInitializerFromSignals:
         assert ds.dataset.index.name == "Time"
         # Check that time vector is periodic
         assert all(
-            np.isclose(x, target_sampling_period)
-            for x in np.diff(ds.dataset.index)
+            np.isclose(x, target_sampling_period) for x in np.diff(ds.dataset.index)
         )
         assert np.isclose(
             ds.dataset.index[1] - ds.dataset.index[0], target_sampling_period
@@ -182,6 +181,4 @@ class TestInitializerFromDataframe:
         tin = 0.5
         tout = 0.1
         with pytest.raises(ValueError):
-            dmv.dataset.Dataset(
-                "potato", df, u_labels, y_labels, tin=tin, tout=tout
-            )
+            dmv.dataset.Dataset("potato", df, u_labels, y_labels, tin=tin, tout=tout)

@@ -55,9 +55,7 @@ input_signal_names = ["u1", "u2", "u3"]
 input_sampling_periods = [0.01, 0.1, 0.1]
 input_signal_values = [
     np.hstack((np.random.rand(50), nan_thing, np.random.rand(400), nan_thing)),
-    np.hstack(
-        (np.random.rand(20), nan_thing[0:5], np.random.rand(30), nan_thing)
-    ),
+    np.hstack((np.random.rand(20), nan_thing[0:5], np.random.rand(30), nan_thing)),
     np.hstack((np.random.rand(80), nan_thing, np.random.rand(100))),
 ]
 
@@ -78,15 +76,9 @@ output_signal_names = ["y1", "y2", "y3", "y4"]
 output_sampling_periods = [0.1, 0.1, 0.1, 0.1]
 output_signal_values = [
     np.hstack((np.random.rand(50), nan_thing, np.random.rand(100), nan_thing)),
-    np.hstack(
-        (np.random.rand(100), nan_thing[0:50], np.random.rand(150), nan_thing)
-    ),
-    np.hstack(
-        (np.random.rand(10), nan_thing[0:105], np.random.rand(50), nan_thing)
-    ),
-    np.hstack(
-        (np.random.rand(20), nan_thing[0:85], np.random.rand(60), nan_thing)
-    ),
+    np.hstack((np.random.rand(100), nan_thing[0:50], np.random.rand(150), nan_thing)),
+    np.hstack((np.random.rand(10), nan_thing[0:105], np.random.rand(50), nan_thing)),
+    np.hstack((np.random.rand(20), nan_thing[0:85], np.random.rand(60), nan_thing)),
 ]
 
 output_signal_units = ["m/s", "deg", "°C", "kPa"]

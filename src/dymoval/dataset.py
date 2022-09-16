@@ -551,9 +551,9 @@ class Dataset:
             u_labels = input_columns_list
         else:
             u_labels = str2list(u_labels)  # noqa
-            input_not_found = list_belonging_check(  # noqa
+            input_not_found = list_belonging_check(
                 u_labels, input_columns_list
-            )
+            )  # noqa
 
             if input_not_found:
                 raise KeyError(
@@ -1234,9 +1234,9 @@ def signals_validation(signal_list: list[Signal]) -> None:
         keys = sig.keys()
         #
         # Existence
-        not_found_keys = list_belonging_check(  # noqa
+        not_found_keys = list_belonging_check(
             list(ALLOWED_KEYS), list(keys)
-        )
+        )  # noqa
         if not_found_keys:
             raise KeyError(
                 f"Key {not_found_keys} not found in signal {sig['name']}."

@@ -558,7 +558,7 @@ class ValidationSession:
                     ax2[ii, jj].grid(True)
                     ax2[ii, jj].set_xlabel("Lags")
                     # TODO: Escape sequence?
-                    ax2[ii, jj].set_title(f"$\hat r_{{u_{ii}\epsilon_{jj}}}$")
+                    ax2[ii, jj].set_title(rf"$\hat r_{{u_{ii}\epsilon_{jj}}}$")
                     ax2[ii, jj].legend()
         plt.suptitle("Input-residuals cross-correlation")
 
