@@ -37,14 +37,27 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
+          python -m pip install -e .
+      
+      - name: Formatting source code
+        uses: psf/black@stable
+
+      - name: Linting and code style check
+        run: |
+          python -m pip install flake8
+          flake8 .
+
+      - name: Static typing check
+        run: |
+          python -m pip install mypy
+          mypy .
+
+      - name: Build docs
+        run: |
           python -m pip install sphinx
           python -m pip install furo
           python -m pip install sphinx-toolbox
           python -m pip install sphinx-autodoc-typehints
-          python -m pip install -e .
-      
-      - name: Make the sphinx docs
-        run: |
           cd docs
           make clean
           sphinx-apidoc -f -n -o ./docs/source ../src/dymoval/

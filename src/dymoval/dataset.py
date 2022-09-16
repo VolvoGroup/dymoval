@@ -1,3 +1,5 @@
+# The following are only for Spyder, otherwise things are written in
+# the pyproject.toml
 # mypy: disable_error_code = ["name-defined"]
 # mypy: show_error_codes
 """Module containing everything related to datasets.

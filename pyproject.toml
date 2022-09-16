@@ -21,11 +21,34 @@ classifiers = [
 "Homepage" = "https://github.com/VolvoGroup/dymoval"
 "Bug Tracker" = "https://github.com/VolvoGroup/dymoval/issues"
 
+[tool.black]
+target-version = ['py39']
+line-length = 80
+
+
 [tool.mypy]
 python_version = "3.9"
 disallow_untyped_defs = true
-ignore_missing_imports = true
 show_error_codes = true
 no_implicit_optional = true
 warn_return_any = true
 warn_unused_ignores = true
+# For now, mypy is only run on ./src
+exclude = ["scripts", "docs", "tests"]
+# The following two shall be module specific
+ignore_missing_imports = true
+disable_error_code = ["name-defined"]
+
+[[tool.mypy.overrides]]
+module = [
+    "dataset",
+    "validation",
+    "utils",
+    "config",
+]
+
+
+
+
+[tool.pytest.ini_options]
+norecursedirs = ["scripts"] # Exclude folders
