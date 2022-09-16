@@ -103,11 +103,11 @@ def rsquared(x: np.ndarray, y: np.ndarray) -> float:
 
 
 def xcorr_norm(
-    R: XCorrelation,
-    l_norm: Literal[None, 1, -1, 2, -2, "inf", "-inf", "fro"] = None,
-    matrix_norm: Literal[None, 1, -1, 2, -2, "inf", "-inf", "fro"] = None,
+    Rxy: XCorrelation,
+    l_norm: Optional[Union[float, Literal["fro", "nuc"]]] = None,
+    matrix_norm: Optional[Union[float, Literal["fro", "nuc"]]] = None,
 ) -> float:
-    """Return the norm of the cross-correlation tensor.
+    r"""Return the norm of the cross-correlation tensor.
 
     It first compute the *l*-norm of each component
     :math:`(r_{i,j}(\\tau)) \in R(\\tau), i=1,\\dots p, j=1,\\dots,q`,
@@ -537,7 +537,7 @@ class ValidationSession:
                     ax1[ii, jj].grid(True)
                     ax1[ii, jj].set_xlabel("Lags")
                     ax1[ii, jj].set_title(
-                        f"$\hat r_{{\epsilon_{ii}\epsilon_{jj}}}$"
+                        rf"$\hat r_{{\epsilon_{ii}\epsilon_{jj}}}$"
                     )
                     ax1[ii, jj].legend()
         plt.suptitle("Residuals auto-correlation")
