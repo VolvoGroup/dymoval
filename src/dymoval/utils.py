@@ -6,6 +6,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import scipy.signal as signal  # noqa
 from typing import Union
+import sys
 
 
 def factorize(n: int) -> tuple[int, int]:
@@ -85,4 +86,6 @@ def save_plot_as(fig: matplotlib.figure.Figure, name: str) -> None:
 
 
 def open_tutorial() -> None:
-    pass
+    site_packages = next(p for p in sys.path if "site-packages" in p)
+    open(site_packages + "\\mypackage\\scripts\\tutorial.py")
+    print(site_packages)

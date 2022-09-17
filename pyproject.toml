@@ -5,6 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "dymoval"
 version = "0.1"
+requires-python = ">=3.9"
 authors = [
   { name="Ubaldo Tiberi", email="ubaldo.tiberi@volvo.com" },
 ]
