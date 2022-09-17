@@ -82,3 +82,7 @@ def save_plot_as(fig: matplotlib.figure.Figure, name: str) -> None:
     fig.tight_layout()
     fig.savefig(name)
     plt.close()
+
+
+def open_tutorial() -> None:
+    pass
