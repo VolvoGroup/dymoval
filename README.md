@@ -38,8 +38,8 @@ Although it is a very helpful in engineering, its usage may come handy in other 
 ## Installation
 
 
-    The tool still needs some adjustments before it can be release in typical distribution channels. 
-	Hence, at the moment it is only available on GitHub.
+The tool still needs some adjustments before it can be release in typical distribution channels. 
+Hence, at the moment it is only available on GitHub.
 
 
 ## Getting started
