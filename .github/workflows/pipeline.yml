@@ -1,5 +1,5 @@
-# Sample workflow for building and deploying a Jekyll site to GitHub Pages
-name: Deploy dymoval doc pages
+# CI/CD pipeline
+name: CI/CD pipeline
 
 on:
   # Runs on pushes targeting the default branch
@@ -23,7 +23,12 @@ concurrency:
 jobs:
   # Build job
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v3
