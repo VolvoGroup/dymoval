@@ -2,7 +2,7 @@ CI/CD integration
 =================
 
 *Dymoval* can be used for unit-testing your models and it can be further used in development pipelines like those 
-provided by Jenkins and GitLab.
+provided for example by Jenkins or GitLab.
 
 Unit-test
 ---------
