@@ -87,5 +87,5 @@ def save_plot_as(fig: matplotlib.figure.Figure, name: str) -> None:
 
 def open_tutorial() -> None:
     site_packages = next(p for p in sys.path if "site-packages" in p)
-    open(site_packages + "\\mypackage\\scripts\\tutorial.py")
+    open(site_packages + "\\dymoval\\scripts\\tutorial.py")
     print(site_packages)

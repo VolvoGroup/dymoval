@@ -9,7 +9,7 @@ requires-python = ">=3.9"
 authors = [
   { name="Ubaldo Tiberi", email="ubaldo.tiberi@volvo.com" },
 ]
-description = "Dymoval is a Python package for validating models and analyzing datasets"
+description = "Dymoval is a Python package for validating models and analyzing datasets."
 readme = "README.md"
 license = { file="LICENSE" }
 classifiers = [
@@ -17,9 +17,29 @@ classifiers = [
     "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
 ]
+keywords = [
+  "data-analysis",
+  "modeling",
+  "model validation",
+  "dataset",
+  "data"
+]
+
+[tool.hatch.build.sources]
+"scripts" = "dymoval/scripts"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dymoval", "scripts"]
+
+
+[tool.hatch.build]
+exclude = [
+  "__pycache__"
+]
 
 [project.urls]
 "Homepage" = "https://github.com/VolvoGroup/dymoval"
+"Documentation" = "https://volvogroup.github.io/dymoval/"
 "Bug Tracker" = "https://github.com/VolvoGroup/dymoval/issues"
 
 [tool.black]
@@ -46,9 +66,6 @@ module = [
     "utils",
     "config",
 ]
-
-
-
 
 [tool.pytest.ini_options]
 norecursedirs = ["scripts"] # Exclude folders
