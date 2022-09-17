@@ -1,11 +1,4 @@
 #  -*- coding: utf-8 -*-
-"""
-Created on Srn Jul 10 23:35:31 2022
-
-@author: yt75534
-"""
-
-
 # ===========================================================================
 # This script is used for testing the plot functions
 # by visual inspection.
@@ -31,7 +24,9 @@ input_signal_names = ["u1", "u2", "u3"]
 input_sampling_periods = [0.01, 0.1, 0.1]
 input_signal_values = [
     np.hstack((np.random.rand(50), nan_thing, np.random.rand(400), nan_thing)),
-    np.hstack((np.random.rand(20), nan_thing[0:5], np.random.rand(30), nan_thing)),
+    np.hstack(
+        (np.random.rand(20), nan_thing[0:5], np.random.rand(30), nan_thing)
+    ),
     np.hstack((np.random.rand(80), nan_thing, np.random.rand(100))),
 ]
 
@@ -52,9 +47,15 @@ output_signal_names = ["y1", "y2", "y3", "y4"]
 output_sampling_periods = [0.1, 0.1, 0.1, 0.1]
 output_signal_values = [
     np.hstack((np.random.rand(50), nan_thing, np.random.rand(100), nan_thing)),
-    np.hstack((np.random.rand(100), nan_thing[0:50], np.random.rand(150), nan_thing)),
-    np.hstack((np.random.rand(10), nan_thing[0:105], np.random.rand(50), nan_thing)),
-    np.hstack((np.random.rand(20), nan_thing[0:85], np.random.rand(60), nan_thing)),
+    np.hstack(
+        (np.random.rand(100), nan_thing[0:50], np.random.rand(150), nan_thing)
+    ),
+    np.hstack(
+        (np.random.rand(10), nan_thing[0:105], np.random.rand(50), nan_thing)
+    ),
+    np.hstack(
+        (np.random.rand(20), nan_thing[0:85], np.random.rand(60), nan_thing)
+    ),
 ]
 
 output_signal_units = ["m/s", "deg", "°C", "kPa"]
@@ -77,17 +78,17 @@ if fixture_type == "SISO":
     # Slice signal list
     # Pick u1 and y1
     signal_list = [signal_list[0], signal_list[first_output_idx]]
-    input_signal_names = input_signal_names[0]
-    output_signal_names = output_signal_names[0]
+    input_signal_names = dmv.str2list(input_signal_names[0])
+    output_signal_names = dmv.str2list(output_signal_names[0])
 if fixture_type == "MISO":
     signal_list = [
         *signal_list[:first_output_idx],
         signal_list[first_output_idx],
     ]
-    output_signal_names = output_signal_names[0]
+    output_signal_names = dmv.str2list(output_signal_names[0])
 if fixture_type == "SIMO":
     signal_list = [signal_list[0], *signal_list[first_output_idx:]]
-    input_signal_names = input_signal_names[0]
+    input_signal_names = dmv.str2list(input_signal_names[0])
 
 
 # %%
@@ -133,18 +134,18 @@ vs = dmv.ValidationSession("pippo", ds)
 sim1_name = "Model 1"
 sim1_labels = ["my_y1", "my_y2", "my_y3", "my_y4"]
 if fixture_type == "SISO" or fixture_type == "MISO":
-    sim1_labels = "my_y1"
-sim1_values = vs._validation_dataset._dataset["OUTPUT"].values + np.random.rand(
-    len(vs._validation_dataset._dataset["OUTPUT"].values), 1
+    sim1_labels = dmv.str2list("my_y1")
+sim1_values = vs.Dataset.dataset["OUTPUT"].values + np.random.rand(
+    len(vs.Dataset.dataset["OUTPUT"].values), 1
 )
 
 
 sim2_name = "Model 2"
 sim2_labels = ["your_y1", "your_y2", "your_y3", "your_y4"]
 if fixture_type == "SISO" or fixture_type == "MISO":
-    sim2_labels = "your_y1"
-sim2_values = vs._validation_dataset._dataset["OUTPUT"].values + np.random.rand(
-    len(vs._validation_dataset._dataset["OUTPUT"].values), 1
+    sim2_labels = dmv.str2list("your_y1")
+sim2_values = vs.Dataset.dataset["OUTPUT"].values + np.random.rand(
+    len(vs.Dataset.dataset["OUTPUT"].values), 1
 )
 
 vs.append_simulation(sim1_name, sim1_labels, sim1_values)

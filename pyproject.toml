@@ -24,7 +24,7 @@ classifiers = [
 [tool.black]
 target-version = ['py39']
 line-length = 80
-exclude = ["scripts", "docs", "tests"]
+exclude = ["scripts", "docs"]
 
 [tool.mypy]
 python_version = "3.9"
@@ -34,7 +34,6 @@ no_implicit_optional = true
 warn_return_any = true
 warn_unused_ignores = true
 # For now, mypy is only run on ./src
-exclude = ["scripts", "docs", "tests"]
 # The following two shall be module specific
 ignore_missing_imports = true
 disable_error_code = ["name-defined"]

@@ -7,15 +7,17 @@ Created on Thu Jul 14 11:43:21 2022
 
 import pytest
 import dymoval as dmv
+from dymoval.dataset import Signal
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 import random
-from fixture_data import *  # noqa
+from .fixture_data import *  # noqa
+from typing import Any, Union
 
 
 class TestSignalValidation:
-    def test_name_unicity(self, good_signals):
+    def test_name_unicity(self, good_signals: list[Signal]) -> None:
         # Nominal values
         signal_list, _, _, _ = good_signals
 
@@ -23,7 +25,7 @@ class TestSignalValidation:
         with pytest.raises(ValueError):
             dmv.signals_validation(signal_list)
 
-    def test_key_not_found(self, good_signals):
+    def test_key_not_found(self, good_signals: list[Signal]) -> None:
         # Nominal values
         signal_list, _, _, _ = good_signals
 
@@ -33,7 +35,7 @@ class TestSignalValidation:
         with pytest.raises(KeyError):
             dmv.signals_validation(signal_list)
 
-    def test_wrong_key(self, good_signals):
+    def test_wrong_key(self, good_signals: list[Signal]) -> None:
         # Nominal values
         signal_list, _, _, _ = good_signals
 
@@ -44,6 +46,8 @@ class TestSignalValidation:
             dmv.signals_validation(signal_list)
 
     @pytest.mark.parametrize(
+        # The dataype for the annotation can be inferred by the
+        # following list.
         "test_input, expected",
         [
             (np.zeros((2, 2)), Exception),
@@ -52,7 +56,12 @@ class TestSignalValidation:
             (np.zeros(1), IndexError),
         ],
     )
-    def test_wrong_values(self, good_signals, test_input, expected):
+    def test_wrong_values(
+        self,
+        good_signals: list[Signal],
+        test_input: Any,
+        expected: Any,
+    ) -> None:
         # Nominal values
         signal_list, _, _, _ = good_signals
 
@@ -69,7 +78,9 @@ class TestSignalValidation:
             (-0.1, ValueError),
         ],
     )
-    def test_wrong_sampling_period(self, good_signals, test_input, expected):
+    def test_wrong_sampling_period(
+        self, good_signals: list[Signal], test_input: Any, expected: Any
+    ) -> None:
         # Nominal values
         signal_list, _, _, _ = good_signals
 
@@ -80,14 +91,16 @@ class TestSignalValidation:
 
 
 class TestDataframeValidation:
-    def test_there_is_at_least_one_in_and_one_out(self, good_dataframe):
+    def test_there_is_at_least_one_in_and_one_out(
+        self, good_dataframe: pd.DataFrame
+    ) -> None:
         # Nominal values
         df, u_labels, y_labels, _ = good_dataframe
         u_labels = []
         with pytest.raises(IndexError):
             dmv.dataframe_validation(df, u_labels, y_labels)
 
-    def test_name_unicity(self, good_dataframe):
+    def test_name_unicity(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal values
         df, u_labels, y_labels, fixture = good_dataframe
         u_labels_test = u_labels
@@ -106,7 +119,9 @@ class TestDataframeValidation:
         with pytest.raises(ValueError):
             dmv.dataframe_validation(df, u_labels_test, y_labels_test)
 
-    def test_dataframe_one_level_indices(self, good_dataframe):
+    def test_dataframe_one_level_indices(
+        self, good_dataframe: pd.DataFrame
+    ) -> None:
         # Nominal values
         df, u_labels, y_labels, _ = good_dataframe
         df_test = df
@@ -118,14 +133,18 @@ class TestDataframeValidation:
         with pytest.raises(IndexError):
             dmv.dataframe_validation(df_test, u_labels, y_labels)
 
-    def test_at_least_two_samples_per_signal(self, good_dataframe):
+    def test_at_least_two_samples_per_signal(
+        self, good_dataframe: pd.DataFrame
+    ) -> None:
         # Nominal values
         df, u_labels, y_labels, _ = good_dataframe
         df_test = df.head(1)
         with pytest.raises(IndexError):
             dmv.dataframe_validation(df_test, u_labels, y_labels)
 
-    def test_labels_exist_in_dataframe(self, good_dataframe):
+    def test_labels_exist_in_dataframe(
+        self, good_dataframe: pd.DataFrame
+    ) -> None:
         # Nominal values
         df, u_labels, y_labels, fixture = good_dataframe
         if fixture == "SISO":
@@ -139,14 +158,14 @@ class TestDataframeValidation:
         with pytest.raises(ValueError):
             dmv.dataframe_validation(df, u_labels, y_labels)
 
-    def test_index_monotonicity(self, good_dataframe):
+    def test_index_monotonicity(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal values
         df, u_labels, y_labels, _ = good_dataframe
         df.index.values[0:1] = df.index[1]
         with pytest.raises(ValueError):
             dmv.dataframe_validation(df, u_labels, y_labels)
 
-    def test_values_are_float(self, good_dataframe):
+    def test_values_are_float(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal values
         df, u_labels, y_labels, _ = good_dataframe
         df.iloc[0:1, 0:1] = "potato"
@@ -155,7 +174,7 @@ class TestDataframeValidation:
 
 
 class TestFixSamplingPeriod:
-    def test_excluded_signals_no_args(self, good_signals):
+    def test_excluded_signals_no_args(self, good_signals: list[Signal]) -> None:
         # Nominal values
         (
             signal_list,
@@ -186,12 +205,14 @@ class TestFixSamplingPeriod:
         ]
 
         # Assert
-        actual_resampled, actual_excluded = dmv.fix_sampling_periods(signal_list)
+        actual_resampled, actual_excluded = dmv.fix_sampling_periods(
+            signal_list
+        )
         actual_resampled = [s["name"] for s in actual_resampled]
         assert sorted(actual_excluded) == sorted(expected_excluded)
         assert sorted(actual_resampled) == sorted(expected_resampled)
 
-    def test_excluded_signals(self, good_signals):
+    def test_excluded_signals(self, good_signals: list[Signal]) -> None:
         # Nominal values
         (
             signal_list,
@@ -231,7 +252,12 @@ class TestFixSamplingPeriod:
         "test_input, expected",
         [("potato", Exception), (-0.1, Exception)],
     )
-    def test_excluded_signals_exception(self, good_signals, test_input, expected):
+    def test_excluded_signals_exception(
+        self,
+        good_signals: list[Signal],
+        test_input: tuple[Any, Any],
+        expected: tuple[Any, Any],
+    ) -> None:
         # Nominal values
         signal_list, _, _, _ = good_signals
         with pytest.raises(expected):
@@ -271,12 +297,17 @@ class Test_list_belonging_check:
             ),
         ],
     )
-    def test_list_belonging_check(self, A, B, expected):
+    def test_list_belonging_check(
+        self,
+        A: Union[str, list[str]],
+        B: Union[str, list[str]],
+        expected: list[str],
+    ) -> None:
         # Nominal
         elements_not_found = dmv.list_belonging_check(A, B)
         assert sorted(elements_not_found) == sorted(expected)
 
-    def test_list_belonging_check_empty_set(self):
+    def test_list_belonging_check_empty_set(self) -> None:
         # Error
         B = [0, 1, 2, 3, 4, 5]
         with pytest.raises(IndexError):
@@ -294,13 +325,15 @@ class Test_str2list:
             ),  # list input
         ],
     )
-    def test_str2list(self, x, expected):
+    def test_str2list(
+        self, x: Union[str, list[str]], expected: list[str]
+    ) -> None:
         actual = dmv.str2list(x)
         assert sorted(actual) == sorted(expected)
 
 
 class Test_plot:
-    def test_plot_nominal(self, good_signals):
+    def test_plot_nominal(self, good_signals: list[Signal]) -> None:
         # You should just get a plot.
         signal_list, u_labels, y_labels, fixture = good_signals
         dmv.plot_signals(signal_list)
@@ -321,7 +354,7 @@ class Test_plot:
         dmv.plot_signals(signal_list, u_labels)
         plt.close("all")
 
-    def test_plot_raise(self, good_signals):
+    def test_plot_raise(self, good_signals: list[Signal]) -> None:
         # Nominal values
         signal_list, u_labels, y_labels, fixture = good_signals
         u_labels_test = u_labels

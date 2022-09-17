@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import pytest
+
 import dymoval as dmv
 import numpy as np
-from matplotlib import pyplot as plt
-from fixture_data import *  # noqa
+from .fixture_data import *  # noqa
 
 
 class TestdatasetNominal:
@@ -29,7 +28,7 @@ class TestdatasetNominal:
     #     ds._dataset - df
     #     assert ds._dataset == df
 
-    def test_remove_means(self, sine_dataframe):
+    def test_remove_means(self, sine_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = sine_dataframe
 
         # Actua value
@@ -44,7 +43,7 @@ class TestdatasetNominal:
         for ii, actual_mean in enumerate(actual_means):
             assert np.allclose(actual_mean, 0.0)
 
-    def test_remove_offset(self, sine_dataframe):
+    def test_remove_offset(self, sine_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = sine_dataframe
 
         # Actua value

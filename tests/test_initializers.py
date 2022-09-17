@@ -9,14 +9,15 @@ Such validation functions are tested in test_utils.py.
 """
 import pytest
 import dymoval as dmv
+from dymoval.dataset import Signal
 import numpy as np
-from fixture_data import *  # NOQA
+from .fixture_data import *  # NOQA
 
 
 class TestInitializerFromSignals:
     # Check that the object Dataset is correctly built when the Signal format
     # is good.
-    def test_nominal(self, good_signals):
+    def test_nominal(self, good_signals: list[Signal]) -> None:
         # Nominal data
         (
             signal_list,
@@ -53,7 +54,8 @@ class TestInitializerFromSignals:
         assert ds.dataset.index.name == "Time"
         # Check that time vector is periodic
         assert all(
-            np.isclose(x, target_sampling_period) for x in np.diff(ds.dataset.index)
+            np.isclose(x, target_sampling_period)
+            for x in np.diff(ds.dataset.index)
         )
         assert np.isclose(
             ds.dataset.index[1] - ds.dataset.index[0], target_sampling_period
@@ -99,7 +101,7 @@ class TestInitializerFromSignals:
 class TestInitializerFromDataframe:
     # Check that the object Dataset is correctly built when the Signal format
     # is good.
-    def test_nominal(self, good_dataframe):
+    def test_nominal(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal data
         (
             df_expected,
@@ -134,7 +136,12 @@ class TestInitializerFromDataframe:
         "test_input, expected",
         [((4, 8), (0.0, 4.0)), ((3.2, 3.8), (0.0, 0.5))],
     )
-    def test_nominal_tin_tout(self, good_dataframe, test_input, expected):
+    def test_nominal_tin_tout(
+        self,
+        good_dataframe: pd.DataFrame,
+        test_input: list[float],
+        expected: list[float],
+    ) -> None:
         # Nominal data
         (
             df_expected,
@@ -161,7 +168,7 @@ class TestInitializerFromDataframe:
         assert np.isclose(actual_tin, expected_tin)
         assert np.isclose(actual_tout, expected_tout)
 
-    def test_nominal_missing_tout(self, good_dataframe):
+    def test_nominal_missing_tout(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal data
         df, u_labels, y_labels, _ = good_dataframe
         tin = 0.5
@@ -174,11 +181,13 @@ class TestInitializerFromDataframe:
                 tin=tin,
             )
 
-    def test_nominal_tin_ge_tout(self, good_dataframe):
+    def test_nominal_tin_ge_tout(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal data
         df, u_labels, y_labels, _ = good_dataframe
         # tin > tout
         tin = 0.5
         tout = 0.1
         with pytest.raises(ValueError):
-            dmv.dataset.Dataset("potato", df, u_labels, y_labels, tin=tin, tout=tout)
+            dmv.dataset.Dataset(
+                "potato", df, u_labels, y_labels, tin=tin, tout=tout
+            )

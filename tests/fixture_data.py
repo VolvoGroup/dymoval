@@ -14,19 +14,26 @@ dataset_type = ["MIMO", "SISO", "SIMO", "MISO"]
 # ============================================
 # All good test Signals (good)
 # ============================================
+
+
 @pytest.fixture(params=dataset_type)
-def good_signals(request):
+def good_signals(request):  # type: ignore
 
     fixture_type = request.param
     # General case (MIMO)
     nan_thing = np.empty(200)
     nan_thing[:] = np.NaN
 
+    # Signals creation
     input_signal_names = ["u1", "u2", "u3"]
     input_sampling_periods = [0.01, 0.1, 0.1]
     input_signal_values = [
-        np.hstack((np.random.rand(50), nan_thing, np.random.rand(400), nan_thing)),
-        np.hstack((np.random.rand(20), nan_thing[0:5], np.random.rand(30), nan_thing)),
+        np.hstack(
+            (np.random.rand(50), nan_thing, np.random.rand(400), nan_thing)
+        ),
+        np.hstack(
+            (np.random.rand(20), nan_thing[0:5], np.random.rand(30), nan_thing)
+        ),
         np.hstack((np.random.rand(80), nan_thing, np.random.rand(100))),
     ]
 
@@ -42,18 +49,33 @@ def good_signals(request):
             "time_unit": "s",
         }
         in_lst.append(deepcopy(temp_in))
+
     # Output signal
     output_signal_names = ["y1", "y2", "y3", "y4"]
     output_sampling_periods = [0.1, 0.1, 0.1, 0.1]
     output_signal_values = [
-        np.hstack((np.random.rand(50), nan_thing, np.random.rand(100), nan_thing)),
         np.hstack(
-            (np.random.rand(100), nan_thing[0:50], np.random.rand(150), nan_thing)
+            (np.random.rand(50), nan_thing, np.random.rand(100), nan_thing)
         ),
         np.hstack(
-            (np.random.rand(10), nan_thing[0:105], np.random.rand(50), nan_thing)
+            (
+                np.random.rand(100),
+                nan_thing[0:50],
+                np.random.rand(150),
+                nan_thing,
+            )
         ),
-        np.hstack((np.random.rand(20), nan_thing[0:85], np.random.rand(60), nan_thing)),
+        np.hstack(
+            (
+                np.random.rand(10),
+                nan_thing[0:105],
+                np.random.rand(50),
+                nan_thing,
+            )
+        ),
+        np.hstack(
+            (np.random.rand(20), nan_thing[0:85], np.random.rand(60), nan_thing)
+        ),
     ]
 
     output_signal_units = ["m/s", "deg", "°C", "kPa"]
@@ -71,6 +93,7 @@ def good_signals(request):
     signal_list = [*in_lst, *out_lst]
     first_output_idx = len(input_signal_names)
 
+    # Adjust based on fixtures
     if fixture_type == "SISO":
         # Slice signal list
         # Pick u1 and y1
@@ -78,7 +101,10 @@ def good_signals(request):
         input_signal_names = input_signal_names[0]
         output_signal_names = output_signal_names[0]
     if fixture_type == "MISO":
-        signal_list = [*signal_list[:first_output_idx], signal_list[first_output_idx]]
+        signal_list = [
+            *signal_list[:first_output_idx],
+            signal_list[first_output_idx],
+        ]
         output_signal_names = output_signal_names[0]
     if fixture_type == "SIMO":
         signal_list = [signal_list[0], *signal_list[first_output_idx:]]
@@ -90,7 +116,7 @@ def good_signals(request):
 # End good test Signals
 # ============================================
 @pytest.fixture(params=dataset_type)
-def good_dataframe(request):
+def good_dataframe(request):  # type: ignore
 
     fixture_type = request.param
     # Create a dummy dataframe
@@ -101,7 +127,9 @@ def good_dataframe(request):
     y_labels = ["y1", "y2"]
     cols_name = [*u_labels, *y_labels]
     df = pd.DataFrame(
-        np.random.randn(num_samples, len(cols_name)), index=idx, columns=cols_name
+        np.random.randn(num_samples, len(cols_name)),
+        index=idx,
+        columns=cols_name,
     )
     df.index.name = "Time (s)"
 
@@ -126,7 +154,7 @@ def good_dataframe(request):
 
 
 @pytest.fixture(params=dataset_type)
-def sine_dataframe(request):
+def sine_dataframe(request):  # type: ignore
 
     fixture_type = request.param
 

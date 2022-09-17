@@ -1,13 +1,14 @@
 import pytest
 import dymoval as dmv
+from dymoval.validation import XCorrelation
 import numpy as np
 from matplotlib import pyplot as plt
-from fixture_data import *  # noqa
+from .fixture_data import *  # noqa
 import scipy.signal as signal
 
 
 class TestClassValidationNominal:
-    def test_init(self, good_dataframe):
+    def test_init(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal data
         df, u_labels, y_labels, fixture = good_dataframe
         name_ds = "my_dataset"
@@ -24,7 +25,7 @@ class TestClassValidationNominal:
         for ii in range(4):  # Size of coverage
             assert all(vs.Dataset.coverage[ii] == ds.coverage[ii])
 
-    def test_random_walk(self, good_dataframe):
+    def test_random_walk(self, good_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
@@ -43,7 +44,9 @@ class TestClassValidationNominal:
         sim1_labels = ["my_y1", "my_y2"]  # The fixture has two outputs
         if fixture == "SISO" or fixture == "MISO":
             sim1_labels = [sim1_labels[0]]
-        sim1_values = np.random.rand(len(df.iloc[:, 0].values), len(sim1_labels))
+        sim1_values = np.random.rand(
+            len(df.iloc[:, 0].values), len(sim1_labels)
+        )
 
         vs.append_simulation(sim1_name, sim1_labels, sim1_values)
         # At least the names are there...
@@ -114,7 +117,7 @@ class TestClassValidationNominal:
 
 
 class TestClassValidatioNominal_sim_validation:
-    def test_existing_sim_raise(self, good_dataframe):
+    def test_existing_sim_raise(self, good_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
@@ -128,14 +131,16 @@ class TestClassValidatioNominal_sim_validation:
         sim1_labels = ["my_y1", "my_y2"]  # The fixture has two outputs
         if fixture == "SISO" or fixture == "MISO":
             sim1_labels = [sim1_labels[0]]
-        sim1_values = np.random.rand(len(df.iloc[:, 0].values), len(sim1_labels))
+        sim1_values = np.random.rand(
+            len(df.iloc[:, 0].values), len(sim1_labels)
+        )
 
         # Same sim nmane
         vs.append_simulation(sim1_name, sim1_labels, sim1_values)
         with pytest.raises(ValueError):
             vs.append_simulation(sim1_name, sim1_labels, sim1_values)
 
-    def test_too_many_signals_raise(self, good_dataframe):
+    def test_too_many_signals_raise(self, good_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
@@ -152,13 +157,15 @@ class TestClassValidatioNominal_sim_validation:
             "my_y2",
             "potato",
         ]  # The fixture has two outputs
-        sim1_values = np.random.rand(len(df.iloc[:, 0].values), len(sim1_labels))
+        sim1_values = np.random.rand(
+            len(df.iloc[:, 0].values), len(sim1_labels)
+        )
 
         # Same sim nmane
         with pytest.raises(IndexError):
             vs.append_simulation(sim1_name, sim1_labels, sim1_values)
 
-    def test_duplicate_names_raise(self, good_dataframe):
+    def test_duplicate_names_raise(self, good_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
@@ -173,14 +180,18 @@ class TestClassValidatioNominal_sim_validation:
         sim1_labels = ["my_y1", "my_y1"]  # The fixture has two outputs
         if fixture == "SISO" or fixture == "MISO":
             sim1_labels = [sim1_labels[0]]
-        sim1_values = np.random.rand(len(df.iloc[:, 0].values), len(sim1_labels))
+        sim1_values = np.random.rand(
+            len(df.iloc[:, 0].values), len(sim1_labels)
+        )
 
         # Same sim nmane
         if fixture == "SIMO" or fixture == "MIMO":
             with pytest.raises(ValueError):
                 vs.append_simulation(sim1_name, sim1_labels, sim1_values)
 
-    def test_mismatch_labels_values_raise(self, good_dataframe):
+    def test_mismatch_labels_values_raise(
+        self, good_dataframe: pd.DataFrame
+    ) -> None:
         df, u_labels, y_labels, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
@@ -195,13 +206,15 @@ class TestClassValidatioNominal_sim_validation:
         sim1_labels = ["my_y1", "my_y2"]  # The fixture has two outputs
         if fixture == "SISO" or fixture == "MISO":
             sim1_labels = [sim1_labels[0]]
-        sim1_values = np.random.rand(len(df.iloc[:, 0].values), len(sim1_labels) + 1)
+        sim1_values = np.random.rand(
+            len(df.iloc[:, 0].values), len(sim1_labels) + 1
+        )
 
         # Same sim nmane
         with pytest.raises(IndexError):
             vs.append_simulation(sim1_name, sim1_labels, sim1_values)
 
-    def test_too_many_values_raise(self, good_dataframe):
+    def test_too_many_values_raise(self, good_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
@@ -226,7 +239,7 @@ class TestClassValidatioNominal_sim_validation:
 
 
 class TestPlots:
-    def test_plots(self, good_dataframe):
+    def test_plots(self, good_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
@@ -241,7 +254,9 @@ class TestPlots:
         sim1_labels = ["my_y1", "my_y2"]  # The fixture has two outputs
         if fixture == "SISO" or fixture == "MISO":
             sim1_labels = [sim1_labels[0]]
-        sim1_values = np.random.rand(len(df.iloc[:, 0].values), len(sim1_labels))
+        sim1_values = np.random.rand(
+            len(df.iloc[:, 0].values), len(sim1_labels)
+        )
         vs.append_simulation(sim1_name, sim1_labels, sim1_values)
 
         # Add a second
@@ -263,7 +278,9 @@ class TestPlots:
         plt.close("all")
 
         # Test plot - all the options
-        vs.plot_simulations(["Model 1", "Model 2"], plot_dataset=True, plot_input=True)
+        vs.plot_simulations(
+            ["Model 1", "Model 2"], plot_dataset=True, plot_input=True
+        )
         plt.close("all")
 
         # Test plot - conditional wrong
@@ -300,7 +317,7 @@ class Test_xcorr:
             # (np.random.rand(10, 4), np.random.rand(15, 3)),
         ],
     )
-    def test_xcorr(self, X, Y):
+    def test_xcorr(self, X: XCorrelation, Y: XCorrelation) -> None:
         # Just test that it won't run any error
         # Next, remove randoms with known values.
         dmv.xcorr(X, Y)
@@ -315,7 +332,9 @@ class Test_rsquared:
             (np.random.rand(3, 5), np.random.rand(3, 5)),
         ],
     )
-    def test_rsquared_nominal(self, y_values, y_sim_values):
+    def test_rsquared_nominal(
+        self, y_values: np.ndarray, y_sim_values: np.ndarray
+    ) -> None:
         # Just test that it won't run any error
         # Next, remove randoms with known values.
         dmv.rsquared(y_values, y_sim_values)
@@ -331,7 +350,9 @@ class Test_rsquared:
             (np.random.rand(10, 4), np.random.rand(15, 3)),
         ],
     )
-    def test_rsquared_raise(self, y_values, y_sim_values):
+    def test_rsquared_raise(
+        self, y_values: np.ndarray, y_sim_values: np.ndarray
+    ) -> None:
         # Just test that it won't run any error
         # Next, remove randoms with known values.
         with pytest.raises(IndexError):
@@ -348,7 +369,7 @@ class Test_xcorr_norm:
             np.random.rand(10),
         ],
     )
-    def test_xcorr_norm_nominal(self, R):
+    def test_xcorr_norm_nominal(self, R: XCorrelation) -> None:
         # Just test that it won't run any error
         # Next, remove randoms with known values.
         Rxy = {"values": R, "lags": signal.correlation_lags(len(R), len(R))}
@@ -358,7 +379,7 @@ class Test_xcorr_norm:
         "R",
         [np.random.rand(10, 3, 2, 4), np.random.rand(10, 2, 1, 5, 4)],
     )
-    def test_xcorr_norm_raise(self, R):
+    def test_xcorr_norm_raise(self, R: XCorrelation) -> None:
         # Just test that it won't run any error
         # Next, remove randoms with known values.
         Rxy = {"values": R, "lags": signal.correlation_lags(len(R), len(R))}

@@ -12,14 +12,15 @@ Dymoval further provides a number of functions for dataset analysis and manipula
 Although it is a very helpful in engineering, its usage may come handy in other application domains as well. 
 
 
+
+## Main Features
+
  **Datasets analysis and manipulation**
 - Time and frequency analysis 
 - Missing data handling
 - Linear filtering
 - Means and offsets removal
 - Re-sampling
-
-## Main Features
 
 **Model validation**
 
@@ -37,7 +38,8 @@ Although it is a very helpful in engineering, its usage may come handy in other 
 ## Installation
 
 
-    pip install dymoval
+    The tool still needs some adjustments before it can be release in typical distribution channels. 
+	Hence, at the moment it is only available on GitHub.
 
 
 ## Getting started
@@ -46,4 +48,4 @@ The best way to learn *dymoval* is to run the tutorial scripts but perhaps you m
 have a look at the [documentation](https://volvogroup.github.io/dymoval/).
 
 ## License
-[BSD 3](https://github.com/VolvoGroup/dymoval/blob/main/LICENSE)
+Dymoval is licensed under [BSD 3](https://github.com/VolvoGroup/dymoval/blob/main/LICENSE) license.
