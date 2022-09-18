@@ -25,11 +25,6 @@ keywords = [
   "data"
 ]
 
-[tool.hatch.build.sources]
-"scripts" = "dymoval/scripts"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/dymoval", "scripts"]
 
 
 [tool.hatch.build]
