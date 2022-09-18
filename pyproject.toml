@@ -24,19 +24,26 @@ keywords = [
   "dataset",
   "data"
 ]
+# dynamic = ["version"] This may be useful once I will learn how to deal with versions
 
-
-
-[tool.hatch.build]
-exclude = [
-  "__pycache__"
-]
 
 [project.urls]
 "Homepage" = "https://github.com/VolvoGroup/dymoval"
 "Documentation" = "https://volvogroup.github.io/dymoval/"
 "Bug Tracker" = "https://github.com/VolvoGroup/dymoval/issues"
 
+
+[tool.hatch]
+
+[tool.hatch.build.targets.wheel]
+only-include = ["src/dymoval", "scripts"]
+
+[tool.hatch.build.sources]
+"src/dymoval" = "dymoval"
+"scripts" = "dymoval/scripts"
+
+
+# Formatting, type check, unit-test 
 [tool.black]
 target-version = ['py39']
 line-length = 80
@@ -64,3 +71,4 @@ module = [
 
 [tool.pytest.ini_options]
 norecursedirs = ["scripts"] # Exclude folders
+
