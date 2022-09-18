@@ -35,6 +35,11 @@ keywords = [
 
 [tool.hatch]
 
+[tool.hatch.build]
+exclude = [
+  "__pycache__/"
+]
+
 [tool.hatch.build.targets.wheel]
 only-include = ["src/dymoval", "scripts"]
 
