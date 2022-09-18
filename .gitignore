@@ -1,0 +1,15 @@
+# Global directories
+__pycache__/
+
+
+# Root directories
+/.benchmarks/
+/.env/
+/.mypy_cache/
+/.pytest_cache/
+/backend/dist/
+/dist/
+/site/
+
+# Root files
+/.coverage*
