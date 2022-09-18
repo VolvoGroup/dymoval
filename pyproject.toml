@@ -33,27 +33,34 @@ keywords = [
 "Bug Tracker" = "https://github.com/VolvoGroup/dymoval/issues"
 
 
-[tool.hatch]
+# =======================
+# Hatch settings
+# =======================
 
-[tool.hatch.build]
+[tool.hatch.build.targets.sdist]
 exclude = [
-  "__pycache__/"
+  "/.github",
+  ".gitignore"
 ]
 
 [tool.hatch.build.targets.wheel]
 only-include = ["src/dymoval", "scripts"]
 
-[tool.hatch.build.sources]
-"src/dymoval" = "dymoval"
+[tool.hatch.build.targets.wheel.sources]
+"src" = ""
 "scripts" = "dymoval/scripts"
 
 
+# ===================================
 # Formatting, type check, unit-test 
+# ===================================
+# black
 [tool.black]
 target-version = ['py39']
 line-length = 80
 exclude = ["scripts", "docs"]
 
+# mypy
 [tool.mypy]
 python_version = "3.9"
 disallow_untyped_defs = true
@@ -74,6 +81,8 @@ module = [
     "config",
 ]
 
+
+# pytest
 [tool.pytest.ini_options]
 norecursedirs = ["scripts"] # Exclude folders
 
