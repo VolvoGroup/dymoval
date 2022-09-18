@@ -1,4 +1,6 @@
 ![Dymoval logo](https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo.png)
+[![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch)
+
 
 What is it?
 -
