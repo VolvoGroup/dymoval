@@ -59,7 +59,7 @@ jobs:
 
       - name: Unit-tests (pytest)
         run: |
-          python.exe -m pytest .
+          python -m pytest .
 
       - name: Build wheel and sdist (hatch)
         run: |
