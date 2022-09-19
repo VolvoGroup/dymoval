@@ -1,13 +1,13 @@
 # Dymoval
 
-![Dymoval logo](https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo.svg | width=100)
+![Dymoval logo](https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo.svg)
 
-# Test
+## Test
 TBD
-# Build
+## Build
 [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch)
 
-# License
+## License
 [![license](https://img.shields.io/github/license/VolvoGroup/dymoval)](./LICENSE.txt)
 
 -----
