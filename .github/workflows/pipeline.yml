@@ -39,6 +39,7 @@ jobs:
             python-version: '3.9'
         
       - name: Install dev-dependencies
+        run: |  
           python -m pip install .[test]
           python -m pip install .[build]
           python -m pip install .[docs]
