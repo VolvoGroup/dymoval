@@ -12,7 +12,7 @@
 
 ### Tools
 [![Hatch project](https://img.shields.io/badge/build-Hatch-4051b5.svg)](https://github.com/pypa/hatch) 
-[![code check - flake8](https://img.shields.io/badge/code%20check-flake8-green.svg)](https://pypi.org/project/flake8)
+[![code check - flake8](https://img.shields.io/badge/lint-flake8-green.svg)](https://pypi.org/project/flake8)
 [![types - Mypy](https://img.shields.io/badge/types-MyPy-orange.svg)](https://github.com/python/mypy) 
 [![test - pytest](https://img.shields.io/badge/test-pytest-brightgreen.svg)](https://github.com/pytest-dev/pytest)
 [![format - black](https://img.shields.io/badge/format-black-000000.svg)](https://github.com/psf/black) 
