@@ -3,9 +3,24 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
+# General info
 name = "dymoval"
 version = "0.1"
+
+# Requirements
 requires-python = ">=3.9"
+dependencies = [
+"numpy",
+"scipy",
+"pandas",
+"matplotlib",
+"control",
+"typing",
+"pathlib",
+"warnings",
+]
+
+# Other metadata
 authors = [
   { name="Ubaldo Tiberi", email="ubaldo.tiberi@volvo.com" },
 ]
@@ -27,6 +42,20 @@ keywords = [
 # dynamic = ["version"] This may be useful once I will learn how to deal with versions
 
 
+# For developers
+[project.optional-dependencies]
+build = ["hatch"]
+tests = [
+  'pytest',
+]
+docs = [
+  "sphinx",
+  "furo",
+  "sphinx-toolbox",
+  "sphinx-autodoc-typehints"
+]
+
+
 [project.urls]
 "Homepage" = "https://github.com/VolvoGroup/dymoval"
 "Documentation" = "https://volvogroup.github.io/dymoval/"
@@ -39,8 +68,7 @@ keywords = [
 
 [tool.hatch.build.targets.sdist]
 exclude = [
-  "/.github",
-  ".gitignore"
+  "/.github"
 ]
 
 [tool.hatch.build.targets.wheel]

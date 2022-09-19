@@ -1,7 +1,0 @@
-pytest
-numpy
-scipy
-pandas
-matplotlib
-control
-typing
