@@ -17,7 +17,7 @@
 [![test - pytest](https://img.shields.io/badge/test-pytest-brightgreen.svg)](https://github.com/pytest-dev/pytest)
 [![format - black](https://img.shields.io/badge/format-black-000000.svg)](https://github.com/psf/black) 
 [![doc - sphinx](https://img.shields.io/badge/doc-sphinx-blue.svg)](https://github.com/sphinx-doc/sphinx)
-
+License: [![license](https://img.shields.io/badge/BSD-3-clause-brightgreen.svg)](https://github.com/sphinx-doc/sphinx)
 -----
 
 ## What is it?
