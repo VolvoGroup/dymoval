@@ -46,7 +46,9 @@ keywords = [
 [project.optional-dependencies]
 build = ["hatch"]
 tests = [
-  'pytest',
+  "pytest",
+  "flake8",
+  "mypy"
 ]
 docs = [
   "sphinx",
