@@ -17,7 +17,6 @@ dependencies = [
 "control",
 "typing",
 "pathlib",
-"warnings",
 ]
 
 # Other metadata
@@ -44,6 +43,7 @@ keywords = [
 
 # For developers
 [project.optional-dependencies]
+
 build = ["hatch"]
 tests = [
   "pytest",
