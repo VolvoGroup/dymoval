@@ -1,8 +1,18 @@
-![Dymoval logo](https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo.svg)
+# Dymoval
+
+![Dymoval logo](https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo.svg | width=100)
+
+# Test
+TBD
+# Build
 [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch)
 
+# License
+[![license](https://img.shields.io/github/license/VolvoGroup/dymoval)](./LICENSE.txt)
 
-What is it?
+-----
+
+## What is it?
 -
 **Dymoval**  (**DY**namic **MO**del **VAL**idation) is a Python package for  *validating models* and *analyzing datasets*. 
 
