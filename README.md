@@ -7,14 +7,14 @@
 
 </div>
 
-### Build status
+#### Build status
 ![example workflow](https://github.com/VolvoGroup/dymoval/actions/workflows/pipeline.yml/badge.svg)
 
-### Tools
- Build  [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch)
+#### Tools
+[![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch)
 
-### License
-| License | [![license](https://img.shields.io/github/license/VolvoGroup/dymoval)](./LICENSE.txt) |
+#### License
+ [![license](https://img.shields.io/github/license/VolvoGroup/dymoval)](./LICENSE.txt) 
 
 
 
