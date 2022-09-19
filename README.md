@@ -1,6 +1,6 @@
 # Dymoval
 
-![Dymoval logo](https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo.svg)
+![Dymoval logo](https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo.svg | width=100px)
 
 
 | | |
