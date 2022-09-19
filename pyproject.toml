@@ -45,7 +45,7 @@ keywords = [
 [project.optional-dependencies]
 
 build = ["hatch"]
-tests = [
+test = [
   "pytest",
   "flake8",
   "mypy"
