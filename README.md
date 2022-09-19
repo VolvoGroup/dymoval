@@ -14,9 +14,9 @@
 [![Hatch project](https://img.shields.io/badge/build-Hatch-4051b5.svg)](https://github.com/pypa/hatch) 
 [![format - black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) 
 [![types - Mypy](https://img.shields.io/badge/types-Mypy-yellow.svg)](https://github.com/python/mypy) 
-[![lint - flake8](https://img.shields.io/badge/imports-isort-green.svg)](https://pypi.org/project/flake8)
-[![test - pytest](https://img.shields.io/badge/imports-pytest-brightgreen.svg)](https://github.com/pytest-dev/pytest)
-[![doc - sphinx](https://img.shields.io/badge/imports-sphinx-blue.svg)](https://github.com/sphinx-doc/sphinx)
+[![lint - flake8](https://img.shields.io/badge/imports-flake8-green.svg)](https://pypi.org/project/flake8)
+[![test - pytest](https://img.shields.io/badge/test-pytest-brightgreen.svg)](https://github.com/pytest-dev/pytest)
+[![doc - sphinx](https://img.shields.io/badge/doc-sphinx-blue.svg)](https://github.com/sphinx-doc/sphinx)
 
 -----
 
