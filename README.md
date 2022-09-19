@@ -2,8 +2,10 @@
 
 <div align="center">
 
-<img src="https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo.svg" data-canonical-src="https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo.svg" width="400" class="center" />
-</center>
+<img src="https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo.svg" data-canonical-src="https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo.svg" width="500" class="center" />
+
+
+</div>
 
 | | |
 | --- | --- |
@@ -11,7 +13,7 @@
 | Build | [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch)|
 | License | [![license](https://img.shields.io/github/license/VolvoGroup/dymoval)](./LICENSE.txt) |
 
-</div>
+
 
 -----
 
