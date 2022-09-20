@@ -11,7 +11,8 @@ What is it?
 
 *Dymoval* is a Python package for  *validating models* and *analyzing datasets*. 
 
-*Dymoval* validates model against some user-provided dataset regardless of their format (*DNN, transfer function, ODE,* etc.) and the tool  used for developing them (*Simulink, Modelica,* etc.). 
+*Dymoval* validates models against some user-provided dataset regardless of the models format (*DNN, transfer function, ODE,* etc.) and the tool 
+used for developing them (*Simulink, Modelica,* etc.). 
 If your development process is done in a CI/CD environment, *dymoval*'s functions can be easily included in a development pipeline to test your changes. 
 It can be also used to unit-test your models.
 
@@ -50,8 +51,8 @@ Model validation
 	- Residuals auto-correlation
 	- Input-Residuals cross-correlation 
 - Coverage region
-- Modeling tool independency
 - Works for both SISO and MIMO models
+- Modeling tool independency
 - Easily integrates with CI/CD pipelines. 
 
 

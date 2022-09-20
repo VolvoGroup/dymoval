@@ -23,8 +23,10 @@
 
 **Dymoval**  (**DY**namic **MO**del **VAL**idation) is a Python package for  *validating models* and *analyzing datasets*. 
 
-Dymoval validates models against some user-provided dataset regardless of their format (DNN, transfer function, ODE, etc.) and the tool  used for developing them (Simulink, Modelica, etc.). 
-If your development process is done in a CI/CD environment, then dymoval's functions can be easily included in a development pipeline to test your changes. 
+Dymoval validates models against some user-provided dataset regardless of the models format (*DNN, transfer function, ODE,* etc.) and the tool 
+used for developing them (*Simulink, Modelica,* etc.). 
+If your development process is done in a CI/CD environment, dymoval's functions can be easily included in a development pipeline to test your changes. 
+It can be also used to unit-test your models.
 
 Dymoval further provides a number of functions for dataset analysis and manipulation.  
 
@@ -49,22 +51,30 @@ Although it is a very helpful in engineering, its usage may come handy in other 
 	- Residuals auto-correlation
 	- Input-Residuals cross-correlation 
 - Coverage region
-- Modeling tool independency
 - Works for both SISO and MIMO models
+- Modeling tool independency
 - Easily integrates with CI/CD pipelines.
 
 
 ## Installation
 
 
-The tool still needs some adjustments before it can be release in typical distribution channels. 
-Hence, at the moment it is only available on GitHub.
+The tool is still under development and therefore there are no release available yet.
+However, if you want to give it a shot, you can just clone this repo and run
+
+	cd /path/to/where/you/cloned/this/repo
+	pip install -e .
 
 
 ## Getting started
 
-The best way to learn *dymoval* is to run the tutorial scripts but perhaps you may want to 
-have a look at the [documentation](https://volvogroup.github.io/dymoval/).
+If you are already familiar with what model validation is, then the best way to learn dymoval is to run the tutorial scripts that you can open with
+
+	import dymoval as dmv
+
+	dmv.(TBD)
+ 
+Otherwise, you can get an inroduction by taking a look at the [documentation](https://volvogroup.github.io/dymoval/).
 
 ## License
 Dymoval is licensed under [BSD 3](https://github.com/VolvoGroup/dymoval/blob/main/LICENSE) license.
