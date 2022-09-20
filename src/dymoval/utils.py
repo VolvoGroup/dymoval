@@ -6,7 +6,9 @@ import numpy as np
 from matplotlib import pyplot as plt
 import scipy.signal as signal  # noqa
 from typing import Union
-import os, sys, subprocess
+import os
+import sys
+import subprocess
 
 
 def factorize(n: int) -> tuple[int, int]:
