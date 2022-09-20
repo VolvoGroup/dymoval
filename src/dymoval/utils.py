@@ -6,8 +6,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import scipy.signal as signal  # noqa
 from typing import Union
-import sys
-import os
+import os, sys, subprocess
 
 
 def factorize(n: int) -> tuple[int, int]:
@@ -87,6 +86,12 @@ def save_plot_as(fig: matplotlib.figure.Figure, name: str) -> None:
 
 
 def open_tutorial() -> None:
+    """Test"""
     site_packages = next(p for p in sys.path if "site-packages" in p)
-    os.startfile(site_packages + "\\dymoval\\scripts\\tutorial.py")
-    print(site_packages)
+    if sys.platform == "win32":
+        filename = "\\dymoval\\scripts\\tutorial.py"
+        os.startfile(site_packages + filename)
+    else:
+        filename = "/dymoval/scripts/tutorial.py"
+        opener = "open" if sys.platform == "darwin" else "xdg-open"
+        subprocess.call([opener, site_packages + filename])
