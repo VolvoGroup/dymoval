@@ -16,8 +16,7 @@ dependencies = [
 "matplotlib",
 "control",
 "typing",
-"pathlib",
-"sys"
+"pathlib"
 ]
 
 # Other metadata
