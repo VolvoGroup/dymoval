@@ -22,12 +22,16 @@ class XCorrelation(TypedDict):
 
     This data structure resembles typical Matlab *structs x* of the form
     *x.time* and *x.values*.
+
+
+    Attributes
+    ----------
+    values: np.ndarray
+        Values of the correlation tensor.
+        It is a *Nxpxq* tensor, where *N* is the number of lags.
     """
 
-    values: np.ndarray
-    """Values of the correlation tensor.
-    It is a *Nxpxq* tensor, where *N* is the number of lags."""
-
+    values: np.ndarray  # values collide with collide() method of dict and won't be rendered
     lags: np.ndarray
     """Lags of the cross-correlation.
     It is a vector of length *N*,where *N* is the number of lags."""

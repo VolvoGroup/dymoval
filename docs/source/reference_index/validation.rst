@@ -5,7 +5,7 @@ A :ref:`ValidationSession<ValidationSession>` object stores a :ref:`Dataset <Dat
 Then, the user can append as many simulation results as he/she want to the same 
 :ref:`ValidationSession<ValidationSession>` object that automatically computes the validation metrics for each appended simulation 
 and store the results in the 
-:py:attr:`ValidationSession.validation_results` attribute.
+:py:attr:`~.ValidationSession.validation_results` attribute.
 
 Note that a :ref:`ValidationSession<ValidationSession>` object is instantiated from a :ref:`Dataset <Dataset>` object and therefore 
 the user can access all the attributes and methods of the :ref:`Dataset` directly from the :ref:`ValidationSession`.
@@ -36,6 +36,11 @@ ValidationSession class
 .. rubric:: Methods
 .. autosummary::
 
-   ValidationSession.plot_residuals
+   ValidationSession.append_simulation
    ValidationSession.drop_simulation
+   ValidationSession.plot_simulations
+   ValidationSession.plot_residuals
+   ValidationSession.get_simulations_name
+   ValidationSession.get_simulation_signals_list
+   ValidationSession.clear
 

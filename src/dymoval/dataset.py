@@ -20,11 +20,16 @@ from typing import TypedDict, Optional, Union, Any, Literal
 class Signal(TypedDict):
     """Signals are used to represent real-world signals and are used for
     instantiate :py:class:`Dataset <dymoval.dataset.Dataset>` class objects.
+
+
+    Attributes
+    ----------
+    values: np.ndarray
+        Signal values.
     """
 
-    # TO DO: it does not render np.ndarray
     name: str  #: Signal name.
-    values: np.ndarray  #: Signal values.
+    values: np.ndarray  # values confuse with values() which is a dict method.
     signal_unit: str  #: Signal unit.
     sampling_period: float  #: Signal sampling period.
     time_unit: str  #: Signal sampling period.
