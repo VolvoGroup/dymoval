@@ -4,12 +4,17 @@ Installation & configuration
 Installation
 ------------
 
-To install `dymoval`` through `pip` simply run
+*Dymoval* has zero releases and it is still under development. 
+Therefore, at the moment to install it through `pip` you must clone the repo on `GitHub`_ 
+and then run 
+
 
 .. code-block::
 
-    pip install dymoval
+	cd /path/to/where/you/cloned/this/repo
+	pip install -e .
 
+.. _GitHub: https://github.com/VolvoGroup/dymoval
 
 Configuration
 -------------
