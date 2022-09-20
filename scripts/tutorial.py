@@ -1,10 +1,8 @@
 #  -*- coding: utf-8 -*-
-"""
-    This class...
-"""
-
 # ===========================================================================
-# In this tutorial we show the main functionalities of dymoval
+# In this tutorial we show the main functionalities of dymoval.
+# The code is divided in code-cell blocks so you can run it piece-by-piece
+# and analyze the result.
 # ===========================================================================
 
 from copy import deepcopy
@@ -13,8 +11,13 @@ import numpy as np
 
 
 # ===========================================================================
-# Assume that we have the following dataset from some experiment.
-# We map each logged signal into a dymoval Signal.
+# Assume that we have some measurements from some experiment.
+# Unfortunately, there is some missing data and the signals are not even sampled
+# with the same sampling period.
+#
+# Simulate something with Simulink and export an FMU.
+#
+# We  map each logged signal into a dymoval Signal.
 # To create a dymoval Signal use the syntax and fill the fields accordingly
 # to the specified datatypes
 # name: dmv.Signal = {
@@ -28,16 +31,25 @@ import numpy as np
 
 
 # Let's create some Signal
-nan_thing = np.empty(200)
-nan_thing[:] = np.NaN
+nan_intervals = np.empty(200)
+nan_intervals[:] = np.NaN
 
 # INPUT signals
 input_signal_names = ["u1", "u2", "u3"]
 input_sampling_periods = [0.01, 0.1, 0.1]
 input_signal_values = [
-    np.hstack((np.random.rand(50), nan_thing, np.random.rand(400), nan_thing)),
-    np.hstack((np.random.rand(20), nan_thing[0:5], np.random.rand(30), nan_thing)),
-    np.hstack((np.random.rand(80), nan_thing, np.random.rand(100))),
+    np.hstack(
+        (np.random.rand(50), nan_intervals, np.random.rand(400), nan_intervals)
+    ),
+    np.hstack(
+        (
+            np.random.rand(20),
+            nan_intervals[0:5],
+            np.random.rand(30),
+            nan_intervals,
+        )
+    ),
+    np.hstack((np.random.rand(80), nan_intervals, np.random.rand(100))),
 ]
 
 
@@ -57,10 +69,33 @@ for ii, val in enumerate(input_signal_names):
 output_signal_names = ["y1", "y2", "y3", "y4"]
 output_sampling_periods = [0.3, 0.2, 0.1, 0.05]
 output_signal_values = [
-    np.hstack((np.random.rand(50), nan_thing, np.random.rand(100), nan_thing)),
-    np.hstack((np.random.rand(100), nan_thing[0:50], np.random.rand(150), nan_thing)),
-    np.hstack((np.random.rand(10), nan_thing[0:105], np.random.rand(50), nan_thing)),
-    np.hstack((np.random.rand(20), nan_thing[0:85], np.random.rand(60), nan_thing)),
+    np.hstack(
+        (np.random.rand(50), nan_intervals, np.random.rand(100), nan_intervals)
+    ),
+    np.hstack(
+        (
+            np.random.rand(100),
+            nan_intervals[0:50],
+            np.random.rand(150),
+            nan_intervals,
+        )
+    ),
+    np.hstack(
+        (
+            np.random.rand(10),
+            nan_intervals[0:105],
+            np.random.rand(50),
+            nan_intervals,
+        )
+    ),
+    np.hstack(
+        (
+            np.random.rand(20),
+            nan_intervals[0:85],
+            np.random.rand(60),
+            nan_intervals,
+        )
+    ),
 ]
 
 output_signal_units = ["m/s", "deg", "°C", "kPa"]

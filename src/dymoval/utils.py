@@ -12,7 +12,7 @@ import subprocess
 
 
 def factorize(n: int) -> tuple[int, int]:
-    """Find the smallest and closest integers *(a,b)* such that :math: `n \\le ab`."""
+    r"""Find the smallest and closest integers *(a,b)* such that :math: `n \\le ab`."""
     a = int(np.ceil(np.sqrt(n)))
     b = int(np.ceil(n / a))
     return a, b
