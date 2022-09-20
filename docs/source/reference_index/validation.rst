@@ -1,9 +1,14 @@
 Model Validation
 ================
 
-The :ref:`ValidationSession` class stores a dataset and all the validation results against such a dataset.
-A :ref:`ValidationSession` object is instantiated from a :ref:`Dataset` object. 
-The user can append as many simulation results as he/she want and the class automatically computes the validation metrics.   
+A :ref:`ValidationSession<ValidationSession>` object stores a :ref:`Dataset <Dataset>` object that serves as a basis for validate your models.
+Then, the user can append as many simulation results as he/she want to the same 
+:ref:`ValidationSession<ValidationSession>` object that automatically computes the validation metrics for each appended simulation 
+and store the results in the 
+:py:attr:`ValidationSession.validation_results` attribute.
+
+Note that a :ref:`ValidationSession<ValidationSession>` object is instantiated from a :ref:`Dataset <Dataset>` object and therefore 
+the user can access all the attributes and methods of the :ref:`Dataset` directly from the :ref:`ValidationSession`.
 
 
 .. _ValidationSession:

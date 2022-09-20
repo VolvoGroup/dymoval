@@ -2,9 +2,9 @@ Dataset handling
 ================
 
 Measurement datasets are a central part in model validation and therefore we designed 
-the :ref:`Dataset` class that offer a number of useful methods to deal with them.
+the :ref:`Dataset` class that offer a number of useful :ref:`methods <datasetMethods>` to deal with them.
 
-There are two ways for creating a :ref:`Dataset`.
+There are two ways for creating a :ref:`Dataset <Dataset>` object.
 
 #. Through a list of :ref:`Signals <signal>`
 #. Through a specific structure pandas DataFrame
@@ -15,15 +15,15 @@ There are two ways for creating a :ref:`Dataset`.
 Signal type
 -----------
 
-If the logged signals that you want to use as dataset are not sampled with the same sampling period, 
-then you must convert them into *dymoval* :ref:`signal` objects.
+If the signals that you want to use as dataset are not sampled with the same sampling period, 
+then you must convert them into *dymoval* :ref:`Signal <signal>` objects.
 
 A  :ref:`Dataset`  object - which is what you need at the end - can be instantiated 
-through a list of :ref:`signal` objects.   
+through a list of :ref:`Signal <signal>` objects.   
 
 .. currentmodule:: dymoval.dataset
 
-*Dymoval* :ref:`signal` are *typeddict* with the following keys
+*Dymoval* :ref:`Signals <signal>` are *typeddict* with the following keys
 
 .. rubric:: Keys
 .. autosummary::
@@ -37,7 +37,7 @@ through a list of :ref:`signal` objects.
 
 .. rubric:: Functions on signals
 
-*Dymoval* offers few function for dealing with :ref:`signal`. 
+*Dymoval* offers few function for dealing with :ref:`Signals <signal>`. 
 Such functions are the following
 
 .. autosummary::
@@ -53,7 +53,8 @@ Dataset class
 -------------
 The :ref:`Dataset`  class is used to store and manipulate datasets.
 Since model validation requires a datasets, this class is used also to instantiate 
-objects of class :ref:`ValidationSession`.  
+objects of class :ref:`ValidationSession`, i.e. a :ref:`Dataset <Dataset>` object 
+becomes an attribute of a :ref:`ValidationSession <ValidationSession>`. 
 
 A Dataset class object can be instantiated in two ways
 

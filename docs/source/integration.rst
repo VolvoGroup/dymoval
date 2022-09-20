@@ -1,8 +1,8 @@
 CI/CD integration
 =================
 
-*Dymoval* can be used for unit-testing your models and it can be further used in development pipelines like those 
-provided for example by Jenkins or GitLab.
+*Dymoval* can be used for unit-testing your models and therefore can be used in development pipelines like those 
+provided for example by e.g. Jenkins or GitLab.
 
 Unit-test
 ---------
@@ -24,9 +24,9 @@ where there is some source automation server (like Jenkins or GitLab) that autom
 can be integrated in the codebase or not.
 
 Very often, the process of developing models goes along the same line: you typically have a Version Control System (VCS) 
-that track your model changes...
+to track your model changes...
 
-... but there are no automated mechanism that test your model.
+... but there are no automated mechanisms that test your model.
 Checking that *"everything still works"* is typically done manually and if your changes cane be 
 integrated or not is at reviewer discretion. 
 Not robust, nor democratic.  
