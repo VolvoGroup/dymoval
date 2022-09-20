@@ -17,6 +17,8 @@ dependencies = [
 "control",
 "typing",
 "pathlib",
+"os",
+"sys"
 ]
 
 # Other metadata
