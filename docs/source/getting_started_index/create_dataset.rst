@@ -17,11 +17,11 @@ Another common problem with log-data, independently of the application domain an
 is that not all the logged signals are sampled with the same sampling period whereas a good dataset 
 shall have all the signals sampled at the same rate. 
 
-*Dymoval* provides a function for re-sampling dymoval :ref:`Signals<signal>`. 
+*Dymoval* provides a function for re-sampling :ref:`Signals<signal>`. 
 
 .. note::
     If the signals in your log-data are sampled with the same sampling period,
-    then you can import them directly in a pandas Dataframe with a specific structure without resorting to dymoval signals.
+    then you can import them directly in a pandas DataFrame with a specific structure without resorting to dymoval signals.
     See :ref:`Dataset` for more details.   
 
 Furthermore, when running experiments, data loggers are run continuously and for long time. 
@@ -31,8 +31,8 @@ This leads to very large log-data where only few time-windows contain interestin
 Finally, other than having signals sampled with different sampling periods, log-data are often affected 
 by other problems such as noisy measurements, missing data and so on.
 
-*Dymoval* offers a number of methods for copying with these kind of problems.
-Once you created your *dymoval* :ref:`Dataset`, then you can plot your dataset,
+*Dymoval* offers a number of :ref:`methods <datasetMethods>` for copying with these kind of problems.
+Once you created your :ref:`Dataset`, then you can plot your dataset,
 you can analyze its frequency content and you can perform 
 a bunch more operations including filtering, shifting, and so on.
 

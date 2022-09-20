@@ -5,8 +5,7 @@ When running experiments, it is important to stimulate the target environment in
 as much information as possible from it.
 
 Good experiments shall stress the target environment as much as possible under different conditions.
-This is important because a good model assessment heavily depends on how *informative* is the dataset 
-that we use in the validation phase.
+This is important because a model is as trustworthy as the dataset used for validating it is *informative*.
 
     **Example**
 
@@ -25,14 +24,16 @@ some statistics on it.
 In this way, the user have an understanding under which conditions the developed model is trustworthy, 
 provided that the validation results provides good figures.
 
-In future releases we plan to further provide measures (Cramer-Rao Theorem? Fisher Matrix?) about the
-information level contained in a given dataset in within its coverage region.
+.. note::
+   In future releases we plan to further provide measures (Cramer-Rao Theorem? Fisher Matrix?) on the
+   information level contained in a given dataset in within its coverage region.
 
-This is justified by that having a dataset covering a fairly large region 
-won't necessarily imply that it is also information rich.
-For example, this can happen when you stimulate your target environment only with constant inputs 
-in a wide range of values. 
-You would get a dataset with a fairly large covered region but that would contain very little information.  
+
+A dataset covering a fairly large region 
+won't necessarily imply information richness.
+For example, this happens when you take a wide range of values but you stimulate your target environment 
+only with constant inputs in within such a range. 
+You would certainly have a dataset with a fairly large covered region but... it would contain little information.  
 
     **Example**
 
@@ -42,7 +43,8 @@ You would get a dataset with a fairly large covered region but that would contai
 
 
 
-What is left out in this part, and will not be included in *dymoval*, is how to design experiments 
-that produce sufficiently informative datasets.
-This issue cannot be automatized and it is addressed in the field of *Design of experiments (DoE)*,
+How to design experiments that produce sufficiently informative datasets then?
+
+Well, such an issue cannot be automatized but there is some theory behind it in the field of *Design of experiments (DoE)*,
 feel free to google it for more details.
+Due to that *DoE* cannot be automatized, it will not be included in dymoval, at least for now. 

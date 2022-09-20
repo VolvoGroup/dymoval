@@ -1,20 +1,27 @@
 Validate your model
 ===================
 
-Once you have both a cleaned-up dataset and the corresponding simulation results, you can evaluate your model
+It is now time to validate your model!
+
+Once you have a :ref:`dataset <Dataset>` and some simulation results, then you can evaluate your model
 through the :ref:`ValidationSession`.
 
-You instantiate a ValidationSession object through a :ref:`Dataset` instance.
-Once created, you can append as many simulation results as you want to the same :ref:`ValidationSession`. instance.
+A :ref:`ValidationSession <ValidationSession>` object is created from a :ref:`Dataset` instance.
+More precisely, the :ref:`Dataset` instance becomes an attribute of the created :ref:`ValidationSession <ValidationSession>` object 
+and therefore you can access all the attributes and methods of the associated :ref:`Dataset object <Dataset>` directly from the 
+created :ref:`ValidationSession <ValidationSession>` object.
 
-For each appended simulation result, validation metrics are automatically computed against the stored dataset.
+Once a :ref:`ValidationSession <ValidationSession>` object is created, then you can append as many simulation results 
+as you want to it and validation metrics are automatically computed against the stored dataset 
+and stored in the attribute :py:attr:`~dymoval.validation.plot_residuals`.
 In this way you can automatically see how "good" is your model. 
-Remember that the dataset also include the coverage region that certifies where it is safe to use your model.
 
-The currently implemented validation metrics in *dymoval* are  
+The currently implemented validation metrics in dymoval are  
 
 - R-square fit (%)
 - Residuals auto-correlation
 - Input-Residuals cross-correlation 
 
-*Dymoval* also allows you to visually inspect the residuals through the :py:meth:`~dymoval.validation.plot_residuals` method. 
+It is also possible to visually inspect the residuals through the :py:meth:`~dymoval.validation.plot_residuals` method.
+
+To know more about the selected validation metrics, feel free to google R-square and why alone it is not enough to validate a model. 

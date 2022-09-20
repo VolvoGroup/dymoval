@@ -5,5 +5,5 @@ Getting started
 
    getting_started_index/model_validation
    getting_started_index/basic_concepts
-   getting_started_index/tutorial
+   getting_started_index/tutorials
 

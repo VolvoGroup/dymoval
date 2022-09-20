@@ -79,6 +79,7 @@ and :py:meth:`~dymoval.dataset.dataframe_validation` functions for more informat
    Dataset.coverage
    Dataset.information_level
 
+.. _datasetMethods:
 .. rubric:: Manipulation methods
 .. autosummary::
 
