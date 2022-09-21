@@ -430,6 +430,7 @@ class ValidationSession:
             fig_in, axes_in = plt.subplots(
                 nrows, ncols, sharex=True, squeeze=False
             )
+            # TODO:If you want to overlap change here.
             axes_in = axes_in.flat
             df_val.loc[:, ("INPUT", df_val["INPUT"].columns)].plot(
                 subplots=True,
@@ -573,20 +574,6 @@ class ValidationSession:
 
         return None
 
-    # def plot_dataset(
-    #     self, **kwargs: Any
-    # ) -> Optional[tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]]:
-    #     """It plots the stored dataset.
-
-    #     See XXX
-
-    #     Parameters
-    #     ----------
-    #     **kwargs :
-    #         Arguments to be passed to dymoval.dataset.Dataset.plot() method.
-    #     """
-    #     return self.Dataset.plot(**kwargs)
-
     def get_simulation_signals_list(
         self, sim_name: Union[str, list[str]]
     ) -> list[str]:
@@ -609,15 +596,6 @@ class ValidationSession:
                 "Check the available simulation names with 'get_simulations_names()'"
             )
         return list(self.simulations_results[sim_name].columns)
-
-    # def get_dataset(self) -> pd.DataFrame:
-    #     return self.Dataset.get_dataset()
-
-    # def getDataset_values(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    #     return self.Dataset.get_dataset_values()
-
-    # def get_dataset_signals_list(self) -> list[tuple[str, str]]:
-    #     return self.Dataset.get_signal_list()
 
     def get_validation_metrics(self) -> pd.DataFrame:
         """Return the validation metrics of all the stored simulation names."""
