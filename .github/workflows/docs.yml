@@ -1,5 +1,5 @@
 # CI/CD pipeline
-name: Publish docs
+name: Build and publish docs
 
 on:
   # Runs on pushes targeting the default branch
