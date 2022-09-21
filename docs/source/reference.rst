@@ -2,7 +2,7 @@ Reference Manual
 ================
 
 As seen, the ingredients for validating a model are the *model* itself, a *dataset* and some *validation metrics*.
-Given that *dymoval* is not a modeling tool, then its focus areas are the following
+Given that *Dymoval* is not a modeling tool, then its focus areas are the following
 
 - :doc:`./reference_index/dataset`
 - :doc:`./reference_index/validation`

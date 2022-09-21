@@ -1,7 +1,10 @@
 Tutorials
 =========
 
-Now that you learned what is meant with model validation you can play around with dymoval.
-The best way to take familiarity with dymoval is to run the tutorial in 
+Now that you learned what is meant with model validation you can play around with *Dymoval*.
+The best way to take familiarity with *Dymoval* is to run any tutorial by typing 
 
-see BLA BLA BLA
+.. code-block::
+    import dymoval as dmv
+
+    dmv.open_tutorial()

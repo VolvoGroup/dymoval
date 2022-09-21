@@ -2,7 +2,7 @@ Dataset handling
 ================
 
 Measurement datasets are a central part in model validation and therefore we designed 
-the :ref:`Dataset` class that offer a number of useful :ref:`methods <datasetMethods>` to deal with them.
+the :ref:`Dataset` that offer a number of useful :ref:`methods <datasetMethods>` to deal with them.
 
 There are two ways for creating a :ref:`Dataset <Dataset>` object.
 
@@ -18,7 +18,7 @@ Signal type
 If the signals that you want to use as dataset are not sampled with the same sampling period, 
 then you must convert them into *dymoval* :ref:`Signal <signal>` objects.
 
-A  :ref:`Dataset`  object - which is what you need at the end - can be instantiated 
+A  :ref:`Dataset <Dataset>` object - which is what you need at the end - can be instantiated 
 through a list of :ref:`Signal <signal>` objects.   
 
 .. currentmodule:: dymoval.dataset

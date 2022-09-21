@@ -19,7 +19,7 @@ This is important because a model is as trustworthy as the dataset used for vali
 
  
 
-At the current release, *dymoval* only stores the coverage region of the dataset and compute 
+In the current release, *Dymoval* only stores the coverage region of the dataset and compute 
 some statistics on it.
 In this way, the user have an understanding under which conditions the developed model is trustworthy, 
 provided that the validation results provides good figures.
@@ -29,9 +29,9 @@ provided that the validation results provides good figures.
    information level contained in a given dataset in within its coverage region.
 
 
-A dataset covering a fairly large region 
+It is worth noting that s dataset covering a fairly large region 
 won't necessarily imply information richness.
-For example, this happens when you take a wide range of values but you stimulate your target environment 
+This happens for example when you take a wide range of values but you stimulate your target environment 
 only with constant inputs in within such a range. 
 You would certainly have a dataset with a fairly large covered region but... it would contain little information.  
 
@@ -47,4 +47,4 @@ How to design experiments that produce sufficiently informative datasets then?
 
 Well, such an issue cannot be automatized but there is some theory behind it in the field of *Design of experiments (DoE)*,
 feel free to google it for more details.
-Due to that *DoE* cannot be automatized, it will not be included in dymoval, at least for now. 
+Due to that *DoE* cannot be automatized, it will not be included in *Dymoval*, at least for now. 

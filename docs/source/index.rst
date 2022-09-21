@@ -27,7 +27,7 @@ You have to develop your models with the tool you prefer.
 
 It is nor a tool for *System Identification* (but we don't exclude it can happen in the future ;-)).
 
-*Dymoval* only checks if your models are good or not, regardless of the tool you used for developing them. 
+*Dymoval* only checks if your models are good or not. 
 
 Why dymoval?
 ------------
