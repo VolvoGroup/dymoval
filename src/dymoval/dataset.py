@@ -588,6 +588,43 @@ class Dataset:
 
         return u_labels, y_labels
 
+    def _validate_manipulation_functions_args(
+        self,
+        *,
+        u_list: Optional[list[tuple[str, float]]] = None,
+        y_list: Optional[list[tuple[str, float]]] = None,
+    ) -> tuple[
+        list[str],
+        list[str],
+        Optional[list[tuple[str, float]]],
+        Optional[list[tuple[str, float]]],
+    ]:
+        # Validate the input to dataset manipulation functions
+        if u_list:
+            if not isinstance(u_list, list):
+                u_list = [u_list]
+            u_labels = [u[0] for u in u_list]
+            u_labels, y_labels = self._signals_exist(u_labels, None)
+        if y_list:
+            if not isinstance(y_list, list):
+                y_list = [y_list]
+            y_labels = [y[0] for y in y_list]
+            u_labels, y_labels = self._signals_exist(None, y_labels)
+        if u_list and y_list:
+            if not isinstance(u_list, list):
+                u_list = [u_list]
+            if not isinstance(y_list, list):
+                y_list = [y_list]
+            u_labels = [u[0] for u in u_list]
+            y_labels = [y[0] for y in y_list]
+            u_labels, y_labels = self._signals_exist(u_labels, y_labels)
+        if not u_list and not y_list:
+            raise TypeError(
+                "At least one input or output list must be provdied."
+            )
+
+        return u_labels, y_labels, u_list, y_list
+
     def get_dataset_values(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Return the dataset values as a tuple of *numpy ndarrays* corresponding
@@ -1053,19 +1090,25 @@ class Dataset:
         # Arguments validation
         u_labels, y_labels = self._signals_exist(u_labels, y_labels)
 
+        # Copy the dataframe
+        df_temp = deepcopy(self.dataset)
+
+        # Remove means from input signals
         cols = list(zip(len(u_labels) * ["INPUT"], u_labels))
-        self.dataset.loc[:, cols] = (
+        df_temp.loc[:, cols] = (
             self.dataset.loc[:, cols] - self.dataset.loc[:, cols].mean()
         )
 
+        # Remove means from output signals
         cols = list(zip(len(y_labels) * ["OUTPUT"], y_labels))
+        df_temp.loc[:, cols] = (
+            self.dataset.loc[:, cols] - self.dataset.loc[:, cols].mean()
+        )
 
-        # Remove mean
-        df_temp = self.dataset.loc[:, cols] - self.dataset.loc[:, cols].mean()
-        df_temp.round(NUM_DECIMALS)
+        df_temp.round(decimals=NUM_DECIMALS)
 
         if inplace:
-            self.dataset.loc[:, cols] = deepcopy(df_temp)
+            self.dataset = deepcopy(df_temp)
             return None
         else:
             return df_temp
@@ -1073,10 +1116,12 @@ class Dataset:
     def remove_offset(
         self,
         *,
-        u_list: list[tuple[str, float]],
-        y_list: list[tuple[str, float]],
+        u_list: Optional[list[tuple[str, float]]] = None,
+        y_list: Optional[list[tuple[str, float]]] = None,
         inplace: Optional[bool] = False,
     ) -> Optional[pd.DataFrame]:
+        # At least one argument shall be passed.
+        # This is the reason why they are both specified as Optional.
         """
         Remove a specified offset to the list of specified signals.
 
@@ -1100,28 +1145,24 @@ class Dataset:
         inplace :
             If *True* the function modifies the stored dataset.
             Otherwise, it return a pandas Dataframe.
+
+        Raises
+        ------
+        TypeError
+            If no arguments are passed.
         """
-        if u_list:
-            if not isinstance(u_list, list):
-                u_list = [u_list]
-            u_labels = [u[0] for u in u_list]
-            u_labels, y_labels = self._signals_exist(u_labels, None)
-        if y_list:
-            if not isinstance(y_list, list):
-                y_list = [y_list]
-            y_labels = [y[0] for y in y_list]
-            u_labels, y_labels = self._signals_exist(None, y_labels)
-        if u_list and y_list:
-            if not isinstance(u_list, list):
-                u_list = [u_list]
-            if not isinstance(y_list, list):
-                y_list = [y_list]
-            u_labels = [u[0] for u in u_list]
-            y_labels = [y[0] for y in y_list]
-            u_labels, y_labels = self._signals_exist(u_labels, y_labels)
 
         # Make a copy of the dataset
         df_temp = deepcopy(self.dataset)
+        # Validate passed arguments
+        (
+            u_labels,
+            y_labels,
+            u_list,
+            y_list,
+        ) = self._validate_manipulation_functions_args(
+            u_list=u_list, y_list=y_list
+        )
 
         # First adjust the input columns
         if u_list:
@@ -1150,9 +1191,10 @@ class Dataset:
     def low_pass_filter(
         self,
         *,
-        u_list: Optional[Union[str, list[str]]] = None,
-        y_list: Optional[Union[str, list[str]]] = None,
-    ) -> None:
+        u_list: Optional[list[tuple[str, float]]] = None,
+        y_list: Optional[list[tuple[str, float]]] = None,
+        inplace: Optional[bool] = False,
+    ) -> Optional[pd.DataFrame]:
         """
         Low-pass filter a list of specified signals.
 
@@ -1178,22 +1220,27 @@ class Dataset:
             Such a signal is filtered with a low-pass
             filter whose cutoff frequency is specified by the *cutoff_frequency*
             parameter.
+        inplace :
+            If *True* the function modifies the stored dataset.
+            Otherwise, it return a pandas Dataframe.
+
+        Raises
+        ------
+        TypeError
+            If no arguments are passed.
         """
-        # TODO: inplace implementation!
-        if u_list:
-            u_list = str2list(u_list)  # noqa
-            u_labels = [u[0] for u in u_list]
-            u_labels, y_labels = self._signals_exist(u_labels, None)
-        if y_list:
-            y_list = str2list(y_list)  # noqa
-            y_labels = [y[0] for y in y_list]
-            u_labels, y_labels = self._signals_exist(None, y_labels)
-        if u_list and y_list:
-            u_list = str2list(u_list)  # noqa
-            y_list = str2list(y_list)  # noqa
-            u_labels = [u[0] for u in u_list]
-            y_labels = [y[0] for y in y_list]
-            u_labels, y_labels = self._signals_exist(u_labels, y_labels)
+        # Make a copy of the dataset
+        df_temp = deepcopy(self.dataset)
+        # Validate passed arguments
+        (
+            u_labels,
+            y_labels,
+            u_list,
+            y_list,
+        ) = self._validate_manipulation_functions_args(
+            u_list=u_list, y_list=y_list
+        )
+
         # Sampling frequency
         fs = 1 / (self.dataset.index[1] - self.dataset.index[0])
         N = len(self.dataset.index)
@@ -1205,31 +1252,37 @@ class Dataset:
             for ii, u in enumerate(u_labels):
                 # Low-pass filter implementatiom
                 fc = u_fc[ii]
-                u_filt = self.dataset[("INPUT", u)].to_numpy()
+                u_filt = df_temp[("INPUT", u)].to_numpy()
                 y_filt = np.zeros(N)
                 y_filt[0]
                 for kk in range(0, N - 1):
                     y_filt[kk + 1] = (1.0 - fc / fs) * y_filt[kk] + (
                         fc / fs
                     ) * u_filt[kk]
-                self.dataset.loc[:, ("INPUT", u)] = y_filt
+                df_temp.loc[:, ("INPUT", u)] = y_filt
         # OUTPUT
         # List of all the requested input cutoff frequencies
-        if u_list:
-            y_fc = [y[1] for y in u_list]
+        if y_list:
+            y_fc = [y[1] for y in y_list]
             for ii, y in enumerate(y_labels):
                 fc = y_fc[ii]  # cutoff frequency
                 # Low-pass filter implementatiom
-                u_filt = self.dataset[("OUTPUT", y)].to_numpy()
+                u_filt = df_temp[("OUTPUT", y)].to_numpy()
                 y_filt = np.zeros(N)
                 y_filt[0]
                 for kk in range(0, N - 1):
                     y_filt[kk + 1] = (1.0 - fc / fs) * y_filt[kk] + (
                         fc / fs
                     ) * u_filt[kk]
-                self.dataset.loc[:, ("OUTPUT", y)] = y_filt
+                df_temp.loc[:, ("OUTPUT", y)] = y_filt
         # Round value
-        self.dataset = np.round(self.dataset, NUM_DECIMALS)  # noqa
+        df_temp = np.round(self.dataset, NUM_DECIMALS)  # noqa
+
+        if inplace:
+            self.dataset = deepcopy(df_temp)
+            return None
+        else:
+            return df_temp
 
     def filter(self) -> Any:
         """To be implemented!"""

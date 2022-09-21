@@ -31,8 +31,6 @@ class TestdatasetNominal:
             [*u_extended_labels, *y_extended_labels]
         )
 
-        print(ds.dataset)
-        print(df_expected)
         assert np.allclose(ds.dataset, df_expected)
 
     def test_remove_means(self, sine_dataframe: pd.DataFrame) -> None:
@@ -46,15 +44,20 @@ class TestdatasetNominal:
 
         # You should get a dataframe with zero mean.
         df_zero_mean = ds.remove_means()
+
         # Lets see if it is true
-        assert np.allclose(df_zero_mean.mean(), 0.0)
+        assert np.allclose(df_zero_mean["INPUT"].mean(), 0.0)
+        assert np.allclose(df_zero_mean["OUTPUT"].mean(), 0.0)
 
         # inplace test
         ds.remove_means(inplace=True)
         # Lets see if it is true
-        assert np.allclose(ds.dataset.mean(), 0.0)
+        assert np.allclose(ds.dataset["INPUT"].mean(), 0.0)
+        assert np.allclose(ds.dataset["OUTPUT"].mean(), 0.0)
 
-    def test_remove_offset(self, constant_ones_dataframe: pd.DataFrame) -> None:
+    def test_remove_offset_nominal(
+        self, constant_ones_dataframe: pd.DataFrame
+    ) -> None:
         df, u_labels, y_labels, fixture = constant_ones_dataframe
 
         # Test values. OBS! constant_ones_dataframe has 3 input and 3 output.
@@ -119,13 +122,159 @@ class TestdatasetNominal:
             name_ds, df, u_labels, y_labels, full_time_interval=True
         )
 
-        print(u_list[fixture])
         df_actual = deepcopy(
             ds.remove_offset(u_list=u_list[fixture], y_list=y_list[fixture])
         )
 
         # Assert
         assert np.allclose(df_actual, df_expected)
+
+    def test_remove_offset_only_input(
+        self, constant_ones_dataframe: pd.DataFrame
+    ) -> None:
+        df, u_labels, y_labels, fixture = constant_ones_dataframe
+
+        # Test values. OBS! constant_ones_dataframe has 3 input and 3 output.
+        u_list = {
+            "SISO": ("u1", 2.0),
+            "SIMO": ("u1", 2.0),
+            "MISO": [("u1", 2.0), ("u2", 2.0), ("u3", 2.0)],
+            "MIMO": [("u1", 2.0), ("u2", 2.0), ("u3", 2.0)],
+        }
+
+        # Expected values. Compare with constant_ones_dataframe and the data above.
+        N = 10
+        idx = np.linspace(0, 1, N)
+        if fixture == "SISO":
+            values = np.hstack(
+                (-1.0 * np.ones((N, 1)), np.ones((N, 1)))
+            )  # Expected
+            df_expected = pd.DataFrame(
+                index=idx, columns=[u_labels, y_labels], data=values
+            )
+            df_expected.index.name = "Time (s)"
+        if fixture == "SIMO":
+            values = np.hstack(
+                (
+                    -1.0 * np.ones((N, 1)),
+                    np.ones((N, 3)),
+                )
+            )
+            df_expected = pd.DataFrame(
+                index=idx, columns=[u_labels, *y_labels], data=values
+            )
+            df_expected.index.name = "Time (s)"
+        if fixture == "MISO":
+            values = np.hstack(
+                (-1.0 * np.ones((N, 3)), np.ones((N, 1)))
+            )  # Expected
+            df_expected = pd.DataFrame(
+                index=idx, columns=[*u_labels, y_labels], data=values
+            )
+            df_expected.index.name = "Time (s)"
+        if fixture == "MIMO":
+            values = np.hstack(
+                (
+                    -1.0 * np.ones((N, 3)),
+                    np.ones((N, 3)),
+                )
+            )  # Expected
+            df_expected = pd.DataFrame(
+                index=idx, columns=[*u_labels, *y_labels], data=values
+            )
+            df_expected.index.name = "Time (s)"
+
+        # Actual value
+        name_ds = "my_dataset"
+        ds = dmv.dataset.Dataset(
+            name_ds, df, u_labels, y_labels, full_time_interval=True
+        )
+
+        df_actual = deepcopy(ds.remove_offset(u_list=u_list[fixture]))
+
+        # Assert
+        assert np.allclose(df_actual, df_expected)
+
+    def test_remove_offset_only_output(
+        self, constant_ones_dataframe: pd.DataFrame
+    ) -> None:
+        df, u_labels, y_labels, fixture = constant_ones_dataframe
+
+        # Test values. OBS! constant_ones_dataframe has 3 input and 3 output.
+        y_list = {
+            "SISO": ("y1", 2.0),
+            "SIMO": [("y1", 2.0), ("y2", 1.0), ("y3", -2.0)],
+            "MISO": ("y1", 2.0),
+            "MIMO": [("y1", 2.0), ("y2", 1.0), ("y3", 2.0)],
+        }
+
+        # Expected values. Compare with constant_ones_dataframe and the data above.
+        N = 10
+        idx = np.linspace(0, 1, N)
+        if fixture == "SISO":
+            values = np.hstack(
+                (np.ones((N, 1)), -1.0 * np.ones((N, 1)))
+            )  # Expected
+            df_expected = pd.DataFrame(
+                index=idx, columns=[u_labels, y_labels], data=values
+            )
+            df_expected.index.name = "Time (s)"
+        if fixture == "SIMO":
+            values = np.hstack(
+                (
+                    np.ones((N, 1)),
+                    -1.0 * np.ones((N, 1)),
+                    np.zeros((N, 1)),
+                    3.0 * np.ones((N, 1)),
+                )
+            )
+            df_expected = pd.DataFrame(
+                index=idx, columns=[u_labels, *y_labels], data=values
+            )
+            df_expected.index.name = "Time (s)"
+        if fixture == "MISO":
+            values = np.hstack(
+                (np.ones((N, 3)), -1.0 * np.ones((N, 1)))
+            )  # Expected
+            df_expected = pd.DataFrame(
+                index=idx, columns=[*u_labels, y_labels], data=values
+            )
+            df_expected.index.name = "Time (s)"
+        if fixture == "MIMO":
+            values = np.hstack(
+                (
+                    np.ones((N, 3)),
+                    -1.0 * np.ones((N, 1)),
+                    np.zeros((N, 1)),
+                    -1.0 * np.ones((N, 1)),
+                )
+            )  # Expected
+            df_expected = pd.DataFrame(
+                index=idx, columns=[*u_labels, *y_labels], data=values
+            )
+            df_expected.index.name = "Time (s)"
+
+        # Actual value
+        name_ds = "my_dataset"
+        ds = dmv.dataset.Dataset(
+            name_ds, df, u_labels, y_labels, full_time_interval=True
+        )
+
+        df_actual = deepcopy(ds.remove_offset(y_list=y_list[fixture]))
+
+        # Assert
+        assert np.allclose(df_actual, df_expected)
+
+    def test_remove_raise(self, sine_dataframe: pd.DataFrame) -> None:
+        df, u_labels, y_labels, fixture = sine_dataframe
+
+        # Actua value
+        name_ds = "my_dataset"
+        ds = dmv.dataset.Dataset(
+            name_ds, df, u_labels, y_labels, full_time_interval=True
+        )
+        with pytest.raises(TypeError):
+            ds.remove_offset()
 
 
 class Test_plots:
