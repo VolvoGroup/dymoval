@@ -16,7 +16,8 @@ dependencies = [
 "matplotlib",
 "control",
 "typing",
-"pathlib"
+"pathlib",
+"tomli"
 ]
 
 # Other metadata
@@ -70,16 +71,12 @@ docs = [
 
 [tool.hatch.build.targets.sdist]
 exclude = [
-  "/.github"
+  "/.github",
+  ".flake8"
 ]
 
-[tool.hatch.build.targets.wheel]
-only-include = ["src/dymoval", "scripts"]
-
-[tool.hatch.build.targets.wheel.sources]
-"src" = ""
+[tool.hatch.build.targets.wheel.force-include]
 "scripts" = "dymoval/scripts"
-
 
 # ===================================
 # Formatting, type check, unit-test 

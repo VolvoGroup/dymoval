@@ -36,7 +36,7 @@ jobs:
 
       - name: Build docs (sphinx)
         run: |
-          python -m pip install .
+          python -m pip install -e .
           python -m pip install .[docs]
           cd docs
           make clean
