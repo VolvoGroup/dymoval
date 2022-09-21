@@ -1029,7 +1029,8 @@ class Dataset:
         *,
         u_labels: Optional[Union[str, list[str]]] = None,
         y_labels: Optional[Union[str, list[str]]] = None,
-    ) -> None:
+        inplace: Optional[bool] = False,
+    ) -> Optional[pd.DataFrame]:
         """
         Remove the mean value to the specified signals.
 
@@ -1044,6 +1045,10 @@ class Dataset:
             List of the output signal names.
             If not specified, then the mean value is removed to all
             the output signals in the dataset.
+
+        inplace :
+            If *True* the function modifies the stored dataset.
+            Otherwise, it return a pandas Dataframe.
         """
         # Arguments validation
         u_labels, y_labels = self._signals_exist(u_labels, y_labels)
@@ -1054,25 +1059,24 @@ class Dataset:
         )
 
         cols = list(zip(len(y_labels) * ["OUTPUT"], y_labels))
-        self.dataset.loc[:, cols] = (
-            self.dataset.loc[:, cols] - self.dataset.loc[:, cols].mean()
-        )
 
-        # means_input = self.dataset["INPUT"]
-        # vals = (
-        #     self.dataset.droplevel(level=0, axis=1)
-        #     .loc[:, [*u_labels, *y_labels]]
-        #     .to_numpy()
-        # )
+        # Remove mean
+        df_temp = self.dataset.loc[:, cols] - self.dataset.loc[:, cols].mean()
+        df_temp.round(NUM_DECIMALS)
 
-        self.dataset = np.round(self.dataset, NUM_DECIMALS)  # noqa
+        if inplace:
+            self.dataset.loc[:, cols] = deepcopy(df_temp)
+            return None
+        else:
+            return df_temp
 
     def remove_offset(
         self,
         *,
         u_list: list[tuple[str, float]],
         y_list: list[tuple[str, float]],
-    ) -> None:
+        inplace: Optional[bool] = False,
+    ) -> Optional[pd.DataFrame]:
         """
         Remove a specified offset to the list of specified signals.
 
@@ -1093,6 +1097,9 @@ class Dataset:
             List of tuples of the form *(name, offset)*.
             The *name* parameter must match the name of any output signal stored
             in the dataset.
+        inplace :
+            If *True* the function modifies the stored dataset.
+            Otherwise, it return a pandas Dataframe.
         """
         if u_list:
             if not isinstance(u_list, list):
@@ -1112,22 +1119,33 @@ class Dataset:
             u_labels = [u[0] for u in u_list]
             y_labels = [y[0] for y in y_list]
             u_labels, y_labels = self._signals_exist(u_labels, y_labels)
-        # Input
+
+        # Make a copy of the dataset
+        df_temp = deepcopy(self.dataset)
+
+        # First adjust the input columns
         if u_list:
             u_offset = [u[1] for u in u_list]
             cols = list(zip(len(u_labels) * ["INPUT"], u_labels))
-            self.dataset.loc[:, cols] = self.dataset.loc[:, cols].apply(
+
+            df_temp.loc[:, cols] = self.dataset.loc[:, cols].apply(
                 lambda x: x.subtract(u_offset), axis=1
             )
-            # for ii, u in enumerate(u_labels):
-            #     self.dataset[("INPUT", u)] -= u_offset[ii]
-        # Output
+
+        # Then adjust the output columns
         if y_list:
             y_offset = [y[1] for y in y_list]
             cols = list(zip(len(y_labels) * ["OUTPUT"], y_labels))
-            self.dataset.loc[:, cols] = self.dataset.loc[:, cols].apply(
+            df_temp.loc[:, cols] = self.dataset.loc[:, cols].apply(
                 lambda x: x.subtract(y_offset), axis=1
             )
+
+        df_temp.round(NUM_DECIMALS)
+        if inplace:
+            self.dataset = deepcopy(df_temp)
+            return None
+        else:
+            return df_temp
 
     def low_pass_filter(
         self,

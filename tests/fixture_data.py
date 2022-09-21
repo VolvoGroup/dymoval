@@ -209,3 +209,36 @@ def sine_dataframe(request):  # type: ignore
     df = df.loc[:, cols]
     np.round(df, dmv.NUM_DECIMALS)
     return df, u_labels, y_labels, fixture_type
+
+
+@pytest.fixture(params=dataset_type)
+def constant_ones_dataframe(request):  # type: ignore
+
+    fixture_type = request.param
+
+    N = 10
+    idx = np.linspace(0, 1, N)
+    u_labels = ["u1", "u2", "u3"]
+    y_labels = ["y1", "y2", "y3"]
+    values = np.ones((N, 6))
+    df = pd.DataFrame(index=idx, columns=[*u_labels, *y_labels], data=values)
+    df.index.name = "Time (s)"
+
+    if fixture_type == "SISO":
+        # Slice signal list
+        u_labels = u_labels[0]
+        y_labels = y_labels[0]
+        cols = [u_labels, y_labels]
+    if fixture_type == "MISO":
+        # Slice signal list
+        y_labels = y_labels[0]
+        cols = [*u_labels, y_labels]
+    if fixture_type == "SIMO":
+        # Slice signal list
+        u_labels = u_labels[0]
+        cols = [u_labels, *y_labels]
+    if fixture_type == "MIMO":
+        cols = [*u_labels, *y_labels]
+    df = df.loc[:, cols]
+    np.round(df, dmv.NUM_DECIMALS)
+    return df, u_labels, y_labels, fixture_type
