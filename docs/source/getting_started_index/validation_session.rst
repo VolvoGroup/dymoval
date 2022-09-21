@@ -2,6 +2,7 @@ Validate your model
 ===================
 
 It is now time to validate your model!
+
 This is done through the :ref:`ValidationSession`.
 
 A :ref:`ValidationSession <ValidationSession>` object is created from a :ref:`Dataset <Dataset>` object.

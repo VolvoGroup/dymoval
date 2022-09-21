@@ -3,7 +3,7 @@ What is model validation?
 
 Imagine that you are developing a super product or process. At some point, you need to test test it.
 Then, based on the test outcome, you continue your development in a certain direction. 
-Then, at some point you test your work-product again... 
+Then, at some point you test again... 
 and you keep in iterating such a process over and over until you get something good to deploy. 
 
 This is the way things are typically developed. 
@@ -60,13 +60,15 @@ Let's make an example showing how the steps 1-4 can be applied through a simple 
    which represent your *target environment*.
 
    Assume that you already developed the model of a car where its **input** signals are
-   - *accelerator pedal position, 
-   - steering wheel position* and 
-   - *road profile* 
+
+   #. *accelerator pedal position*, 
+   #. *steering wheel position* and 
+   #. *road profile*, 
    
    whereas its *output* signals are 
-   - *longitudinal speed* and 
-   - *lateral speed* 
+
+   #. *longitudinal speed* and 
+   #. *lateral speed*,
    
    of the vehicle. 
    Next, you want to validate your model. 
@@ -76,17 +78,14 @@ Let's make an example showing how the steps 1-4 can be applied through a simple 
    #. Establish a driving route with sufficiently road slope variation. You decide to take a ride on that path by adopting a 
       nasty driving style that with sudden accelerations and abrupt steering movements.  
       
-   #. Take a ride with the target vehicle and drive according to plan while logging the *accelerator pedal position*, 
-      the *steering wheel position* and the *road profile* time-series (input signals) along with the *longitudinal* and *lateral 
-      speed* time-series of the vehicle (output signals). Such log-data represent your *dataset*. 
-      *Note how input and output are separated.*
+   #. Take a ride with the target vehicle and drive according to plan while logging the input signals (i.e. the *accelerator pedal position*, 
+      the *steering wheel position* and the *road profile* time-series) along with the output signals (i.e. *longitudinal* and *lateral 
+      speed* time-series) of the vehicle. Such log-data represent your *dataset*. 
+      Note how input and output are separated.
 
-   #. Feed your model with the *accelerator pedal position*, the *steering wheel position* and the *road profile* 
-      time-series *logged during your ride* and log your model output 
+   #. Feed your model with the input signals *logged during your ride* and log your model output 
       corresponding to the *longitudinal* and *lateral vehicle speed* into a *simulation results* data. 
-
-   #. Compare the **logged** *longitudinal* and *lateral vehicle speed* time-series with the **simulated** 
-      *longitudinal* and *lateral vehicle speed* time-series and you evaluate the results with respect to some validation metrics.
+      outputs (*longitudinal* and *lateral vehicle speed* time-series) and you evaluate the results with respect to some validation metrics.
 
    You haven' finished yet. 
    In-fact, when you develop and validate a model, you should ship the coverage region of our model along with the validation results. 
@@ -99,8 +98,8 @@ The cost saving when using models is clear, but there is no free lunch.
 In-fact, the challenge relies in the design of good models.
 
 Nevertheless, although the design of good models is an art that cannot be completely automated, 
-we can at least validate them automatically and here is where dymoval comes into play. 
-In-fact, dymoval wil not help you in developing any model at all, it will just tell you 
+we can at least validate them automatically and here is where *Dymoval* comes into play. 
+In-fact, *Dymoval* wil not help you in developing any model at all, it will just tell you 
 if your modes are good or not. 
 
 .. note::
