@@ -7,170 +7,10 @@ Created on Thu Jul 14 11:43:21 2022
 
 import pytest
 import dymoval as dmv
-from dymoval.dataset import Signal
-import numpy as np
-import pandas as pd
 from matplotlib import pyplot as plt
-import random
+from dymoval.dataset import Signal
 from .fixture_data import *  # noqa
 from typing import Any, Union
-
-
-class TestSignalValidation:
-    def test_name_unicity(self, good_signals: list[Signal]) -> None:
-        # Nominal values
-        signal_list, _, _, _ = good_signals
-
-        signal_list[1]["name"] = signal_list[0]["name"]
-        with pytest.raises(ValueError):
-            dmv.signals_validation(signal_list)
-
-    def test_key_not_found(self, good_signals: list[Signal]) -> None:
-        # Nominal values
-        signal_list, _, _, _ = good_signals
-
-        idx = random.randrange(0, len(signal_list))
-        key = "name"
-        signal_list[idx].pop(key)
-        with pytest.raises(KeyError):
-            dmv.signals_validation(signal_list)
-
-    def test_wrong_key(self, good_signals: list[Signal]) -> None:
-        # Nominal values
-        signal_list, _, _, _ = good_signals
-
-        idx = random.randrange(0, len(signal_list))
-        k_new = "potato"
-        signal_list[idx][k_new] = signal_list[idx].pop("values")
-        with pytest.raises(KeyError):
-            dmv.signals_validation(signal_list)
-
-    @pytest.mark.parametrize(
-        # The dataype for the annotation can be inferred by the
-        # following list.
-        "test_input, expected",
-        [
-            (np.zeros((2, 2)), Exception),
-            ("potato", Exception),
-            (3, Exception),
-            (np.zeros(1), IndexError),
-        ],
-    )
-    def test_wrong_values(
-        self,
-        good_signals: list[Signal],
-        test_input: Any,
-        expected: Any,
-    ) -> None:
-        # Nominal values
-        signal_list, _, _, _ = good_signals
-
-        idx = random.randrange(0, len(signal_list))
-        signal_list[idx]["values"] = test_input
-        with pytest.raises(expected):
-            dmv.signals_validation(signal_list)
-
-    @pytest.mark.parametrize(
-        "test_input, expected",
-        [
-            (np.zeros((2, 2)), TypeError),
-            ("potato", TypeError),
-            (-0.1, ValueError),
-        ],
-    )
-    def test_wrong_sampling_period(
-        self, good_signals: list[Signal], test_input: Any, expected: Any
-    ) -> None:
-        # Nominal values
-        signal_list, _, _, _ = good_signals
-
-        idx = random.randrange(0, len(signal_list))
-        signal_list[idx]["sampling_period"] = test_input
-        with pytest.raises(expected):
-            dmv.signals_validation(signal_list)
-
-
-class TestDataframeValidation:
-    def test_there_is_at_least_one_in_and_one_out(
-        self, good_dataframe: pd.DataFrame
-    ) -> None:
-        # Nominal values
-        df, u_labels, y_labels, _ = good_dataframe
-        u_labels = []
-        with pytest.raises(IndexError):
-            dmv.dataframe_validation(df, u_labels, y_labels)
-
-    def test_name_unicity(self, good_dataframe: pd.DataFrame) -> None:
-        # Nominal values
-        df, u_labels, y_labels, fixture = good_dataframe
-        u_labels_test = u_labels
-        y_labels_test = y_labels
-        if fixture == "SISO":  # If SISO the names are obviously unique.
-            u_labels = y_labels
-            u_labels_test = y_labels
-        if fixture == "MISO" or fixture == "MIMO":
-            u_labels_test[-1] = u_labels_test[-2]
-        if fixture == "SIMO" or fixture == "MIMO":
-            y_labels_test[0] = y_labels_test[1]
-        with pytest.raises(ValueError):
-            dmv.dataframe_validation(df, u_labels_test, y_labels)
-        with pytest.raises(ValueError):
-            dmv.dataframe_validation(df, u_labels, y_labels_test)
-        with pytest.raises(ValueError):
-            dmv.dataframe_validation(df, u_labels_test, y_labels_test)
-
-    def test_dataframe_one_level_indices(
-        self, good_dataframe: pd.DataFrame
-    ) -> None:
-        # Nominal values
-        df, u_labels, y_labels, _ = good_dataframe
-        df_test = df
-        df_test.columns = pd.MultiIndex.from_product([df.columns, ["potato"]])
-        with pytest.raises(IndexError):
-            dmv.dataframe_validation(df_test, u_labels, y_labels)
-        df_test = df
-        df_test.index = pd.MultiIndex.from_product([df.index, ["potato"]])
-        with pytest.raises(IndexError):
-            dmv.dataframe_validation(df_test, u_labels, y_labels)
-
-    def test_at_least_two_samples_per_signal(
-        self, good_dataframe: pd.DataFrame
-    ) -> None:
-        # Nominal values
-        df, u_labels, y_labels, _ = good_dataframe
-        df_test = df.head(1)
-        with pytest.raises(IndexError):
-            dmv.dataframe_validation(df_test, u_labels, y_labels)
-
-    def test_labels_exist_in_dataframe(
-        self, good_dataframe: pd.DataFrame
-    ) -> None:
-        # Nominal values
-        df, u_labels, y_labels, fixture = good_dataframe
-        if fixture == "SISO":
-            u_labels = [u_labels]
-            y_labels = [y_labels]
-        if fixture == "MISO":
-            y_labels = [y_labels]
-        if fixture == "SIMO":
-            u_labels = [u_labels]
-        u_labels[-1] = "potato"
-        with pytest.raises(ValueError):
-            dmv.dataframe_validation(df, u_labels, y_labels)
-
-    def test_index_monotonicity(self, good_dataframe: pd.DataFrame) -> None:
-        # Nominal values
-        df, u_labels, y_labels, _ = good_dataframe
-        df.index.values[0:1] = df.index[1]
-        with pytest.raises(ValueError):
-            dmv.dataframe_validation(df, u_labels, y_labels)
-
-    def test_values_are_float(self, good_dataframe: pd.DataFrame) -> None:
-        # Nominal values
-        df, u_labels, y_labels, _ = good_dataframe
-        df.iloc[0:1, 0:1] = "potato"
-        with pytest.raises(TypeError):
-            dmv.dataframe_validation(df, u_labels, y_labels)
 
 
 class TestFixSamplingPeriod:
@@ -332,7 +172,7 @@ class Test_str2list:
         assert sorted(actual) == sorted(expected)
 
 
-class Test_plot:
+class Test_plot_Signal:
     def test_plot_nominal(self, good_signals: list[Signal]) -> None:
         # You should just get a plot.
         signal_list, u_labels, y_labels, fixture = good_signals

@@ -15,6 +15,7 @@ from scipy import io, fft
 from .config import *  # noqa
 from .utils import *  # noqa
 from typing import TypedDict, Optional, Union, Any, Literal
+from copy import deepcopy
 
 
 class Signal(TypedDict):
@@ -145,11 +146,13 @@ class Dataset:
         # in class attributes (see sphinx.ext.autodoc)
 
         self.name: str = name  #: Dataset name.
-        self.dataset: pd.DataFrame = df  #: Actual dataset.
-        self.coverage: pd.DataFrame = dataset_coverage  # Docstring below,
+        self.dataset: pd.DataFrame = deepcopy(df)  #: Actual dataset.
+        self.coverage: pd.DataFrame = deepcopy(
+            dataset_coverage
+        )  # Docstring below,
         """Coverage statistics in terms of mean value and variance"""
         self.information_level: float = 0.0  #: *Not implemented yet!*
-        self._nan_intervals: Any = nan_intervals
+        self._nan_intervals: Any = deepcopy(nan_intervals)
         # TODO: Check if _excluded_signals it can be removed.
         self._excluded_signals: list[str] = excluded_signals
 
@@ -850,11 +853,69 @@ class Dataset:
         else:
             return None
 
+    def fft(
+        self,
+        u_labels: Optional[Union[str, list[str]]] = None,
+        y_labels: Optional[Union[str, list[str]]] = None,
+        real: Optional[bool] = True,
+    ) -> pd.DataFrame:
+        """Return the FFT of the dataset along with the frequency bins.
+
+
+        Parameters
+        ----------
+        real :
+            Set to *False* if the dataset has complex-valued signals.
+
+        Raises
+        ------
+        ValueError
+            If the dataset contains *NaN*:s
+        """
+
+        u_labels, y_labels = self._signals_exist(u_labels, y_labels)
+
+        # Compute FFT
+        Ts = self.dataset.index[1] - self.dataset.index[0]
+        N = len(self.dataset.index)  # number of samples
+        # Remove 'INPUT' 'OUTPUT' columns level from dataframe
+        df_temp = self.dataset.droplevel(level=0, axis=1)
+
+        if real:
+            vals = np.abs(
+                fft.rfftn(df_temp.loc[:, [*u_labels, *y_labels]], axes=0)
+            )
+        else:
+            vals = np.abs(
+                fft.fftn(df_temp.loc[:, [*u_labels, *y_labels]], axes=0)
+            )
+
+        if np.any(np.isnan(vals)):
+            raise ValueError(
+                f"Dataset '{self.name}' contains NaN:s. I Cannot plot the amplitude spectrum."
+            )
+
+        # Frequency axis
+        if real:
+            f_bins = fft.rfftfreq(N, Ts)
+        else:
+            f_bins = fft.fftfreq(N, Ts)
+
+        # Create a new Dataframe
+        u_extended_labels = list(zip(["INPUT"] * len(u_labels), u_labels))
+        y_extended_labels = list(zip(["OUTPUT"] * len(y_labels), y_labels))
+        cols = pd.MultiIndex.from_tuples(
+            [*u_extended_labels, *y_extended_labels]
+        )
+
+        return pd.DataFrame(data=vals, columns=cols, index=f_bins)
+
     def plot_amplitude_spectrum(
         self,
         *,
         u_labels: Optional[Union[str, list[str]]] = None,
         y_labels: Optional[Union[str, list[str]]] = None,
+        real: Optional[bool] = True,
         overlap: Optional[bool] = False,
         line_color_input: Optional[str] = "b",
         linestyle_input: Optional[str] = "-",
@@ -882,6 +943,8 @@ class Dataset:
         y_labels:
             List of output signals.
             If not specified, the FFT is performed over all the output signals.
+        real :
+            Set to *False* if the dataset has complex-valued signals.
         overlap:
             If true it overlaps the input and the output signals plots.
         line_color_input:
@@ -920,27 +983,7 @@ class Dataset:
         q = len(y_labels)
 
         # Compute FFT
-        Ts = self.dataset.index[1] - self.dataset.index[0]
-        N = len(self.dataset.index)  # number of samples
-        # Remove 'INPUT' 'OUTPUT' columns level from dataframe
-        df_temp = self.dataset.droplevel(level=0, axis=1)
-        vals = np.abs(fft.rfftn(df_temp.loc[:, [*u_labels, *y_labels]], axes=0))
-
-        if np.any(np.isnan(vals)):
-            raise ValueError(
-                f"Dataset '{self.name}' contains NaN:s. I Cannot plot the amplitude spectrum."
-            )
-        # Frequency axis
-        f_bins = fft.rfftfreq(N, Ts)
-
-        # Create a new Dataframe
-        u_extended_labels = list(zip(["INPUT"] * len(u_labels), u_labels))
-        y_extended_labels = list(zip(["OUTPUT"] * len(y_labels), y_labels))
-        cols = pd.MultiIndex.from_tuples(
-            [*u_extended_labels, *y_extended_labels]
-        )
-
-        df_freq = pd.DataFrame(data=vals, columns=cols, index=f_bins)
+        df_freq = self.fft(real=real)
 
         # Start plot ritual
         if overlap:
@@ -1545,9 +1588,9 @@ def plot_signals(
             ax[ii].set_xlabel("Time")
         ax[ii].legend()
     plt.suptitle("Raw signals.")
-    # return fig, ax
 
 
+# TODO Compare Datasets.
 def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
     # arguments validation
     # for ds in datasets:
