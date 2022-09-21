@@ -2,7 +2,7 @@ What is model validation?
 =========================
 
 Imagine that you are developing a super product or process. At some point, you need to test test it.
-Then, you continue your work-product development in a given direction, depending on the test outcome. 
+Then, based on the test outcome, you continue your development in a certain direction. 
 Then, at some point you test your work-product again... 
 and you keep in iterating such a process over and over until you get something good to deploy. 
 
