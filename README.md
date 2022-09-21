@@ -26,10 +26,10 @@
 
 Dymoval validates models against some user-provided dataset regardless of the model format (*DNN, transfer function, ODE,* etc.) and the tool 
 used for developing it (*Simulink, Modelica,* etc.). 
-If your development process is done in a CI/CD environment, dymoval's functions can be easily included in a development pipeline to test your changes. 
+If your development process is done in a CI/CD environment, *Dymoval*'s functions can be easily included in a development pipeline to test your changes. 
 It can be also used to unit-test your models.
 
-Dymoval further provides a number of functions for dataset analysis and manipulation.  
+*Dymoval* further provides a number of functions for dataset analysis and manipulation.  
 
 Although it is a very helpful in engineering, its usage may come handy in other application domains as well. 
 
