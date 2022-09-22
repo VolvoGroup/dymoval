@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<img src="https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo4.png" data-canonical-src="https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo4.png" width="800" class="center" />
+<img src="https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo5.png" data-canonical-src="https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo5.png" width="800" class="center" />
 
 
 </div>
