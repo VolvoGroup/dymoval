@@ -51,12 +51,12 @@ Such functions are the following
 
 Dataset class
 -------------
-The :ref:`Dataset`  class is used to store and manipulate datasets.
+The :ref:`Dataset`  is used to store and manipulate datasets.
 Since model validation requires a datasets, this class is used also to instantiate 
-objects of class :ref:`ValidationSession`, i.e. a :ref:`Dataset <Dataset>` object 
+ :ref:`ValidationSession <ValidationSession>`, i.e. a :ref:`Dataset <Dataset>` object 
 becomes an attribute of a :ref:`ValidationSession <ValidationSession>`. 
 
-A Dataset class object can be instantiated in two ways
+A :ref:`Dataset <Dataset>` object can be instantiated in two ways
 
 #. Through a list of dymoval :ref:`Signals<signal>`,
 #. Through a pandas DataFrame with a specific structure.

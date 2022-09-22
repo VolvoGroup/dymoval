@@ -70,6 +70,11 @@ docs = [
 # Hatch settings
 # =======================
 
+[tool.hatch.envs.myenv]
+type = "conda"
+command = "conda"
+conda-forge = true
+
 [tool.hatch.build.targets.sdist]
 exclude = [
   "/.github",
