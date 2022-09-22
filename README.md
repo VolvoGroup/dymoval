@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo.png" data-canonical-src="https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo.png" width="800" class="center" />
+<img src="https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo3.png" data-canonical-src="https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo3.png" width="800" class="center" />
 
 
 </div>
