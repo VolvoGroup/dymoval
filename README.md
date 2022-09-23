@@ -8,6 +8,7 @@
 ### Build status
 ![pipeline](https://github.com/VolvoGroup/dymoval/actions/workflows/pipeline.yml/badge.svg)
 ![docs](https://github.com/VolvoGroup/dymoval/actions/workflows/docs.yml/badge.svg)
+![coverage badge](./coverage.svg)
 
 ### Tools
 [![Hatch project](https://img.shields.io/badge/build-hatch-4051b5.svg)](https://github.com/pypa/hatch) 
