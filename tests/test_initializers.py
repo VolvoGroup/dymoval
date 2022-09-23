@@ -33,6 +33,7 @@ class TestInitializerFromSignals:
             input_signal_names,
             output_signal_names,
             target_sampling_period=target_sampling_period,
+            plot_raw=True,
             full_time_interval=True,
         )
         if fixture == "SISO":  # Convert string to list
@@ -96,6 +97,27 @@ class TestInitializerFromSignals:
         assert np.isclose(
             expected_nan_interval[1], ds._nan_intervals["OUTPUT"]["y1"][0][-1]
         )
+
+    def test_no_leftovers(self, good_signals: list[Signal]) -> None:
+        # Nominal data
+        (
+            signal_list,
+            input_signal_names,
+            output_signal_names,
+            fixture,
+        ) = good_signals
+
+        target_sampling_period = 0.0001
+        with pytest.raises(IndexError):
+            ds = dmv.Dataset(
+                "potato",
+                signal_list,
+                input_signal_names,
+                output_signal_names,
+                target_sampling_period=target_sampling_period,
+                plot_raw=True,
+                full_time_interval=True,
+            )
 
 
 class TestInitializerFromDataframe:
@@ -168,6 +190,8 @@ class TestInitializerFromDataframe:
         assert np.isclose(actual_tin, expected_tin)
         assert np.isclose(actual_tout, expected_tout)
 
+
+class TestInitializerWrongInputData:
     def test_nominal_missing_tout(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal data
         df, u_labels, y_labels, _ = good_dataframe
@@ -191,3 +215,29 @@ class TestInitializerFromDataframe:
             dmv.dataset.Dataset(
                 "potato", df, u_labels, y_labels, tin=tin, tout=tout
             )
+
+    def test_nominal_wrong_type(self, good_dataframe: pd.DataFrame) -> None:
+        # Nominal data
+        df, u_labels, y_labels, _ = good_dataframe
+        # tin > tout
+        tin = 0.1
+        tout = 0.5
+        with pytest.raises(TypeError):
+            dmv.dataset.Dataset(
+                "potato", "string_type", u_labels, y_labels, tin=tin, tout=tout
+            )
+
+
+class TestOtherStuff:
+    def test__str__(self, good_dataframe: pd.DataFrame) -> None:
+        # Nominal data
+        df, u_labels, y_labels, _ = good_dataframe
+        # tin > tout
+        tin = 0.1
+        tout = 0.5
+        ds = dmv.dataset.Dataset(
+            "potato", df, u_labels, y_labels, tin=tin, tout=tout
+        )
+
+        expected_string = "Dymoval dataset called 'potato'."
+        assert ds.__str__() == expected_string

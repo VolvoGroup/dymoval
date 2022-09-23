@@ -115,6 +115,37 @@ class TestClassValidationNominal:
         assert [] == list(vs.cross_correlation.keys())
         assert [] == list(vs.validation_results.columns)
 
+    def test_get_sim_signal_list_raise(
+        self, good_dataframe: pd.DataFrame
+    ) -> None:
+        df, u_labels, y_labels, fixture = good_dataframe
+        name_ds = "my_dataset"
+        ds = dmv.dataset.Dataset(
+            name_ds, df, u_labels, y_labels, full_time_interval=True
+        )
+        name_vs = "my_validation"
+        vs = dmv.ValidationSession(name_vs, ds)
+
+        # simulation not in the list
+        with pytest.raises(KeyError):
+            vs.get_simulation_signals_list("potato")
+
+        # Another test with one model
+        sim1_name = "Model 1"
+        sim1_labels = ["my_y1", "my_y2"]  # The fixture has two outputs
+        if fixture == "SISO" or fixture == "MISO":
+            sim1_labels = [sim1_labels[0]]
+        sim1_values = np.random.rand(
+            len(df.iloc[:, 0].values), len(sim1_labels)
+        )
+
+        # Same sim nmane
+        vs.append_simulation(sim1_name, sim1_labels, sim1_values)
+
+        # Search for a non-existing simulation
+        with pytest.raises(KeyError):
+            vs.get_simulation_signals_list("potato")
+
 
 class TestClassValidatioNominal_sim_validation:
     def test_existing_sim_raise(self, good_dataframe: pd.DataFrame) -> None:
@@ -237,6 +268,52 @@ class TestClassValidatioNominal_sim_validation:
         with pytest.raises(IndexError):
             vs.append_simulation(sim1_name, sim1_labels, sim1_values)
 
+    def test_values_not_ndarray_raise(
+        self, good_dataframe: pd.DataFrame
+    ) -> None:
+        df, u_labels, y_labels, fixture = good_dataframe
+        name_ds = "my_dataset"
+        ds = dmv.dataset.Dataset(
+            name_ds, df, u_labels, y_labels, full_time_interval=True
+        )
+
+        name_vs = "my_validation"
+        vs = dmv.ValidationSession(name_vs, ds)
+
+        # Add one model
+        sim1_name = "Model 1"
+        sim1_labels = ["my_y1", "my_y2"]  # The fixture has two outputs
+        if fixture == "SISO" or fixture == "MISO":
+            sim1_labels = [sim1_labels[0]]
+        sim1_values = "potato"
+
+        # Same sim nmane
+        with pytest.raises(ValueError):
+            vs.append_simulation(sim1_name, sim1_labels, sim1_values)
+
+    def test_ydata_too_short_raise(self, good_dataframe: pd.DataFrame) -> None:
+        df, u_labels, y_labels, fixture = good_dataframe
+        name_ds = "my_dataset"
+        ds = dmv.dataset.Dataset(
+            name_ds, df, u_labels, y_labels, full_time_interval=True
+        )
+
+        name_vs = "my_validation"
+        vs = dmv.ValidationSession(name_vs, ds)
+
+        # Add one model
+        sim1_name = "Model 1"
+        sim1_labels = ["my_y1", "my_y2"]  # The fixture has two outputs
+        if fixture == "SISO" or fixture == "MISO":
+            sim1_labels = [sim1_labels[0]]
+
+        # Short data
+        sim1_values = np.random.rand(2, 1)
+
+        # Same sim nmane
+        with pytest.raises(IndexError):
+            vs.append_simulation(sim1_name, sim1_labels, sim1_values)
+
 
 class TestPlots:
     def test_plots(self, good_dataframe: pd.DataFrame) -> None:
@@ -273,6 +350,10 @@ class TestPlots:
         vs.plot_simulations()
         plt.close("all")
 
+        #
+        figures = vs.plot_simulations(plot_input=True, return_figure=True)
+        plt.close("all")
+
         # Test plot - conditional
         vs.plot_simulations("Model 2")
         plt.close("all")
@@ -303,6 +384,17 @@ class TestPlots:
         plt.close("all")
         vs.plot_residuals("Model 1", "Model 2")
         plt.close("all")
+
+        # =============================
+        # plot residuals raises
+        # =============================
+        with pytest.raises(KeyError):
+            vs.plot_residuals("potato")
+
+        # Empty simulation list
+        vs.clear()
+        with pytest.raises(KeyError):
+            vs.plot_residuals()
 
 
 class Test_xcorr:

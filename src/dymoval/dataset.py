@@ -157,7 +157,7 @@ class Dataset:
         self._excluded_signals: list[str] = excluded_signals
 
     def __str__(self) -> str:
-        return f"Dymoval dataset called '{self.name}'.\nTo see the stored values use the method 'get_dataset()'."
+        return f"Dymoval dataset called '{self.name}'."
 
     # ============= NOT READY =======================
     # def __eq__(self, other):
@@ -591,8 +591,12 @@ class Dataset:
     def _validate_manipulation_functions_args(
         self,
         *,
-        u_list: Optional[list[tuple[str, float]]] = None,
-        y_list: Optional[list[tuple[str, float]]] = None,
+        u_list: Optional[
+            Union[list[tuple[str, float]], tuple[str, float]]
+        ] = None,
+        y_list: Optional[
+            Union[list[tuple[str, float]], tuple[str, float]]
+        ] = None,
     ) -> tuple[
         list[str],
         list[str],
@@ -611,16 +615,17 @@ class Dataset:
             y_labels = [y[0] for y in y_list]
             u_labels, y_labels = self._signals_exist(None, y_labels)
         if u_list and y_list:
-            if not isinstance(u_list, list):
-                u_list = [u_list]
-            if not isinstance(y_list, list):
-                y_list = [y_list]
+            # Remove me!
+            # if not isinstance(u_list, list):
+            #     u_list = [u_list]
+            # if not isinstance(y_list, list):
+            #     y_list = [y_list]
             u_labels = [u[0] for u in u_list]
             y_labels = [y[0] for y in y_list]
             u_labels, y_labels = self._signals_exist(u_labels, y_labels)
         if not u_list and not y_list:
             raise TypeError(
-                "At least one input or output list must be provdied."
+                "At least one input or output list must be provided."
             )
 
         return u_labels, y_labels, u_list, y_list
@@ -639,10 +644,26 @@ class Dataset:
         y:
             The values of the output signal.
         """
+
+        # If there is a scalar input or output to avoid returning a column vector.
+        if len(self.dataset["INPUT"].columns) == 1:
+            u_values = (
+                self.dataset["INPUT"].to_numpy().round(NUM_DECIMALS)[:, 0]
+            )
+        else:
+            u_values = self.dataset["INPUT"].to_numpy().round(NUM_DECIMALS)
+
+        if len(self.dataset["OUTPUT"].columns) == 1:
+            y_values = (
+                self.dataset["OUTPUT"].to_numpy().round(NUM_DECIMALS)[:, 0]
+            )
+        else:
+            y_values = self.dataset["OUTPUT"].to_numpy().round(NUM_DECIMALS)
+
         return (
-            self.dataset.index.to_numpy(),
-            self.dataset["INPUT"].to_numpy(),
-            self.dataset["OUTPUT"].to_numpy(),
+            self.dataset.index.to_numpy().round(NUM_DECIMALS),
+            u_values,
+            y_values,
         )
 
     # def get_dataset(self) -> pd.DataFrame:
@@ -1116,8 +1137,12 @@ class Dataset:
     def remove_offset(
         self,
         *,
-        u_list: Optional[list[tuple[str, float]]] = None,
-        y_list: Optional[list[tuple[str, float]]] = None,
+        u_list: Optional[
+            Union[list[tuple[str, float]], tuple[str, float]]
+        ] = None,
+        y_list: Optional[
+            Union[list[tuple[str, float]], tuple[str, float]]
+        ] = None,
         inplace: Optional[bool] = False,
     ) -> Optional[pd.DataFrame]:
         # At least one argument shall be passed.
@@ -1191,8 +1216,12 @@ class Dataset:
     def low_pass_filter(
         self,
         *,
-        u_list: Optional[list[tuple[str, float]]] = None,
-        y_list: Optional[list[tuple[str, float]]] = None,
+        u_list: Optional[
+            Union[list[tuple[str, float]], tuple[str, float]]
+        ] = None,
+        y_list: Optional[
+            Union[list[tuple[str, float]], tuple[str, float]]
+        ] = None,
         inplace: Optional[bool] = False,
     ) -> Optional[pd.DataFrame]:
         """
@@ -1284,16 +1313,18 @@ class Dataset:
         else:
             return df_temp
 
-    def filter(self) -> Any:
-        """To be implemented!"""
-        print("Not implemented yet!")
+    # def filter(self) -> Any:
+    #     """To be implemented!"""
+    #     print("Not implemented yet!")
 
     def replace_NaNs(
         self,
         method: Literal["interpolate", "fillna"] = "interpolate",
         fill_value: float = 0.0,
-    ) -> None:
+        inplace: Optional[bool] = False,
+    ) -> Optional[pd.DataFrame]:
         """Replace NaN:s in the dataset.
+
 
         Parameters
         ----------
@@ -1301,14 +1332,25 @@ class Dataset:
             Interpolation method.
         fill_value :
             When *method* = "fillna", then the *NaN*:s vales are filled with this value.
+        inplace :
+            If *True* the function modifies the stored dataset.
+            Otherwise, it return a pandas Dataframe.
+
+
+        Raises
+        ------
+        ValueError
+            If the passed method is not 'interpolate' or 'fillna'.
         """
 
         if method == "interpolate":
-            self.dataset.interpolate(axis=1, inplace=True)
+            return self.dataset.interpolate(inplace=inplace)
         elif method == "fillna":
-            self.dataset.fillna(fill_value, inplace=True)
+            return self.dataset.fillna(fill_value, inplace=inplace)
         else:
-            print("Unknown method. Choose between 'interpolate' or 'fillna'")
+            raise ValueError(
+                "Unknown method. Choose between 'interpolate' or 'fillna'"
+            )
 
 
 # ====================================================
@@ -1363,11 +1405,6 @@ def signals_validation(signal_list: list[Signal]) -> None:
                 f"Key {not_found_keys} not found in signal {sig['name']}."
             )
         for key in keys:
-            if key not in ALLOWED_KEYS or key is None:
-                raise KeyError(
-                    f"Key '{key}' is not allowed."
-                    " Keys must be one of '{ALLOWED_KEYS}'"
-                )
             if key == "values":
                 cond = (
                     not isinstance(sig[key], np.ndarray) or sig[key].ndim != 1  # type: ignore
@@ -1538,12 +1575,10 @@ def fix_sampling_periods(
     signals_validation(signal_list)
     #
     if target_sampling_period:
-        cond = (
+        if (
             not isinstance(target_sampling_period, float)
             or target_sampling_period < 0
-            or np.isclose(target_sampling_period, 0.0)
-        )
-        if cond:
+        ):
             raise ValueError("'target_sampling_period' must be positive.")
     # ==========================================================
 
