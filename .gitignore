@@ -11,6 +11,3 @@ __pycache__/
 /dist/
 /site/
 /docs/build/
-
-# Root files
-/.coverage*
