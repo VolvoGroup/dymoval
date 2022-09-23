@@ -7,10 +7,8 @@ Created on Thu Jul 14 11:43:21 2022
 
 import pytest
 import dymoval as dmv
-from matplotlib import pyplot as plt
-from dymoval.dataset import Signal
 from .fixture_data import *  # noqa
-from typing import Any, Union
+from typing import Union
 
 
 class Test_list_belonging_check:

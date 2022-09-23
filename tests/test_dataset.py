@@ -299,16 +299,16 @@ class TestdatasetNominal:
         with pytest.raises(KeyError):
             ds.remove_offset(u_list=u_list[fixture], y_list=y_list[fixture])
 
-    def test__validate_manipulation_functions_args(
-        self, sine_dataframe: pd.DataFrame
-    ) -> None:
-        df, u_labels, y_labels, fixture = sine_dataframe
+    # def test__validate_manipulation_functions_args(
+    #     self, sine_dataframe: pd.DataFrame
+    # ) -> None:
+    #     df, u_labels, y_labels, fixture = sine_dataframe
 
-        # Actual value
-        name_ds = "my_dataset"
-        ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
-        )
+    #     # Actual value
+    #     name_ds = "my_dataset"
+    #     ds = dmv.dataset.Dataset(
+    #         name_ds, df, u_labels, y_labels, full_time_interval=True
+    #     )
 
     def test_remove_offset_raise(self, sine_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = sine_dataframe
@@ -404,13 +404,14 @@ class TestdatasetNominal:
         # Interpolate
         ds_test = deepcopy(ds)
         df_actual = ds_test.replace_NaNs(method="interpolate")
-        print("df_actual = ", df_actual)
-        assert df_actual.isna().any().any() == False
+        # Assert that no NaN:s left
+        assert not df_actual.isna().any().any()
 
         # Fill
         ds_test = deepcopy(ds)
         df_actual = ds_test.replace_NaNs(method="fillna")
-        assert df_actual.isna().any().any() == False
+        # Assert that no NaN:s left
+        assert not df_actual.isna().any().any()
 
         # Raise
         with pytest.raises(ValueError):

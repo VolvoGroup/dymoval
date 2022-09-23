@@ -9,6 +9,8 @@ version = "0.1"
 
 # Requirements
 requires-python = ">=3.9"
+
+# Dependencies
 dependencies = [
 "numpy",
 "scipy",
@@ -17,7 +19,12 @@ dependencies = [
 "control",
 "typing",
 "pathlib",
-"tomli"
+"tomli",
+"pytest",
+"flake8",
+"mypy",
+"black",
+"coverage"
 ]
 
 # Other metadata
@@ -46,12 +53,7 @@ keywords = [
 [project.optional-dependencies]
 
 build = ["hatch"]
-test = [
-  "pytest",
-  "flake8",
-  "mypy",
-  "coverage"
-]
+
 docs = [
   "sphinx",
   "furo",

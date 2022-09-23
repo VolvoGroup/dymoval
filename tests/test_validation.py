@@ -115,7 +115,7 @@ class TestClassValidationNominal:
         assert [] == list(vs.cross_correlation.keys())
         assert [] == list(vs.validation_results.columns)
 
-    def test_get_sim_signal_list_raise(
+    def test_get_sim_signal_list_and_metrics_raise(
         self, good_dataframe: pd.DataFrame
     ) -> None:
         df, u_labels, y_labels, fixture = good_dataframe
@@ -314,6 +314,31 @@ class TestClassValidatioNominal_sim_validation:
         with pytest.raises(IndexError):
             vs.append_simulation(sim1_name, sim1_labels, sim1_values)
 
+    def test_drop_simulation_raise(self, good_dataframe: pd.DataFrame) -> None:
+        df, u_labels, y_labels, fixture = good_dataframe
+        name_ds = "my_dataset"
+        ds = dmv.dataset.Dataset(
+            name_ds, df, u_labels, y_labels, full_time_interval=True
+        )
+
+        # Create validation session.
+        name_vs = "my_validation"
+        vs = dmv.ValidationSession(name_vs, ds)
+
+        # Add one model
+        sim1_name = "Model 1"
+        sim1_labels = ["my_y1", "my_y2"]  # The fixture has two outputs
+        if fixture == "SISO" or fixture == "MISO":
+            sim1_labels = [sim1_labels[0]]
+        sim1_values = np.random.rand(
+            len(df.iloc[:, 0].values), len(sim1_labels)
+        )
+
+        vs.append_simulation(sim1_name, sim1_labels, sim1_values)
+
+        with pytest.raises(ValueError):
+            vs.drop_simulation("potato")
+
 
 class TestPlots:
     def test_plots(self, good_dataframe: pd.DataFrame) -> None:
@@ -351,7 +376,7 @@ class TestPlots:
         plt.close("all")
 
         #
-        figures = vs.plot_simulations(plot_input=True, return_figure=True)
+        vs.plot_simulations(plot_input=True, return_figure=True)
         plt.close("all")
 
         # Test plot - conditional

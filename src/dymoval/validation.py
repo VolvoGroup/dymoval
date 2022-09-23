@@ -256,6 +256,13 @@ class ValidationSession:
 
         self.validation_results[sim_name] = [r2, Ree_norm, Rue_norm]
 
+    def check_if_sim_list_is_empty(self) -> None:
+        if not self.get_simulations_name():
+            raise KeyError(
+                "The simulations list looks empty. "
+                "Check the available simulation names with 'get_simulations_names()'"
+            )
+
     def _simulation_validation(
         self, sim_name: str, y_labels: list[str], y_data: np.ndarray
     ) -> None:
@@ -358,11 +365,9 @@ class ValidationSession:
         # ================================================================
         # Validate and arange the plot setup.
         # ================================================================
-        if not self.get_simulations_name():
-            raise KeyError(
-                "The simulations list looks empty. "
-                "Check the available simulations names with 'get_simulations_names()'"
-            )
+        # check if the sim list is empty
+        self.check_if_sim_list_is_empty()
+
         if not list_sims:
             list_sims = self.get_simulations_name()
         else:
@@ -496,11 +501,7 @@ class ValidationSession:
             If the simulation list is empty.
         """
         # Check if you have any simulation available
-        if not self.get_simulations_name():
-            raise KeyError(
-                "The simulations list looks empty. "
-                "Check the available simulations names with 'get_simulations_names()'"
-            )
+        self.check_if_sim_list_is_empty()
         if not list_sims:
             list_sims = self.get_simulations_name()
         else:
@@ -590,20 +591,12 @@ class ValidationSession:
         KeyError
             If the simulation is not in the simulation list.
         """
-        if not self.get_simulations_name():
-            raise KeyError(
-                "The simulations list looks empty. "
-                "Check the available simulation names with 'get_simulations_names()'"
-            )
+        self.check_if_sim_list_is_empty()
         return list(self.simulations_results[sim_name].columns)
 
     def get_validation_metrics(self) -> pd.DataFrame:
         """Return the validation metrics of all the stored simulation names."""
-        if not self.get_simulations_name():
-            raise KeyError(
-                "The simulations list looks empty. "
-                "Check the available simulations names with 'get_simulations_names()'"
-            )
+        self.check_if_sim_list_is_empty()
         return self.validation_results
 
     def get_simulations_name(self) -> list[str]:
@@ -673,11 +666,8 @@ class ValidationSession:
         ValueError
             If the simulation name is not found.
         """
-        if not self.get_simulations_name():
-            raise KeyError(
-                "The simulations list looks empty. "
-                "Check the available simulation names with 'get_simulations_names()'"
-            )
+        self.check_if_sim_list_is_empty()
+
         for sim_name in args:
             if sim_name not in self.get_simulations_name():
                 raise ValueError(f"Simulation {sim_name} not found.")

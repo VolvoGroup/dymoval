@@ -118,6 +118,9 @@ class TestInitializerFromSignals:
                 plot_raw=True,
                 full_time_interval=True,
             )
+            # To make flake8 happy otherwise it complains that a variable
+            # has been declared but not used.
+            ds.coverage
 
 
 class TestInitializerFromDataframe:
