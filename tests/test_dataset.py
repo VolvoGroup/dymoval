@@ -433,7 +433,10 @@ class TestDatasetPlots:
             full_time_interval=True,
         )
 
-        ds.plot(return_figure=True)
+        # A is definined for tricking flake8.
+        # If you remove it the pipeline for windows will not build.
+        A = ds.plot(return_figure=True)
+        del A
         plt.close("all")
 
         ds.plot()
@@ -445,13 +448,15 @@ class TestDatasetPlots:
         ds.plot_coverage()
         plt.close("all")
 
-        ds.plot_coverage(return_figure=True)
+        A = ds.plot_coverage(return_figure=True)
+        del A
         plt.close("all")
 
         ds.plot_amplitude_spectrum()
         plt.close("all")
 
-        ds.plot_amplitude_spectrum(return_figure=True, overlap=True)
+        A = ds.plot_amplitude_spectrum(return_figure=True, overlap=True)
+        del A
         plt.close("all")
 
 
