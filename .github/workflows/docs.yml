@@ -63,6 +63,12 @@ jobs:
           force: true
           directory: ./docs/build/html
 
+      - name: Run test for generating .coverage file
+        run: |
+          pwd
+          coverage run -m pytest .
+          coverage report -m
+
       - name: Coverage Badge
         uses: tj-actions/coverage-badge-py@v1.8
 
@@ -75,6 +81,7 @@ jobs:
       - name: Commit files
         if: steps.changed_files.outputs.files_changed == 'true'
         run: |
+          rm .coverage
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add coverage.svg
