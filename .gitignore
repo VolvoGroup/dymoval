@@ -11,3 +11,5 @@ __pycache__/
 /dist/
 /site/
 /docs/build/
+
+./.coverage*
