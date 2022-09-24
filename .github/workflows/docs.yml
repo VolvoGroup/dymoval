@@ -66,6 +66,7 @@ jobs:
       - name: Run test for generating .coverage file
         run: |
           coverage run -m pytest .
+          coverage report -m
 
       - name: Coverage Badge
         uses: tj-actions/coverage-badge-py@v1.8
