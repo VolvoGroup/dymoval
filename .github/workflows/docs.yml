@@ -79,6 +79,8 @@ jobs:
       - name: Commit files
         if: steps.changed_files.outputs.files_changed == 'true'
         run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
           git add coverage.svg
           git commit -m "Updated coverage.svg"
 
