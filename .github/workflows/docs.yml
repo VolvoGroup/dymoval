@@ -65,7 +65,7 @@ jobs:
 
       - name: Run test for generating .coverage file
         run: |
-          coverage run --source=dymoval -m pytest
+          coverage run --source=dymoval --branch -m pytest
           coverage report -m
 
       - name: Coverage Badge
