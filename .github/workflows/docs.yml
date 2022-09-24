@@ -65,7 +65,8 @@ jobs:
 
       - name: Run test for generating .coverage file
         run: |
-          coverage run --source=. -m pytest
+          coverage erase
+          coverage run -m pytest
           coverage report -m
 
       - name: Coverage Badge
