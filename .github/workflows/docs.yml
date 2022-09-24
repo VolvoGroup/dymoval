@@ -23,7 +23,7 @@ concurrency:
 jobs:
   # Build job
   build:
-    runs-on: windows-latest   
+    runs-on: ubuntu-latest   
     
     steps:
       - name: Checkout
@@ -65,8 +65,7 @@ jobs:
 
       - name: Run test for generating .coverage file
         run: |
-          pwd
-          coverage run -m pytest .
+          coverage run -m pytest
           coverage report -m
 
       - name: Coverage Badge
