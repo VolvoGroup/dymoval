@@ -376,7 +376,7 @@ class TestPlots:
         plt.close("all")
 
         #
-        vs.plot_simulations(plot_input=True, return_figure=True)
+        _ = vs.plot_simulations(plot_input=True, return_figure=True)
         plt.close("all")
 
         # Test plot - conditional
