@@ -15,15 +15,10 @@ class TestdatasetNominal:
     def test_init(self, good_dataframe: pd.DataFrame) -> None:
         # Check if the passed dataset DataFrame is correctly stored as class attribute.
         # Nominal data
-        df_expected, u_labels, y_labels, fixture = good_dataframe
+        df, u_labels, y_labels, fixture = good_dataframe
 
-        # Actual value
-        name_ds = "my_dataset"
-        ds = dmv.dataset.Dataset(
-            name_ds, df_expected, u_labels, y_labels, full_time_interval=True
-        )
-
-        # Expected value
+        # Expected value. Create a two-levels column from normal DataFrame
+        df_expected = deepcopy(df)
         u_labels = dmv.str2list(u_labels)
         y_labels = dmv.str2list(y_labels)
         u_extended_labels = list(zip(["INPUT"] * len(u_labels), u_labels))
@@ -32,36 +27,53 @@ class TestdatasetNominal:
             [*u_extended_labels, *y_extended_labels]
         )
 
+        # Actual value. Pass the single-level DataFrame to the Dataset constructor.
+        name_ds = "my_dataset"
+        ds = dmv.dataset.Dataset(
+            name_ds, df, u_labels, y_labels, full_time_interval=True
+        )
+
         assert np.allclose(ds.dataset, df_expected)
 
     def test_remove_means(self, sine_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = sine_dataframe
+
+        # Expected value.
+        # If you remove a mean from a signa, then the mean of the reminder
+        # signal must be zero.
+        expected_mean = 0.0
 
         # Actual value
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
             name_ds, df, u_labels, y_labels, full_time_interval=True
         )
-
         # You should get a dataframe with zero mean.
+        # Stored dataframe shall be left unchanged.
         df_zero_mean = ds.remove_means()
 
         # Lets see if it is true
-        assert np.allclose(df_zero_mean["INPUT"].mean(), 0.0)
-        assert np.allclose(df_zero_mean["OUTPUT"].mean(), 0.0)
+        assert np.allclose(df_zero_mean.droplevel(0, axis=1).mean(), 0.0)
+
+        # Lets check that the stored DataFrame has not been changed (inplace=False)
+        df_actual = ds.dataset.droplevel(0, axis=1)
+        assert np.allclose(df_actual.to_numpy(), df.to_numpy())
 
         # inplace test
         ds.remove_means(inplace=True)
-        # Lets see if it is true
-        assert np.allclose(ds.dataset["INPUT"].mean(), 0.0)
-        assert np.allclose(ds.dataset["OUTPUT"].mean(), 0.0)
+        # Lets see if it is also true
+        assert np.allclose(ds.dataset.droplevel(0, axis=1).mean(), 0.0)
 
     def test_remove_offset_nominal(
         self, constant_ones_dataframe: pd.DataFrame
     ) -> None:
         df, u_labels, y_labels, fixture = constant_ones_dataframe
 
-        # Test values. OBS! constant_ones_dataframe has 3 input and 3 output.
+        # Test values, i.e. offset to be removed from the specified signal.
+        # The first value of the tuple indicates the signal name, whereas
+        # the second value indicated the offset to be removed.
+        # OBS! constant_ones_dataframe has 3 input and 3 output.
+
         u_list = {
             "SISO": ("u1", 2.0),
             "SIMO": ("u1", 2.0),
@@ -76,9 +88,9 @@ class TestdatasetNominal:
             "MIMO": [("y1", 2.0), ("y2", 1.0), ("y3", 2.0)],
         }
 
-        # Expected values. Compare with constant_ones_dataframe and the data above.
-        N = 10
-        idx = np.linspace(0, 1, N)
+        # Expected dataframe.
+        N = len(df.index)
+        idx = np.linspace(0, df.index[-1], N)
         if fixture == "SISO":
             values = -1.0 * np.ones((N, 2))  # Expected
             df_expected = pd.DataFrame(
@@ -122,8 +134,9 @@ class TestdatasetNominal:
         ds = dmv.dataset.Dataset(
             name_ds, df, u_labels, y_labels, full_time_interval=True
         )
-        df_actual = deepcopy(
-            ds.remove_offset(u_list=u_list[fixture], y_list=y_list[fixture])
+        # Function call
+        df_actual = ds.remove_offset(
+            u_list=u_list[fixture], y_list=y_list[fixture]
         )
 
         # Assert
@@ -139,9 +152,9 @@ class TestdatasetNominal:
     def test_remove_offset_only_input(
         self, constant_ones_dataframe: pd.DataFrame
     ) -> None:
+        # It is the same as above.
         df, u_labels, y_labels, fixture = constant_ones_dataframe
 
-        # Test values. OBS! constant_ones_dataframe has 3 input and 3 output.
         u_list = {
             "SISO": ("u1", 2.0),
             "SIMO": ("u1", 2.0),
@@ -150,8 +163,8 @@ class TestdatasetNominal:
         }
 
         # Expected values. Compare with constant_ones_dataframe and the data above.
-        N = 10
-        idx = np.linspace(0, 1, N)
+        N = len(df.index)
+        idx = np.linspace(0, df.index[-1], N)
         if fixture == "SISO":
             values = np.hstack(
                 (-1.0 * np.ones((N, 1)), np.ones((N, 1)))
@@ -196,18 +209,24 @@ class TestdatasetNominal:
         ds = dmv.dataset.Dataset(
             name_ds, df, u_labels, y_labels, full_time_interval=True
         )
-
-        df_actual = deepcopy(ds.remove_offset(u_list=u_list[fixture]))
+        # Function call
+        df_actual = ds.remove_offset(u_list=u_list[fixture])
 
         # Assert
         assert np.allclose(df_actual, df_expected)
 
+        # Assert that the internally stored dataset is not overwritten
+        assert np.allclose(ds.dataset, df)
+        # Test inplace = True
+        ds.remove_offset(u_list=u_list[fixture], inplace=True)
+        assert np.allclose(df_actual, ds.dataset)
+
     def test_remove_offset_only_output(
         self, constant_ones_dataframe: pd.DataFrame
     ) -> None:
+        # It is the same as above.
         df, u_labels, y_labels, fixture = constant_ones_dataframe
 
-        # Test values. OBS! constant_ones_dataframe has 3 input and 3 output.
         y_list = {
             "SISO": ("y1", 2.0),
             "SIMO": [("y1", 2.0), ("y2", 1.0), ("y3", -2.0)],
@@ -216,8 +235,8 @@ class TestdatasetNominal:
         }
 
         # Expected values. Compare with constant_ones_dataframe and the data above.
-        N = 10
-        idx = np.linspace(0, 1, N)
+        N = len(df.index)
+        idx = np.linspace(0, df.index[-1], N)
         if fixture == "SISO":
             values = np.hstack(
                 (np.ones((N, 1)), -1.0 * np.ones((N, 1)))
@@ -266,16 +285,22 @@ class TestdatasetNominal:
         ds = dmv.dataset.Dataset(
             name_ds, df, u_labels, y_labels, full_time_interval=True
         )
+        # Function call
+        df_actual = ds.remove_offset(y_list=y_list[fixture])
 
-        df_actual = deepcopy(ds.remove_offset(y_list=y_list[fixture]))
-
-        # Assert
+        # Assert that the offsets are removed
         assert np.allclose(df_actual, df_expected)
+        # Assert that the internally stored dataset is not overwritten
+        assert np.allclose(ds.dataset, df)
+
+        # Now assert th inplace = True
+        ds.remove_offset(y_list=y_list[fixture], inplace=True)
+        assert np.allclose(df_actual, ds.dataset)
 
     def test__signals_exist_raise(self, sine_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = sine_dataframe
 
-        # Actual value
+        # Base Dataset
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
             name_ds, df, u_labels, y_labels, full_time_interval=True
@@ -296,6 +321,7 @@ class TestdatasetNominal:
             "MIMO": [("potato", 2.0), ("y2", 1.0), ("y3", 2.0)],
         }
 
+        # Try to remove very weird signals.
         with pytest.raises(KeyError):
             ds.remove_offset(u_list=u_list[fixture], y_list=y_list[fixture])
 

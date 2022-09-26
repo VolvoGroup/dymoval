@@ -178,6 +178,7 @@ def sine_dataframe(request):  # type: ignore
         c1 + np.sin(w2 * t),
         c1 + np.sin(w3 * t),
     ]
+    u_values = [u.round(dmv.NUM_DECIMALS) for u in u_values]
 
     y_labels = ["y1", "y2", "y3", "y4"]
     y_values = [
@@ -186,6 +187,7 @@ def sine_dataframe(request):  # type: ignore
         c1 + np.sin(w1 * t) + np.sin(w2 * t) + c2 * np.sin(w3 * t),
         np.sin(w1 * t) - np.sin(w2 * t) - np.sin(w3 * t),
     ]
+    y_values = [y.round(dmv.NUM_DECIMALS) for y in y_values]
 
     data = np.vstack((np.asarray(u_values), np.asarray(y_values))).transpose()
     df = pd.DataFrame(index=t, columns=[*u_labels, *y_labels], data=data)
@@ -213,6 +215,7 @@ def sine_dataframe(request):  # type: ignore
 
 @pytest.fixture(params=dataset_type)
 def constant_ones_dataframe(request):  # type: ignore
+    # Dataframe of all ones.
 
     fixture_type = request.param
 

@@ -615,11 +615,6 @@ class Dataset:
             y_labels = [y[0] for y in y_list]
             u_labels, y_labels = self._signals_exist(None, y_labels)
         if u_list and y_list:
-            # Remove me!
-            # if not isinstance(u_list, list):
-            #     u_list = [u_list]
-            # if not isinstance(y_list, list):
-            #     y_list = [y_list]
             u_labels = [u[0] for u in u_list]
             y_labels = [y[0] for y in y_list]
             u_labels, y_labels = self._signals_exist(u_labels, y_labels)
