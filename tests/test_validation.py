@@ -407,7 +407,9 @@ class TestPlots:
         plt.close("all")
         vs.plot_residuals("Model 1")
         plt.close("all")
-        vs.plot_residuals("Model 1", "Model 2")
+        vs.plot_residuals(["Model 1", "Model 2"])
+        plt.close("all")
+        _ = vs.plot_residuals(["Model 1", "Model 2"], return_figure=True)
         plt.close("all")
 
         # =============================

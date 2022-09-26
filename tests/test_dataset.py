@@ -28,12 +28,66 @@ class TestdatasetNominal:
         )
 
         # Actual value. Pass the single-level DataFrame to the Dataset constructor.
-        name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
+            "my_dataset", df, u_labels, y_labels, full_time_interval=True
         )
 
         assert np.allclose(ds.dataset, df_expected)
+
+    @pytest.mark.parametrize(
+        # The dataype for the annotation can be inferred by the
+        # following list.
+        "test_input, expected",
+        [
+            (("u1", ["y1", "y3"]), (["u1"], ["y1", "y3"])),
+            ((["u1", "u2"], ["y1", "y3"]), (["u1", "u2"], ["y1", "y3"])),
+            ((["u1", "u2"], None), (["u1", "u2"], None)),
+            ((None, ["y1", "y3"]), (None, ["y1", "y3"])),
+        ],
+    )
+    def test__validate_signals(
+        self,
+        sine_dataframe: pd.DataFrame,
+        test_input: Any,
+        expected: Any,
+    ) -> None:
+        # Check if the passed dataset DataFrame is correctly stored as class attribute.
+        # Nominal data
+        df, u_labels, y_labels, fixture = sine_dataframe
+
+        # Just test the MIMO case. This function is called so many times from
+        # other functions that also consider the other cases.
+        # If it won't work for SISO, MISO or SIMO, you would got a test fail anyway.
+        # This test is just for easy the debugging.
+        if fixture == "MIMO":
+            ds = dmv.dataset.Dataset(
+                "my_dataset", df, u_labels, y_labels, full_time_interval=True
+            )
+
+            # Test values
+            u_labels_test = test_input[0]
+            y_labels_test = test_input[1]
+
+            # Expected value
+            expected_u_labels = expected[0]
+            expected_y_labels = expected[1]
+
+            # Acual values
+            actual_u_labels, actual_y_labels = ds._validate_signals(
+                u_labels_test, y_labels_test
+            )
+
+            # Assert
+            if u_labels_test:
+                assert expected_u_labels == actual_u_labels
+            if y_labels_test:
+                assert expected_y_labels == actual_y_labels
+
+    def test__validate_name_value_tuples(self) -> None:
+        # Add a test only if you really need it.
+        # This function is called so many times so it is implicitly tested
+        # and writing tricky tests won't help
+        pass
 
     def test_remove_means(self, sine_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = sine_dataframe
@@ -64,9 +118,7 @@ class TestdatasetNominal:
         # Lets see if it is also true
         assert np.allclose(ds.dataset.droplevel(0, axis=1).mean(), 0.0)
 
-    def test_remove_offset_nominal(
-        self, constant_ones_dataframe: pd.DataFrame
-    ) -> None:
+    def test_remove_offset(self, constant_ones_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = constant_ones_dataframe
 
         # Test values, i.e. offset to be removed from the specified signal.
@@ -297,56 +349,6 @@ class TestdatasetNominal:
         ds.remove_offset(y_list=y_list[fixture], inplace=True)
         assert np.allclose(df_actual, ds.dataset)
 
-    def test__signals_exist_raise(self, sine_dataframe: pd.DataFrame) -> None:
-        df, u_labels, y_labels, fixture = sine_dataframe
-
-        # Base Dataset
-        name_ds = "my_dataset"
-        ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
-        )
-
-        # Test values. OBS! constant_ones_dataframe has 3 input and 3 output.
-        u_list = {
-            "SISO": ("potato", 2.0),
-            "SIMO": ("u1", 2.0),
-            "MISO": [("potato", 2.0), ("u2", 2.0), ("u3", 2.0)],
-            "MIMO": [("u1", 2.0), ("u2", 2.0), ("u3", 2.0)],
-        }
-
-        y_list = {
-            "SISO": ("y1", 2.0),
-            "SIMO": [("y1", 2.0), ("potato", 1.0), ("y3", -2.0)],
-            "MISO": ("y1", 2.0),
-            "MIMO": [("potato", 2.0), ("y2", 1.0), ("y3", 2.0)],
-        }
-
-        # Try to remove very weird signals.
-        with pytest.raises(KeyError):
-            ds.remove_offset(u_list=u_list[fixture], y_list=y_list[fixture])
-
-    # def test__validate_manipulation_functions_args(
-    #     self, sine_dataframe: pd.DataFrame
-    # ) -> None:
-    #     df, u_labels, y_labels, fixture = sine_dataframe
-
-    #     # Actual value
-    #     name_ds = "my_dataset"
-    #     ds = dmv.dataset.Dataset(
-    #         name_ds, df, u_labels, y_labels, full_time_interval=True
-    #     )
-
-    def test_remove_offset_raise(self, sine_dataframe: pd.DataFrame) -> None:
-        df, u_labels, y_labels, fixture = sine_dataframe
-
-        # Actua value
-        name_ds = "my_dataset"
-        ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
-        )
-        with pytest.raises(TypeError):
-            ds.remove_offset()
-
     def test_get_dataset_values(self, sine_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = sine_dataframe
 
@@ -355,7 +357,7 @@ class TestdatasetNominal:
         ds = dmv.dataset.Dataset(
             name_ds, df, u_labels, y_labels, full_time_interval=True
         )
-        # Expected time vector
+        # Expected vectors
         t_expected = df.index.to_numpy().round(NUM_DECIMALS)
         u_expected = df[u_labels].to_numpy().round(NUM_DECIMALS)
         y_expected = df[y_labels].to_numpy().round(NUM_DECIMALS)
@@ -418,7 +420,7 @@ class TestdatasetNominal:
 
         target_sampling_period = 0.1
         ds = dmv.Dataset(
-            "potato",
+            "my_dataset",
             signal_list,
             input_signal_names,
             output_signal_names,
@@ -426,7 +428,7 @@ class TestdatasetNominal:
             plot_raw=True,
             full_time_interval=True,
         )
-
+        # TODO: add inplace test
         # Interpolate
         ds_test = deepcopy(ds)
         df_actual = ds_test.replace_NaNs(method="interpolate")
@@ -439,9 +441,88 @@ class TestdatasetNominal:
         # Assert that no NaN:s left
         assert not df_actual.isna().any().any()
 
-        # Raise
+
+class Test_Dataset_raise:
+    def test__validate_signals_raise(
+        self,
+        sine_dataframe: pd.DataFrame,
+    ) -> None:
+        # Check if the passed dataset DataFrame is correctly stored as class attribute.
+        # Nominal data
+        df, u_labels, y_labels, fixture = sine_dataframe
+        ds = dmv.dataset.Dataset(
+            "my_dataset", df, u_labels, y_labels, full_time_interval=True
+        )
+
+        # Test values
+        u_labels_test = "potato"
+        y_labels_test = "y1"
+
+        with pytest.raises(KeyError):
+            ds._validate_signals(u_labels_test, y_labels_test)
+
+    def test_replaceNaNs_raise(self, good_signals: list[Signal]) -> None:
+        # Nominal data
+        (
+            signal_list,
+            input_signal_names,
+            output_signal_names,
+            fixture,
+        ) = good_signals
+
+        target_sampling_period = 0.1
+        ds = dmv.Dataset(
+            "my_dataset",
+            signal_list,
+            input_signal_names,
+            output_signal_names,
+            target_sampling_period=target_sampling_period,
+            plot_raw=True,
+            full_time_interval=True,
+        )
+
+        # Raise unexistng replacement method
         with pytest.raises(ValueError):
-            ds_test.replace_NaNs(method="potato")
+            ds.replace_NaNs(method="potato")
+
+    def test__validate_name_value_tuples_raise(
+        self, sine_dataframe: pd.DataFrame
+    ) -> None:
+        df, u_labels, y_labels, fixture = sine_dataframe
+
+        # Base Dataset
+        ds = dmv.dataset.Dataset(
+            "my_dataset", df, u_labels, y_labels, full_time_interval=True
+        )
+
+        # Test values. OBS! constant_ones_dataframe has 3 input and 3 output.
+        u_list = {
+            "SISO": ("potato", 2.0),
+            "SIMO": ("u1", 2.0),
+            "MISO": [("potato", 2.0), ("u2", 2.0), ("u3", 2.0)],
+            "MIMO": [("u1", 2.0), ("u2", 2.0), ("u3", 2.0)],
+        }
+
+        y_list = {
+            "SISO": ("y1", 2.0),
+            "SIMO": [("y1", 2.0), ("potato", 1.0), ("y3", -2.0)],
+            "MISO": ("y1", 2.0),
+            "MIMO": [("potato", 2.0), ("y2", 1.0), ("y3", 2.0)],
+        }
+
+        # Try to remove very weird signals.
+        with pytest.raises(KeyError):
+            ds._validate_name_value_tuples(u_list[fixture], y_list[fixture])
+
+    def test_remove_offset_raise(self, sine_dataframe: pd.DataFrame) -> None:
+        df, u_labels, y_labels, fixture = sine_dataframe
+
+        # Actual value
+        ds = dmv.dataset.Dataset(
+            "my_dataset", df, u_labels, y_labels, full_time_interval=True
+        )
+        with pytest.raises(TypeError):
+            ds.remove_offset()
 
 
 class TestDatasetPlots:
@@ -467,10 +548,27 @@ class TestDatasetPlots:
         ds.plot()
         plt.close("all")
 
+        ds.plot(u_labels="u1")
+        plt.close("all")
+
+        if fixture == "MIMO":
+            ds.plot(u_labels=["u1", "u2"], y_labels=["y1", "y2"])
+            plt.close("all")
+
         ds.plot(overlap=True)
         plt.close("all")
 
         ds.plot_coverage()
+        plt.close("all")
+
+        _ = ds.plot_coverage(u_labels="u1", return_figure=True)
+        plt.close("all")
+
+        if fixture == "MIMO":
+            ds.plot_coverage(u_labels=["u1", "u2"], y_labels=["y1", "y2"])
+            plt.close("all")
+
+        _ = ds.plot_coverage(y_labels="y1", return_figure=True)
         plt.close("all")
 
         _ = ds.plot_coverage(return_figure=True)
@@ -808,7 +906,7 @@ class TestFixSamplingPeriod:
         "test_input, expected",
         [("potato", Exception), (-0.1, Exception)],
     )
-    def test_excluded_signals_exception(
+    def test_excluded_signals_raise(
         self,
         good_signals: list[Signal],
         test_input: tuple[Any, Any],

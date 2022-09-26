@@ -18,7 +18,7 @@ def factorize(n: int) -> tuple[int, int]:
     return a, b
 
 
-def list_belonging_check(
+def difference_lists_of_str(
     # Does it work only for strings?
     A: Union[str, list[str]],
     B: Union[str, list[str]],

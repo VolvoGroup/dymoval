@@ -303,6 +303,7 @@ class ValidationSession:
     def plot_simulations(
         self,
         list_sims: Optional[Union[str, list[str]]] = None,
+        *,
         plot_dataset: Optional[bool] = False,
         plot_input: Optional[bool] = False,
         line_color_input: Optional[str] = "k",
@@ -372,7 +373,7 @@ class ValidationSession:
             list_sims = self.get_simulations_name()
         else:
             list_sims = str2list(list_sims)  # noqa
-            sim_not_found = list_belonging_check(  # noqa
+            sim_not_found = difference_lists_of_str(  # noqa
                 list_sims, self.get_simulations_name()
             )
             if sim_not_found:
@@ -469,6 +470,7 @@ class ValidationSession:
     def plot_residuals(
         self,
         list_sims: Optional[Union[str, list[str]]] = None,
+        *,
         return_figure: Optional[bool] = False,
         save_figure: Optional[bool] = False,
         filename: str = "",
@@ -506,7 +508,7 @@ class ValidationSession:
             list_sims = self.get_simulations_name()
         else:
             list_sims = str2list(list_sims)  # noqa
-            sim_not_found = list_belonging_check(  # noqa
+            sim_not_found = difference_lists_of_str(  # noqa
                 list_sims, self.get_simulations_name()
             )
             if sim_not_found:

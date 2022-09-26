@@ -11,7 +11,7 @@ from .fixture_data import *  # noqa
 from typing import Union
 
 
-class Test_list_belonging_check:
+class Test_difference_lists_of_str:
     # This function returns elements not found.
     @pytest.mark.parametrize(
         "A,B, expected",
@@ -44,21 +44,21 @@ class Test_list_belonging_check:
             ),
         ],
     )
-    def test_list_belonging_check(
+    def test_difference_lists_of_str(
         self,
         A: Union[str, list[str]],
         B: Union[str, list[str]],
         expected: list[str],
     ) -> None:
         # Nominal
-        elements_not_found = dmv.list_belonging_check(A, B)
+        elements_not_found = dmv.difference_lists_of_str(A, B)
         assert sorted(elements_not_found) == sorted(expected)
 
-    def test_list_belonging_check_empty_set(self) -> None:
+    def test_difference_lists_of_str_empty_set(self) -> None:
         # Error
         B = [0, 1, 2, 3, 4, 5]
         with pytest.raises(IndexError):
-            dmv.list_belonging_check([], B)
+            dmv.difference_lists_of_str([], B)
 
 
 class Test_str2list:

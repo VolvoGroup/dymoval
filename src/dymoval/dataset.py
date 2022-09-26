@@ -545,7 +545,7 @@ class Dataset:
         )
         return df, nan_intervals, excluded_signals, dataset_coverage
 
-    def _signals_exist(
+    def _validate_signals(
         self,
         u_labels: Optional[Union[str, list[str]]],
         y_labels: Optional[Union[str, list[str]]],
@@ -553,16 +553,12 @@ class Dataset:
         # This function check if the signals (labels) from the user
         # exist in the current dataset.
         df = self.dataset
-        input_columns_list = list(df["INPUT"].columns)  # Index type -> list.
-        output_columns_list = list(df["OUTPUT"].columns)  # Index type -> list.
 
         # Input: check if the signal names exist
-        if not u_labels:
-            u_labels = input_columns_list
-        else:
+        if u_labels:
             u_labels = str2list(u_labels)  # noqa
-            input_not_found = list_belonging_check(
-                u_labels, input_columns_list
+            input_not_found = difference_lists_of_str(
+                u_labels, list(df["INPUT"].columns)
             )  # noqa
 
             if input_not_found:
@@ -570,14 +566,14 @@ class Dataset:
                     f"Signal(s) {input_not_found} not found in the input signals dataset. "
                     "Use 'get_signal_list()' to get the list of all available signals. "
                 )
+        else:
+            u_labels = input_columns_list = list(df["INPUT"].columns)
 
         # Output: check if the signal names exist
-        if not y_labels:
-            y_labels = output_columns_list
-        else:
+        if y_labels:
             y_labels = str2list(y_labels)  # noqa
-            output_not_found = list_belonging_check(  # noqa
-                y_labels, output_columns_list
+            output_not_found = difference_lists_of_str(  # noqa
+                y_labels, list(df["OUTPUT"].columns)
             )
 
             if output_not_found:
@@ -585,12 +581,13 @@ class Dataset:
                     f"Signal(s) {output_not_found} not found in the output signal dataset. "
                     "Use 'get_signal_list()' to get the list of all available signals "
                 )
+        else:
+            y_labels = list(df["OUTPUT"].columns)
 
         return u_labels, y_labels
 
-    def _validate_manipulation_functions_args(
+    def _validate_name_value_tuples(
         self,
-        *,
         u_list: Optional[
             Union[list[tuple[str, float]], tuple[str, float]]
         ] = None,
@@ -603,21 +600,23 @@ class Dataset:
         Optional[list[tuple[str, float]]],
         Optional[list[tuple[str, float]]],
     ]:
-        # Validate the input to dataset manipulation functions
+        # This function is needed to validate inputs like [("u1",3.2), ("y1", 0.5)]
+        # Think for example to the "remove_offset" function.
+        # Return both the list of input and output names and the validated tuples.
         if u_list:
             if not isinstance(u_list, list):
                 u_list = [u_list]
             u_labels = [u[0] for u in u_list]
-            u_labels, y_labels = self._signals_exist(u_labels, None)
+            u_labels, y_labels = self._validate_signals(u_labels, None)
         if y_list:
             if not isinstance(y_list, list):
                 y_list = [y_list]
             y_labels = [y[0] for y in y_list]
-            u_labels, y_labels = self._signals_exist(None, y_labels)
+            u_labels, y_labels = self._validate_signals(None, y_labels)
         if u_list and y_list:
             u_labels = [u[0] for u in u_list]
             y_labels = [y[0] for y in y_list]
-            u_labels, y_labels = self._signals_exist(u_labels, y_labels)
+            u_labels, y_labels = self._validate_signals(u_labels, y_labels)
         if not u_list and not y_list:
             raise TypeError(
                 "At least one input or output list must be provided."
@@ -660,33 +659,6 @@ class Dataset:
             u_values,
             y_values,
         )
-
-    # def get_dataset(self) -> pd.DataFrame:
-    #     """Return the dataset values in a pandas DataFrame."""
-    #     return self.dataset
-
-    # def get_region_covered(
-    #     self,
-    # ) -> tuple[pd.Series, pd.DataFrame, pd.Series, pd.DataFrame]:
-    #     # TODO :examples
-    #     """Return the dataset coverage in histograms.
-
-    #     Returns
-    #     -------
-    #     input mean:
-    #         Input(s) mean values.
-    #     input covariance matrix:
-    #         Input(s) covariance matrix.
-    #     output mean:
-    #         Outputs(s) mean values.
-    #     output covariance matrix:
-    #         Outputs(s) covariance matrix.
-    #     """
-    #     return self.coverage
-
-    # def get_information_level(self) -> Any:
-    #     """*To be implemented!*"""
-    #     return print("To be implemented!")
 
     def export_to_mat(self, filename: str) -> None:
         """
@@ -767,7 +739,7 @@ class Dataset:
         # Extract dataset
         df = self.dataset
 
-        u_labels, y_labels = self._signals_exist(u_labels, y_labels)
+        u_labels, y_labels = self._validate_signals(u_labels, y_labels)
 
         # Input-output length
         p = len(u_labels)
@@ -866,13 +838,13 @@ class Dataset:
         # Extract dataset
         df = self.dataset
 
-        u_labels, y_labels = self._signals_exist(u_labels, y_labels)
+        u_labels, y_labels = self._validate_signals(u_labels, y_labels)
 
         p = len(u_labels)
         nrows, ncols = factorize(p)  # noqa
         fig_in, axes_in = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
         axes_in = axes_in.flat
-        df["INPUT"].hist(
+        df["INPUT"].loc[:, u_labels].hist(
             grid=True,
             bins=nbins,
             color=line_color_input,
@@ -890,7 +862,7 @@ class Dataset:
             nrows, ncols, sharex=True, squeeze=False
         )
         axes_out = axes_out.flat
-        df["OUTPUT"].hist(
+        df["OUTPUT"].loc[:, y_labels].hist(
             grid=True,
             bins=nbins,
             color=line_color_output,
@@ -926,7 +898,7 @@ class Dataset:
             If the dataset contains *NaN*:s
         """
 
-        u_labels, y_labels = self._signals_exist(u_labels, y_labels)
+        u_labels, y_labels = self._validate_signals(u_labels, y_labels)
 
         # Compute FFT
         Ts = self.dataset.index[1] - self.dataset.index[0]
@@ -1030,7 +1002,7 @@ class Dataset:
             FFT of the dataset.
         """
 
-        u_labels, y_labels = self._signals_exist(u_labels, y_labels)
+        u_labels, y_labels = self._validate_signals(u_labels, y_labels)
         # Input-output length
         p = len(u_labels)
         q = len(y_labels)
@@ -1104,7 +1076,7 @@ class Dataset:
             Otherwise, it return a pandas Dataframe.
         """
         # Arguments validation
-        u_labels, y_labels = self._signals_exist(u_labels, y_labels)
+        u_labels, y_labels = self._validate_signals(u_labels, y_labels)
 
         # Copy the dataframe
         df_temp = deepcopy(self.dataset)
@@ -1180,9 +1152,7 @@ class Dataset:
             y_labels,
             u_list,
             y_list,
-        ) = self._validate_manipulation_functions_args(
-            u_list=u_list, y_list=y_list
-        )
+        ) = self._validate_name_value_tuples(u_list, y_list)
 
         # First adjust the input columns
         if u_list:
@@ -1261,9 +1231,7 @@ class Dataset:
             y_labels,
             u_list,
             y_list,
-        ) = self._validate_manipulation_functions_args(
-            u_list=u_list, y_list=y_list
-        )
+        ) = self._validate_name_value_tuples(u_list, y_list)
 
         # Sampling frequency
         fs = 1 / (self.dataset.index[1] - self.dataset.index[0])
@@ -1392,7 +1360,7 @@ def signals_validation(signal_list: list[Signal]) -> None:
         keys = sig.keys()
         #
         # Existence
-        not_found_keys = list_belonging_check(
+        not_found_keys = difference_lists_of_str(
             list(ALLOWED_KEYS), list(keys)
         )  # noqa
         if not_found_keys:
@@ -1510,10 +1478,14 @@ def dataframe_validation(
     if df.index.size < 2:
         raise IndexError("A signal needs at least two samples.")
     # 5. Check if u_labels and y_labels exist in the passed DataFrame
-    input_not_found = list_belonging_check(u_labels, list(df.columns))  # noqa
+    input_not_found = difference_lists_of_str(
+        u_labels, list(df.columns)
+    )  # noqa
     if input_not_found:
         raise ValueError(f"Input(s) {input_not_found} not found.")
-    output_not_found = list_belonging_check(y_labels, list(df.columns))  # noqa
+    output_not_found = difference_lists_of_str(
+        y_labels, list(df.columns)
+    )  # noqa
     # Check output
     if output_not_found:
         raise ValueError(f"Output(s) {output_not_found} not found.")
@@ -1643,7 +1615,9 @@ def plot_signals(
     signal_names = [sig["name"] for sig in signal_list]
     if u_labels:
         u_labels = str2list(u_labels)  # noqa
-        inputs_not_found = list_belonging_check(u_labels, signal_names)  # noqa
+        inputs_not_found = difference_lists_of_str(
+            u_labels, signal_names
+        )  # noqa
         if inputs_not_found:
             raise KeyError(
                 f"Signal(s) {inputs_not_found} not in the signals list. "
@@ -1651,7 +1625,9 @@ def plot_signals(
             )
     if y_labels:
         y_labels = str2list(y_labels)  # noqa
-        outputs_not_found = list_belonging_check(y_labels, signal_names)  # noqa
+        outputs_not_found = difference_lists_of_str(
+            y_labels, signal_names
+        )  # noqa
         if outputs_not_found:
             raise KeyError(
                 f"Signal(s) {outputs_not_found} not in the signals list. "
@@ -1819,7 +1795,7 @@ def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
         for ii, ds in enumerate(datasets):
             u_labels = None
             y_labels = None
-            u_labels, y_labels = ds._signals_exist(u_labels, y_labels)
+            u_labels, y_labels = ds._validate_signals(u_labels, y_labels)
             p = len(u_labels)
             # Compute FFT
             Ts = ds.dataset.index[1] - ds.dataset.index[0]
@@ -1864,7 +1840,7 @@ def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
         for ii, ds in enumerate(datasets):
             u_labels = None
             y_labels = None
-            u_labels, y_labels = ds._signals_exist(u_labels, y_labels)
+            u_labels, y_labels = ds._validate_signals(u_labels, y_labels)
             q = len(y_labels)
             # Compute FFT
             Ts = ds.dataset.index[1] - ds.dataset.index[0]
