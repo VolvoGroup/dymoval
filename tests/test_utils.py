@@ -85,9 +85,11 @@ class Test_str2list:
 
 
 class Test_open_tutorial:
+    @pytest.mark.open_tutorial
     def test_open_tutorial(self) -> None:
         shell_process, filename = dmv.open_tutorial()
-        # Check that the file exist
+        # Check that the file exist, i.e. during the installation the folder
+        # script was installed in the right place.
         assert os.path.exists(filename)
 
         # keep it open for a while

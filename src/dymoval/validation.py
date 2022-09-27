@@ -294,8 +294,7 @@ class ValidationSession:
         self,
         list_sims: Optional[Union[str, list[str]]] = None,
         *,
-        plot_dataset: Optional[bool] = False,
-        plot_input: Optional[bool] = False,
+        dataset: Optional[Literal["all", "only_out"]] = None,
         line_color_input: Optional[str] = "k",
         linestyle_input: Optional[str] = "-",
         alpha_input: Optional[float] = 1.0,
@@ -303,8 +302,7 @@ class ValidationSession:
         linestyle_output: Optional[str] = "-",
         alpha_output: Optional[float] = 1.0,
         return_figure: Optional[bool] = False,
-        save_figure: Optional[bool] = False,
-        filename: str = "",
+        save_as: str = "",
     ) -> Optional[
         Union[
             tuple[matplotlib.figure.Figure, matplotlib.axes.Axes],
@@ -328,10 +326,12 @@ class ValidationSession:
         ----------
         list_sims:
             List of simulation names.
-        plot_dataset:
-            If *True* it also plot the dataset output used for comparison.
-        plot_input:
-            If true *True* it also plot the input signals of the dataset.
+        dataset:
+            Specify if you want to plot the dataset over the simulations.
+
+            - **all**: include both input and output signals of the dataset.
+            - **only_out**: include only the output signals of the dataset.
+
         line_color_input:
             Line color for the input signals.
         linestyle_input:
@@ -346,12 +346,9 @@ class ValidationSession:
             Alpha channel value for the output signals.
         return_figure:
             If *True* it returns the figure parameters.
-        save_figure:
-            If *True* it save the figure on disk.
-        filename:
-            If *save_figure* is *True*, then this parameter specifies
-            the figure *filename*.
-            You **must** specify the complete *filename*, including the path.
+        save_as:
+            Save the figure with a specified name.
+            You must specify the complete *filename*, including the path.
         """
 
         # ================================================================
@@ -360,6 +357,7 @@ class ValidationSession:
         # check if the sim list is empty
         self._sim_list_validate()
 
+        # Check the passed list of simulations if non-empty.
         if not list_sims:
             list_sims = self.get_simulations_name()
         else:
@@ -376,6 +374,7 @@ class ValidationSession:
         df_val = self.Dataset.dataset
         df_sim = self.simulations_results
         q = len(df_val["OUTPUT"].columns)
+        p = len(df_val["INPUT"].columns)
 
         # ================================================================
         # Start the plot. Note how idx work as a filter to select signals
@@ -383,7 +382,7 @@ class ValidationSession:
         # ================================================================
 
         cmap = plt.get_cmap(COLORMAP)  # noqa
-        nrows, ncols = factorize(q)  # noqa
+        nrows, ncols = factorize(max(p, q))  # noqa
         # Plot the output signals
         fig_out, axes_out = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
         axes_out = axes_out.flat
@@ -396,16 +395,30 @@ class ValidationSession:
                 color=cmap(ii),
                 title="Simulations results.",
             )
-        # plot output dataset if requested
-        if plot_dataset:
+
+        # TODO: from here, additional plots
+        if dataset == "only_out" or dataset == "all":
             df_val.loc[:, ("OUTPUT", df_val["OUTPUT"].columns)].plot(
                 subplots=True,
                 grid=True,
                 color="k",
                 ax=axes_out[0:q],
             )
+
+        if dataset == "all":
+            df_val.loc[:, ("INPUT", df_val["INPUT"].columns)].plot(
+                subplots=True,
+                grid=True,
+                color="gray",
+                ax=axes_out[0:p],
+            )
+        # I would be attempted to raise an error if dataset is a weird string,
+        # but I will not.
+
+        # Plot the last details: x-axis legend
         for ii in range((nrows - 1) * ncols, nrows * ncols):
             axes_out[ii].set_xlabel("Time")
+        # Plot the last details: shade NaN:s areas.
         self.Dataset._shade_output_nans(
             self.Dataset.dataset,
             self.Dataset._nan_intervals,
@@ -414,45 +427,14 @@ class ValidationSession:
             color="k",
         )
         # ===============================================================
-        # Input plot handling.
+        # Save and eventually return figures.
         # ===============================================================
-        if plot_input:
-
-            p = len(df_val["INPUT"].columns)
-
-            nrows, ncols = factorize(p)  # noqa
-            # Plot the output signals
-            fig_in, axes_in = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-            # TODO:If you want to overlap change here.
-            axes_in = axes_in.flat
-            df_val.loc[:, ("INPUT", df_val["INPUT"].columns)].plot(
-                subplots=True,
-                color="k",
-                grid=True,
-                ax=axes_in[0:p],
-                title="Input.",
-            )
-            plt.suptitle("Inputs")
-
-            for ii in range((nrows - 1) * ncols, nrows * ncols):
-                axes_in[ii].set_xlabel("Time")
-            # Shade input nans
-            self.Dataset._shade_input_nans(
-                self.Dataset.dataset,
-                self.Dataset._nan_intervals,
-                axes_in[0:p],
-                list(df_val["INPUT"].columns),
-                color="k",
-            )
-            if save_figure:
-                save_plot_as(fig_in, filename + "_dataset_input")  # noqa
-            if return_figure:
-                return fig_in, axes_in, fig_out, axes_out
-        elif save_figure:
-            save_plot_as(fig_out, filename + "_simulations")  # noqa
-            if return_figure:
-                return fig_out, axes_out
-        return None
+        if save_as:
+            save_plot_as(fig_out, save_as)  # noqa
+        if return_figure:
+            return fig_out, axes_out
+        else:
+            return None
 
     def plot_residuals(
         self,
@@ -460,7 +442,7 @@ class ValidationSession:
         *,
         return_figure: Optional[bool] = False,
         save_figure: Optional[bool] = False,
-        filename: str = "",
+        save_as: str = "",
     ) -> Optional[
         tuple[
             matplotlib.figure.Figure,
@@ -478,13 +460,12 @@ class ValidationSession:
             If empty, all the simulations are plotted.
         return_figure:
             If *True* it returns the figure parameters.
-        save_figure:
-            If *True* it save the figure on disk.
-        filename:
-            If *save_figure* is *True*, then this parameter specifies
-            the figure *filename*.
-            You **must** specify the complete *filename*, including the path.
-
+        save_as:
+            Save both the figures with a specified name.
+            It appends the suffix *_eps_eps* and *_u_eps* to the residuals
+            auto-correlation and to the input-residuals cross-correlation figures,
+            respectively.
+            The *filename* shall include the path.
         Raises
         ------
         KeyError
@@ -555,9 +536,9 @@ class ValidationSession:
                     ax2[ii, jj].legend()
         plt.suptitle("Input-residuals cross-correlation")
 
-        if save_figure:
-            save_plot_as(fig1, filename + "_residuals1")  # noqa
-            save_plot_as(fig1, filename + "_residuals2")  # noqa
+        if save_as:
+            save_plot_as(fig1, save_as + "_eps_eps")  # noqa
+            save_plot_as(fig2, save_as + "_u_eps")  # noqa
         if return_figure:
             return fig1, ax1, fig2, ax2
 

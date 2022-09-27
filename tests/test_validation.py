@@ -5,6 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from .fixture_data import *  # noqa
 import scipy.signal as signal
+import os
 
 
 class TestClassValidationNominal:
@@ -322,7 +323,7 @@ class TestClassValidatioNominal_sim_validation:
 
 class TestPlots:
     @pytest.mark.plot
-    def test_plots(self, good_dataframe: pd.DataFrame) -> None:
+    def test_plots(self, good_dataframe: pd.DataFrame, tmp_path: str) -> None:
         df, u_labels, y_labels, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
@@ -350,31 +351,43 @@ class TestPlots:
         )
         vs.append_simulation(sim2_name, sim2_labels, sim2_values)
 
-        # Test plot
+        # =============================
+        # plot simulations
+        # =============================
         vs.plot_simulations()
         plt.close("all")
 
-        #
-        _ = vs.plot_simulations(plot_input=True, return_figure=True)
+        _ = vs.plot_simulations(dataset="all", return_figure=True)
         plt.close("all")
 
-        # Test plot - conditional
-        vs.plot_simulations("Model 2")
+        # Test plot - filtered
+        vs.plot_simulations("Model 2", dataset="only_out")
         plt.close("all")
 
         # Test plot - all the options
-        vs.plot_simulations(["Model 1", "Model 2"], plot_dataset=True, plot_input=True)
+        vs.plot_simulations(["Model 1", "Model 2"], dataset="all")
         plt.close("all")
 
-        # Test plot - conditional wrong
+        # =============================
+        # save simulations
+        # =============================
+        tmp_path_str = str(tmp_path)
+        filename = tmp_path_str + "/potato"
+        vs.plot_simulations(save_as=filename)
+        assert os.path.exists(filename + ".png")
+        # =============================
+        # plot simulations raises
+        # =============================
+        # Test plot - filtered wrong
         with pytest.raises(KeyError):
             vs.plot_simulations("potato")
-        # Test plot - conditional wrong
+        # Test plot - filtered wrong
         vs.clear()
         with pytest.raises(KeyError):
             vs.plot_simulations()
         with pytest.raises(KeyError):
             vs.plot_simulations("potato")
+
         # =============================
         # plot residuals
         # =============================
@@ -388,6 +401,14 @@ class TestPlots:
         plt.close("all")
         _ = vs.plot_residuals(["Model 1", "Model 2"], return_figure=True)
         plt.close("all")
+        # =============================
+        # save residuals
+        # =============================
+        tmp_path_str = str(tmp_path)
+        filename = tmp_path_str + "/potato"
+        vs.plot_residuals(save_as=filename)
+        assert os.path.exists(filename + "_eps_eps.png")
+        assert os.path.exists(filename + "_u_eps.png")
 
         # =============================
         # plot residuals raises
