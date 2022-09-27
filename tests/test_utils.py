@@ -9,12 +9,13 @@ import pytest
 import dymoval as dmv
 from .fixture_data import *  # noqa
 
-import time
+# import time
 from typing import Union
 import os
-import sys
-import subprocess
-import psutil
+
+# import sys
+# import subprocess
+# import psutil
 
 
 class Test_difference_lists_of_str:
@@ -93,10 +94,7 @@ class Test_open_tutorial:
         # time.sleep(5)
 
         # # Check that it opens and then kill the associated process
-        # if sys.platform == "win32":
-        #     parent = psutil.Process(shell_process.pid)
-        # else:
-        #     parent = psutil.Process(shell_process)
+        # parent = psutil.Process(shell_process.pid)
         # while parent.children() == []:
         #     continue
         # children = parent.children()
