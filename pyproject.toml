@@ -97,7 +97,7 @@ exclude = ["scripts", "docs"]
 
 # mypy
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
 disallow_untyped_defs = true
 show_error_codes = true
 no_implicit_optional = true
