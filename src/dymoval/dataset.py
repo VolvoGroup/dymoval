@@ -1295,7 +1295,7 @@ def signals_validation(signal_list: list[Signal]) -> None:
     if len(signal_names) > len(set(signal_names)):
         raise ValueError("Signal names are not unique")
     #
-    ALLOWED_KEYS = Signal.__required_keys__  # type:ignore
+    ALLOWED_KEYS = Signal.__required_keys__  # type: ignore
     for sig in signal_list:
         keys = sig.keys()
         #

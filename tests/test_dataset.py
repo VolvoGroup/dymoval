@@ -11,7 +11,7 @@ import random
 from matplotlib import pyplot as plt
 
 
-class TestdatasetNominal:
+class Test_Dataset_nominal:
     def test_init(self, good_dataframe: pd.DataFrame) -> None:
         # Check if the passed dataset DataFrame is correctly stored as class attribute.
         # Nominal data
@@ -512,7 +512,7 @@ class Test_Dataset_raise:
             ds.remove_offset()
 
 
-class TestDatasetPlots:
+class Test_Dataset_plots:
     @pytest.mark.plot
     def test_plot_nominal(
         self,
@@ -665,7 +665,7 @@ class Test_plot_Signal:
             dmv.plot_signals(signal_list, input_signal_names, bad_output_signal_name)
 
 
-class TestSignalValidation:
+class Test_Signal_validation:
     def test_name_unicity(self, good_signals: list[Signal]) -> None:
         # Nominal values
         signal_list, _, _, _ = good_signals
@@ -739,7 +739,7 @@ class TestSignalValidation:
             dmv.signals_validation(signal_list)
 
 
-class TestDataframeValidation:
+class Test_Dataframe_validation:
     def test_there_is_at_least_one_in_and_one_out(
         self, good_dataframe: pd.DataFrame
     ) -> None:
@@ -830,7 +830,7 @@ class TestDataframeValidation:
             dmv.dataframe_validation(df, u_labels, y_labels)
 
 
-class TestFixSamplingPeriod:
+class Test_fix_sampling_periods:
     def test_excluded_signals_no_args(self, good_signals: list[Signal]) -> None:
         # Nominal values
         (
