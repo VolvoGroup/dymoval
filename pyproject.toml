@@ -120,4 +120,6 @@ module = [
 # pytest
 [tool.pytest.ini_options]
 norecursedirs = ["scripts"] # Exclude folders
-
+markers = [
+    "plot: marks tests as slow (deselect with '-m \"not plot\"')",
+]

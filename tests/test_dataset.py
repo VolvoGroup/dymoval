@@ -95,7 +95,6 @@ class TestdatasetNominal:
         # Expected value.
         # If you remove a mean from a signa, then the mean of the reminder
         # signal must be zero.
-        expected_mean = 0.0
 
         # Actual value
         name_ds = "my_dataset"
@@ -187,18 +186,14 @@ class TestdatasetNominal:
             name_ds, df, u_labels, y_labels, full_time_interval=True
         )
         # Function call
-        df_actual = ds.remove_offset(
-            u_list=u_list[fixture], y_list=y_list[fixture]
-        )
+        df_actual = ds.remove_offset(u_list=u_list[fixture], y_list=y_list[fixture])
 
         # Assert
         assert np.allclose(df_actual, df_expected)
         # Assert that the internally stored dataset is not overwritten
         assert np.allclose(ds.dataset, df)
         # Test inplace = True
-        ds.remove_offset(
-            u_list=u_list[fixture], y_list=y_list[fixture], inplace=True
-        )
+        ds.remove_offset(u_list=u_list[fixture], y_list=y_list[fixture], inplace=True)
         assert np.allclose(df_actual, ds.dataset)
 
     def test_remove_offset_only_input(
@@ -218,9 +213,7 @@ class TestdatasetNominal:
         N = len(df.index)
         idx = np.linspace(0, df.index[-1], N)
         if fixture == "SISO":
-            values = np.hstack(
-                (-1.0 * np.ones((N, 1)), np.ones((N, 1)))
-            )  # Expected
+            values = np.hstack((-1.0 * np.ones((N, 1)), np.ones((N, 1))))  # Expected
             df_expected = pd.DataFrame(
                 index=idx, columns=[u_labels, y_labels], data=values
             )
@@ -237,9 +230,7 @@ class TestdatasetNominal:
             )
             df_expected.index.name = "Time (s)"
         if fixture == "MISO":
-            values = np.hstack(
-                (-1.0 * np.ones((N, 3)), np.ones((N, 1)))
-            )  # Expected
+            values = np.hstack((-1.0 * np.ones((N, 3)), np.ones((N, 1))))  # Expected
             df_expected = pd.DataFrame(
                 index=idx, columns=[*u_labels, y_labels], data=values
             )
@@ -290,9 +281,7 @@ class TestdatasetNominal:
         N = len(df.index)
         idx = np.linspace(0, df.index[-1], N)
         if fixture == "SISO":
-            values = np.hstack(
-                (np.ones((N, 1)), -1.0 * np.ones((N, 1)))
-            )  # Expected
+            values = np.hstack((np.ones((N, 1)), -1.0 * np.ones((N, 1))))  # Expected
             df_expected = pd.DataFrame(
                 index=idx, columns=[u_labels, y_labels], data=values
             )
@@ -311,9 +300,7 @@ class TestdatasetNominal:
             )
             df_expected.index.name = "Time (s)"
         if fixture == "MISO":
-            values = np.hstack(
-                (np.ones((N, 3)), -1.0 * np.ones((N, 1)))
-            )  # Expected
+            values = np.hstack((np.ones((N, 3)), -1.0 * np.ones((N, 1))))  # Expected
             df_expected = pd.DataFrame(
                 index=idx, columns=[*u_labels, y_labels], data=values
             )
@@ -526,22 +513,25 @@ class Test_Dataset_raise:
 
 
 class TestDatasetPlots:
-    def test_Dataset_plots(self, sine_dataframe: pd.DataFrame) -> None:
-        df, u_labels, y_labels, fixture = sine_dataframe
+    @pytest.mark.plot
+    def test_plot_nominal(
+        self,
+        good_signals: list[Signal],
+    ) -> None:
+        # You should just get a plot.
+        signal_list, u_labels, y_labels, fixture = good_signals
 
-        # Actua value
-        name_ds = "my_dataset"
+        # Actual value
         ds = dmv.dataset.Dataset(
-            name_ds,
-            df,
+            "my_dataset",
+            signal_list,
             u_labels,
             y_labels,
             overlap=True,
             full_time_interval=True,
         )
 
-        # A is definined for tricking flake8.
-        # If you remove it the pipeline for windows will not build.
+        # Act
         _ = ds.plot(return_figure=True)
         plt.close("all")
 
@@ -574,6 +564,28 @@ class TestDatasetPlots:
         _ = ds.plot_coverage(return_figure=True)
         plt.close("all")
 
+        # Given that you have NaN:s you cannot plot the amplitude.
+        with pytest.raises(ValueError):
+            _ = ds.plot_amplitude_spectrum(return_figure=True, overlap=True)
+
+    @pytest.mark.plot
+    def test_plot_amplitude_spectrum(self, good_dataframe: pd.DataFrame) -> None:
+        # You should just get a plot.
+        df, u_labels, y_labels, fixture = good_dataframe
+
+        # Actua value
+        name_ds = "my_dataset"
+        ds = dmv.dataset.Dataset(
+            name_ds,
+            df,
+            u_labels,
+            y_labels,
+            overlap=True,
+            full_time_interval=True,
+        )
+
+        # This is only valid if ds does not contain NaN:s, i.e.
+        # it is good_dataframe.
         ds.plot_amplitude_spectrum()
         plt.close("all")
 
@@ -582,6 +594,7 @@ class TestDatasetPlots:
 
 
 class Test_plot_Signal:
+    @pytest.mark.plot
     def test_plot_nominal(self, good_signals: list[Signal]) -> None:
         # You should just get a plot.
         signal_list, u_labels, y_labels, fixture = good_signals
@@ -603,6 +616,7 @@ class Test_plot_Signal:
         dmv.plot_signals(signal_list, u_labels)
         plt.close("all")
 
+    @pytest.mark.plot
     def test_plot_raise(self, good_signals: list[Signal]) -> None:
         # Nominal values
         signal_list, u_labels, y_labels, fixture = good_signals
@@ -628,6 +642,7 @@ class Test_plot_Signal:
         with pytest.raises(KeyError):
             dmv.plot_signals(signal_list, u_labels_test, y_labels_test)
 
+    @pytest.mark.plot
     def test_plot_raise_more(self, good_signals: list[Signal]) -> None:
         # Nominal data
         (
@@ -643,15 +658,11 @@ class Test_plot_Signal:
 
         # Assert in error
         with pytest.raises(KeyError):
-            dmv.plot_signals(
-                signal_list, bad_input_signal_name, output_signal_names
-            )
+            dmv.plot_signals(signal_list, bad_input_signal_name, output_signal_names)
 
         # Assert in error
         with pytest.raises(KeyError):
-            dmv.plot_signals(
-                signal_list, input_signal_names, bad_output_signal_name
-            )
+            dmv.plot_signals(signal_list, input_signal_names, bad_output_signal_name)
 
 
 class TestSignalValidation:
@@ -757,9 +768,7 @@ class TestDataframeValidation:
         with pytest.raises(ValueError):
             dmv.dataframe_validation(df, u_labels_test, y_labels_test)
 
-    def test_input_or_output_not_found(
-        self, good_dataframe: pd.DataFrame
-    ) -> None:
+    def test_input_or_output_not_found(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal values
         df, u_labels, y_labels, fixture = good_dataframe
         u_labels_test = u_labels
@@ -773,9 +782,7 @@ class TestDataframeValidation:
         with pytest.raises(ValueError):
             dmv.dataframe_validation(df, u_labels_test, y_labels)
 
-    def test_dataframe_one_level_indices(
-        self, good_dataframe: pd.DataFrame
-    ) -> None:
+    def test_dataframe_one_level_indices(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal values
         df, u_labels, y_labels, _ = good_dataframe
         df_test = df
@@ -787,18 +794,14 @@ class TestDataframeValidation:
         with pytest.raises(IndexError):
             dmv.dataframe_validation(df_test, u_labels, y_labels)
 
-    def test_at_least_two_samples_per_signal(
-        self, good_dataframe: pd.DataFrame
-    ) -> None:
+    def test_at_least_two_samples_per_signal(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal values
         df, u_labels, y_labels, _ = good_dataframe
         df_test = df.head(1)
         with pytest.raises(IndexError):
             dmv.dataframe_validation(df_test, u_labels, y_labels)
 
-    def test_labels_exist_in_dataframe(
-        self, good_dataframe: pd.DataFrame
-    ) -> None:
+    def test_labels_exist_in_dataframe(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal values
         df, u_labels, y_labels, fixture = good_dataframe
         if fixture == "SISO":
@@ -859,9 +862,7 @@ class TestFixSamplingPeriod:
         ]
 
         # Assert
-        actual_resampled, actual_excluded = dmv.fix_sampling_periods(
-            signal_list
-        )
+        actual_resampled, actual_excluded = dmv.fix_sampling_periods(signal_list)
         actual_resampled = [s["name"] for s in actual_resampled]
         assert sorted(actual_excluded) == sorted(expected_excluded)
         assert sorted(actual_resampled) == sorted(expected_resampled)
@@ -922,9 +923,7 @@ class TestFixSamplingPeriod:
         signal_list, _, _, _ = good_signals
 
         with pytest.raises(ValueError):
-            dmv.fix_sampling_periods(
-                signal_list, target_sampling_period="potato"
-            )
+            dmv.fix_sampling_periods(signal_list, target_sampling_period="potato")
 
         with pytest.raises(ValueError):
             dmv.fix_sampling_periods(signal_list, target_sampling_period=-0.6)

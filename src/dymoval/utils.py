@@ -5,8 +5,7 @@ import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
 import scipy.signal as signal  # noqa
-from typing import Union
-import os
+from typing import Union, Any
 import sys
 import subprocess
 
@@ -46,9 +45,7 @@ def difference_lists_of_str(
     elements_not_found = set()
     if not A_set.issubset(B_set):
         elements_found = B_set & A_set  # Set intersection
-        elements_not_found = (
-            A_set - elements_found
-        )  # Elements in A but not in B
+        elements_not_found = A_set - elements_found  # Elements in A but not in B
     return list(elements_not_found)
 
 
@@ -79,21 +76,20 @@ def save_plot_as(fig: matplotlib.figure.Figure, name: str) -> None:
         Figure filename.
     """
     if not name:
-        raise Exception(
-            "You must specify a filename for the figure you want to save."
-        )
+        raise Exception("You must specify a filename for the figure you want to save.")
     fig.tight_layout()
     fig.savefig(name)
     plt.close()
 
 
-def open_tutorial() -> None:
-    """Test"""
+def open_tutorial() -> tuple[Any, Any]:
+    """Open *Dymoval* tutorial."""
     site_packages = next(p for p in sys.path if "site-packages" in p)
     if sys.platform == "win32":
         filename = "\\dymoval\\scripts\\tutorial.py"
-        os.startfile(site_packages + filename)
+        shell_process = subprocess.Popen([site_packages + filename], shell=True)
     else:
         filename = "/dymoval/scripts/tutorial.py"
         opener = "open" if sys.platform == "darwin" else "xdg-open"
-        subprocess.call([opener, site_packages + filename])
+        shell_process = subprocess.call([opener, site_packages + filename])
+    return shell_process, site_packages + filename

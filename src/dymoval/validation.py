@@ -99,8 +99,7 @@ def rsquared(x: np.ndarray, y: np.ndarray) -> float:
     # Compute r-square fit (%)
     x_mean = np.mean(x, axis=0)
     r2 = np.round(
-        (1.0 - np.linalg.norm(eps) ** 2 / np.linalg.norm(x - x_mean) ** 2)
-        * 100,
+        (1.0 - np.linalg.norm(eps) ** 2 / np.linalg.norm(x - x_mean) ** 2) * 100,
         NUM_DECIMALS,  # noqa
     )
     return r2  # type: ignore
@@ -151,9 +150,7 @@ def xcorr_norm(
     R_matrix = np.zeros((nrows, ncols))
     for ii in range(nrows):
         for jj in range(ncols):
-            R_matrix[ii, jj] = np.linalg.norm(R[:, ii, jj], l_norm) / len(
-                R[:, ii, jj]
-            )
+            R_matrix[ii, jj] = np.linalg.norm(R[:, ii, jj], l_norm) / len(R[:, ii, jj])
     R_norm = np.linalg.norm(R_matrix, matrix_norm)
     return R_norm  # type: ignore
 
@@ -190,22 +187,20 @@ class ValidationSession:
         )  #: The appended simulation results.
 
         self.auto_correlation: dict[str, XCorrelation] = {}
-        """The auto-correlation tensors. 
-        This attribute is automatically set 
+        """The auto-correlation tensors.
+        This attribute is automatically set
         and it should be considered as a *read-only* attribute."""
 
         self.cross_correlation: dict[str, XCorrelation] = {}
-        """The cross-correlation tensors. 
-        This attribute is automatically set 
+        """The cross-correlation tensors.
+        This attribute is automatically set
         and it should be considered as a *read-only* attribute."""
 
         # Initialize validation results DataFrame.
         idx = ["r-square (%)", "Residuals Auto-corr", "Input-Res. Cross-corr"]
-        self.validation_results: pd.DataFrame = pd.DataFrame(
-            index=idx, columns=[]
-        )
-        """The validation results. 
-        This attribute is automatically set 
+        self.validation_results: pd.DataFrame = pd.DataFrame(index=idx, columns=[])
+        """The validation results.
+        This attribute is automatically set
         and it should be considered as a *read-only* attribute."""
 
     def _append_correlations_tensors(self, sim_name: str) -> None:
@@ -256,7 +251,7 @@ class ValidationSession:
 
         self.validation_results[sim_name] = [r2, Ree_norm, Rue_norm]
 
-    def check_if_sim_list_is_empty(self) -> None:
+    def _sim_list_validate(self) -> None:
         if not self.get_simulations_name():
             raise KeyError(
                 "The simulations list looks empty. "
@@ -278,18 +273,14 @@ class ValidationSession:
                 "HINT: check the loaded simulations names with"
                 "'get_simulations_names()' method."
             )
-        if len(set(y_labels)) != len(
-            set(self.Dataset.dataset["OUTPUT"].columns)
-        ):
+        if len(set(y_labels)) != len(set(self.Dataset.dataset["OUTPUT"].columns)):
             raise IndexError(
                 "The number of outputs of your simulation must be equal to "
                 "the number of outputs in the dataset AND "
                 "the name of each simulation output shall be unique."
             )
         if not isinstance(y_data, np.ndarray):
-            raise ValueError(
-                "The type the input signal values must be a numpy ndarray."
-            )
+            raise ValueError("The type the input signal values must be a numpy ndarray.")
         if len(y_labels) not in y_data.shape:
             raise IndexError(
                 "The number of labels and the number of signals must be the same."
@@ -367,7 +358,7 @@ class ValidationSession:
         # Validate and arange the plot setup.
         # ================================================================
         # check if the sim list is empty
-        self.check_if_sim_list_is_empty()
+        self._sim_list_validate()
 
         if not list_sims:
             list_sims = self.get_simulations_name()
@@ -394,9 +385,7 @@ class ValidationSession:
         cmap = plt.get_cmap(COLORMAP)  # noqa
         nrows, ncols = factorize(q)  # noqa
         # Plot the output signals
-        fig_out, axes_out = plt.subplots(
-            nrows, ncols, sharex=True, squeeze=False
-        )
+        fig_out, axes_out = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
         axes_out = axes_out.flat
         for ii, sim_name in enumerate(list_sims):
             # Scan simulation names.
@@ -433,9 +422,7 @@ class ValidationSession:
 
             nrows, ncols = factorize(p)  # noqa
             # Plot the output signals
-            fig_in, axes_in = plt.subplots(
-                nrows, ncols, sharex=True, squeeze=False
-            )
+            fig_in, axes_in = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
             # TODO:If you want to overlap change here.
             axes_in = axes_in.flat
             df_val.loc[:, ("INPUT", df_val["INPUT"].columns)].plot(
@@ -503,7 +490,7 @@ class ValidationSession:
             If the simulation list is empty.
         """
         # Check if you have any simulation available
-        self.check_if_sim_list_is_empty()
+        self._sim_list_validate()
         if not list_sims:
             list_sims = self.get_simulations_name()
         else:
@@ -544,9 +531,7 @@ class ValidationSession:
                     )
                     ax1[ii, jj].grid(True)
                     ax1[ii, jj].set_xlabel("Lags")
-                    ax1[ii, jj].set_title(
-                        rf"$\hat r_{{\epsilon_{ii}\epsilon_{jj}}}$"
-                    )
+                    ax1[ii, jj].set_title(rf"$\hat r_{{\epsilon_{ii}\epsilon_{jj}}}$")
                     ax1[ii, jj].legend()
         plt.suptitle("Residuals auto-correlation")
 
@@ -577,9 +562,7 @@ class ValidationSession:
 
         return None
 
-    def get_simulation_signals_list(
-        self, sim_name: Union[str, list[str]]
-    ) -> list[str]:
+    def get_simulation_signals_list(self, sim_name: Union[str, list[str]]) -> list[str]:
         """
         Return the signal name list of a given simulation result.
 
@@ -593,13 +576,8 @@ class ValidationSession:
         KeyError
             If the simulation is not in the simulation list.
         """
-        self.check_if_sim_list_is_empty()
+        self._sim_list_validate()
         return list(self.simulations_results[sim_name].columns)
-
-    def get_validation_metrics(self) -> pd.DataFrame:
-        """Return the validation metrics of all the stored simulation names."""
-        self.check_if_sim_list_is_empty()
-        return self.validation_results
 
     def get_simulations_name(self) -> list[str]:
         """Return a list of names of the stored simulations."""
@@ -668,7 +646,7 @@ class ValidationSession:
         ValueError
             If the simulation name is not found.
         """
-        self.check_if_sim_list_is_empty()
+        self._sim_list_validate()
 
         for sim_name in args:
             if sim_name not in self.get_simulations_name():

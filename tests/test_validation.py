@@ -44,9 +44,7 @@ class TestClassValidationNominal:
         sim1_labels = ["my_y1", "my_y2"]  # The fixture has two outputs
         if fixture == "SISO" or fixture == "MISO":
             sim1_labels = [sim1_labels[0]]
-        sim1_values = np.random.rand(
-            len(df.iloc[:, 0].values), len(sim1_labels)
-        )
+        sim1_values = np.random.rand(len(df.iloc[:, 0].values), len(sim1_labels))
 
         vs.append_simulation(sim1_name, sim1_labels, sim1_values)
         # At least the names are there...
@@ -135,9 +133,7 @@ class TestClassValidationNominal:
         sim1_labels = ["my_y1", "my_y2"]  # The fixture has two outputs
         if fixture == "SISO" or fixture == "MISO":
             sim1_labels = [sim1_labels[0]]
-        sim1_values = np.random.rand(
-            len(df.iloc[:, 0].values), len(sim1_labels)
-        )
+        sim1_values = np.random.rand(len(df.iloc[:, 0].values), len(sim1_labels))
 
         # Same sim nmane
         vs.append_simulation(sim1_name, sim1_labels, sim1_values)
@@ -162,9 +158,7 @@ class TestClassValidatioNominal_sim_validation:
         sim1_labels = ["my_y1", "my_y2"]  # The fixture has two outputs
         if fixture == "SISO" or fixture == "MISO":
             sim1_labels = [sim1_labels[0]]
-        sim1_values = np.random.rand(
-            len(df.iloc[:, 0].values), len(sim1_labels)
-        )
+        sim1_values = np.random.rand(len(df.iloc[:, 0].values), len(sim1_labels))
 
         # Same sim nmane
         vs.append_simulation(sim1_name, sim1_labels, sim1_values)
@@ -188,9 +182,7 @@ class TestClassValidatioNominal_sim_validation:
             "my_y2",
             "potato",
         ]  # The fixture has two outputs
-        sim1_values = np.random.rand(
-            len(df.iloc[:, 0].values), len(sim1_labels)
-        )
+        sim1_values = np.random.rand(len(df.iloc[:, 0].values), len(sim1_labels))
 
         # Same sim nmane
         with pytest.raises(IndexError):
@@ -211,18 +203,14 @@ class TestClassValidatioNominal_sim_validation:
         sim1_labels = ["my_y1", "my_y1"]  # The fixture has two outputs
         if fixture == "SISO" or fixture == "MISO":
             sim1_labels = [sim1_labels[0]]
-        sim1_values = np.random.rand(
-            len(df.iloc[:, 0].values), len(sim1_labels)
-        )
+        sim1_values = np.random.rand(len(df.iloc[:, 0].values), len(sim1_labels))
 
         # Same sim nmane
         if fixture == "SIMO" or fixture == "MIMO":
             with pytest.raises(ValueError):
                 vs.append_simulation(sim1_name, sim1_labels, sim1_values)
 
-    def test_mismatch_labels_values_raise(
-        self, good_dataframe: pd.DataFrame
-    ) -> None:
+    def test_mismatch_labels_values_raise(self, good_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
@@ -237,9 +225,7 @@ class TestClassValidatioNominal_sim_validation:
         sim1_labels = ["my_y1", "my_y2"]  # The fixture has two outputs
         if fixture == "SISO" or fixture == "MISO":
             sim1_labels = [sim1_labels[0]]
-        sim1_values = np.random.rand(
-            len(df.iloc[:, 0].values), len(sim1_labels) + 1
-        )
+        sim1_values = np.random.rand(len(df.iloc[:, 0].values), len(sim1_labels) + 1)
 
         # Same sim nmane
         with pytest.raises(IndexError):
@@ -260,17 +246,13 @@ class TestClassValidatioNominal_sim_validation:
         sim1_labels = ["my_y1", "my_y2"]  # The fixture has two outputs
         if fixture == "SISO" or fixture == "MISO":
             sim1_labels = [sim1_labels[0]]
-        sim1_values = np.random.rand(
-            len(df.iloc[:, 0].values) + 1, len(sim1_labels) + 1
-        )
+        sim1_values = np.random.rand(len(df.iloc[:, 0].values) + 1, len(sim1_labels) + 1)
 
         # Same sim nmane
         with pytest.raises(IndexError):
             vs.append_simulation(sim1_name, sim1_labels, sim1_values)
 
-    def test_values_not_ndarray_raise(
-        self, good_dataframe: pd.DataFrame
-    ) -> None:
+    def test_values_not_ndarray_raise(self, good_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
@@ -330,9 +312,7 @@ class TestClassValidatioNominal_sim_validation:
         sim1_labels = ["my_y1", "my_y2"]  # The fixture has two outputs
         if fixture == "SISO" or fixture == "MISO":
             sim1_labels = [sim1_labels[0]]
-        sim1_values = np.random.rand(
-            len(df.iloc[:, 0].values), len(sim1_labels)
-        )
+        sim1_values = np.random.rand(len(df.iloc[:, 0].values), len(sim1_labels))
 
         vs.append_simulation(sim1_name, sim1_labels, sim1_values)
 
@@ -341,6 +321,7 @@ class TestClassValidatioNominal_sim_validation:
 
 
 class TestPlots:
+    @pytest.mark.plot
     def test_plots(self, good_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = good_dataframe
         name_ds = "my_dataset"
@@ -356,9 +337,7 @@ class TestPlots:
         sim1_labels = ["my_y1", "my_y2"]  # The fixture has two outputs
         if fixture == "SISO" or fixture == "MISO":
             sim1_labels = [sim1_labels[0]]
-        sim1_values = np.random.rand(
-            len(df.iloc[:, 0].values), len(sim1_labels)
-        )
+        sim1_values = np.random.rand(len(df.iloc[:, 0].values), len(sim1_labels))
         vs.append_simulation(sim1_name, sim1_labels, sim1_values)
 
         # Add a second
@@ -384,9 +363,7 @@ class TestPlots:
         plt.close("all")
 
         # Test plot - all the options
-        vs.plot_simulations(
-            ["Model 1", "Model 2"], plot_dataset=True, plot_input=True
-        )
+        vs.plot_simulations(["Model 1", "Model 2"], plot_dataset=True, plot_input=True)
         plt.close("all")
 
         # Test plot - conditional wrong
