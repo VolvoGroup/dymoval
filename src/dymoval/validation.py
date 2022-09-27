@@ -350,7 +350,8 @@ class ValidationSession:
             If *True* it save the figure on disk.
         filename:
             If *save_figure* is *True*, then this parameter specifies
-            the figure filename.
+            the figure *filename*.
+            You **must** specify the complete *filename*, including the path.
         """
 
         # ================================================================
@@ -481,7 +482,8 @@ class ValidationSession:
             If *True* it save the figure on disk.
         filename:
             If *save_figure* is *True*, then this parameter specifies
-            the figure filename.
+            the figure *filename*.
+            You **must** specify the complete *filename*, including the path.
 
         Raises
         ------

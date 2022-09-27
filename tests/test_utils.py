@@ -12,7 +12,7 @@ from .fixture_data import *  # noqa
 import time
 from typing import Union
 import os
-
+import sys
 import subprocess
 import psutil
 
@@ -93,7 +93,10 @@ class Test_open_tutorial:
         time.sleep(5)
 
         # Check that it opens and then kill the associated process
-        parent = psutil.Process(shell_process.pid)
+        if sys.platform == "win32":
+            parent = psutil.Process(shell_process.pid)
+        else:
+            parent = psutil.Process(shell_process)
         while parent.children() == []:
             continue
         children = parent.children()
