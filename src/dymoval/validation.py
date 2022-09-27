@@ -1,4 +1,3 @@
-# mypy: disable_error_code = ["name-defined"]
 # mypy: show_error_codes
 """Module containing everything related to validation."""
 

@@ -1,6 +1,5 @@
 # The following are only for Spyder, otherwise things are written in
 # the pyproject.toml
-# mypy: disable_error_code = ["name-defined"]
 # mypy: show_error_codes
 """Module containing everything related to datasets.
 Here are defined special datatypes, classes and auxiliary functions to deal with datasets.
@@ -1295,7 +1294,7 @@ def signals_validation(signal_list: list[Signal]) -> None:
     if len(signal_names) > len(set(signal_names)):
         raise ValueError("Signal names are not unique")
     #
-    ALLOWED_KEYS = Signal.__required_keys__  # type: ignore
+    ALLOWED_KEYS = Signal.__required_keys__
     for sig in signal_list:
         keys = sig.keys()
         #
