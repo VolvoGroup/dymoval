@@ -25,6 +25,7 @@ dependencies = [
 "mypy",
 "black",
 "coverage"
+"psutil"
 ]
 
 # Other metadata
