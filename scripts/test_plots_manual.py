@@ -23,7 +23,7 @@ fixture_type = "SISO"
 nan_thing = np.empty(200)
 nan_thing[:] = np.NaN
 
-input_signal_names = [("u1", "s"), ("u2", "Kg"), ("u3", "m/s")]
+input_signal_names = ["u1", "u2", "u3"]
 input_sampling_periods = [0.01, 0.1, 0.1]
 input_signal_values = [
     np.hstack((np.random.rand(50), nan_thing, np.random.rand(400), nan_thing)),
