@@ -24,7 +24,7 @@ dependencies = [
 "flake8",
 "mypy",
 "black",
-"coverage"
+"coverage",
 "psutil"
 ]
 
