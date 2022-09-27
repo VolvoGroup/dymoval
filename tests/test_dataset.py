@@ -9,6 +9,7 @@ from dymoval import NUM_DECIMALS
 from typing import Any
 import random
 from matplotlib import pyplot as plt
+import os
 
 
 class Test_Dataset_nominal:
@@ -93,7 +94,7 @@ class Test_Dataset_nominal:
         df, u_labels, y_labels, fixture = sine_dataframe
 
         # Expected value.
-        # If you remove a mean from a signa, then the mean of the reminder
+        # If you remove a mean from a signal, then the mean of the reminder
         # signal must be zero.
 
         # Actual value
@@ -102,17 +103,17 @@ class Test_Dataset_nominal:
             name_ds, df, u_labels, y_labels, full_time_interval=True
         )
         # You should get a dataframe with zero mean.
-        # Stored dataframe shall be left unchanged.
-        df_zero_mean = ds.remove_means()
+        # Stored dataframe shall be left unchanged since inplace = False
+        df_expected = ds.remove_means()
 
-        # Lets see if it is true
-        assert np.allclose(df_zero_mean.droplevel(0, axis=1).mean(), 0.0)
+        # Lets see if it is true (the mean of a signal with removed mean is 0.0)
+        assert np.allclose(df_expected.droplevel(0, axis=1).mean(), 0.0)
 
         # Lets check that the stored DataFrame has not been changed (inplace=False)
         df_actual = ds.dataset.droplevel(0, axis=1)
         assert np.allclose(df_actual.to_numpy(), df.to_numpy())
 
-        # inplace test
+        # inplace = True test
         ds.remove_means(inplace=True)
         # Lets see if it is also true
         assert np.allclose(ds.dataset.droplevel(0, axis=1).mean(), 0.0)
@@ -185,7 +186,7 @@ class Test_Dataset_nominal:
         ds = dmv.dataset.Dataset(
             name_ds, df, u_labels, y_labels, full_time_interval=True
         )
-        # Function call
+        # Function call with inplace = False
         df_actual = ds.remove_offset(u_list=u_list[fixture], y_list=y_list[fixture])
 
         # Assert
@@ -514,10 +515,7 @@ class Test_Dataset_raise:
 
 class Test_Dataset_plots:
     @pytest.mark.plot
-    def test_plot_nominal(
-        self,
-        good_signals: list[Signal],
-    ) -> None:
+    def test_plot_nominal(self, good_signals: list[Signal], tmp_path: str) -> None:
         # You should just get a plot.
         signal_list, u_labels, y_labels, fixture = good_signals
 
@@ -532,6 +530,9 @@ class Test_Dataset_plots:
         )
 
         # Act
+        # =============================
+        # plot
+        # =============================
         _ = ds.plot(return_figure=True)
         plt.close("all")
 
@@ -548,28 +549,44 @@ class Test_Dataset_plots:
         ds.plot(overlap=True)
         plt.close("all")
 
+        # save on disk
+        tmp_path_str = str(tmp_path)
+        filename = tmp_path_str + "/potato"
+        ds.plot(save_as=filename)
+        assert os.path.exists(filename + ".png")
+
+        # =============================
+        # plot_coverage
+        # =============================
         ds.plot_coverage()
         plt.close("all")
 
-        _ = ds.plot_coverage(u_labels="u1", return_figure=True)
+        _ = ds.plot_coverage(u_labels="u1")
         plt.close("all")
 
         if fixture == "MIMO":
             ds.plot_coverage(u_labels=["u1", "u2"], y_labels=["y1", "y2"])
             plt.close("all")
+            ds.plot_coverage(u_labels=["u1", "u2"], y_labels="y1")
+            plt.close("all")
 
-        _ = ds.plot_coverage(y_labels="y1", return_figure=True)
+        _ = ds.plot_coverage(y_labels="y1")
         plt.close("all")
 
         _ = ds.plot_coverage(return_figure=True)
         plt.close("all")
 
-        # Given that you have NaN:s you cannot plot the amplitude.
-        with pytest.raises(ValueError):
-            _ = ds.plot_amplitude_spectrum(return_figure=True, overlap=True)
+        # save on disk
+        tmp_path_str = str(tmp_path)
+        filename = tmp_path_str + "/potato"
+        ds.plot_coverage(save_as=filename)
+        assert os.path.exists(filename + "_in.png")
+        assert os.path.exists(filename + "_out.png")
 
     @pytest.mark.plot
-    def test_plot_amplitude_spectrum(self, good_dataframe: pd.DataFrame) -> None:
+    def test_plot_amplitude_spectrum(
+        self, good_dataframe: pd.DataFrame, good_signals: list[Signal], tmp_path: str
+    ) -> None:
         # You should just get a plot.
         df, u_labels, y_labels, fixture = good_dataframe
 
@@ -591,6 +608,30 @@ class Test_Dataset_plots:
 
         _ = ds.plot_amplitude_spectrum(return_figure=True, overlap=True)
         plt.close("all")
+
+        # save on disk
+        tmp_path_str = str(tmp_path)
+        filename = tmp_path_str + "/potato"
+        ds.plot_amplitude_spectrum(save_as=filename)
+        assert os.path.exists(filename + ".png")
+
+        # ======= If NaN:s raise =====================
+        # good_signals have some NaN:s
+        df, u_labels, y_labels, fixture = good_signals
+
+        # Actua value
+        name_ds = "my_dataset"
+        ds = dmv.dataset.Dataset(
+            name_ds,
+            df,
+            u_labels,
+            y_labels,
+            overlap=True,
+            full_time_interval=True,
+        )
+
+        with pytest.raises(ValueError):
+            _ = ds.plot_amplitude_spectrum(return_figure=True, overlap=True)
 
 
 class Test_plot_Signal:

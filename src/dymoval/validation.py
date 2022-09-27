@@ -461,9 +461,9 @@ class ValidationSession:
         return_figure:
             If *True* it returns the figure parameters.
         save_as:
-            Save both the figures with a specified name.
+            Save both figures with a specified name.
             It appends the suffix *_eps_eps* and *_u_eps* to the residuals
-            auto-correlation and to the input-residuals cross-correlation figures,
+            auto-correlation and to the input-residuals cross-correlation figure,
             respectively.
             The *filename* shall include the path.
         Raises

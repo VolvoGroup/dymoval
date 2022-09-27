@@ -183,7 +183,6 @@ class Dataset:
             input_name = u_labels[ii]
             for idx, val in enumerate(NaN_intervals["INPUT"][input_name]):
                 if not val.size == 0:
-                    print("Stocazzo")
                     ax.axvspan(min(val), max(val), color=color, alpha=0.2)
 
     def _shade_output_nans(
@@ -666,12 +665,13 @@ class Dataset:
         line_color_output: str = "g",
         linestyle_output: str = "-",
         alpha_output: float = 1.0,
-        return_figure: bool = False,
+        return_figure: Optional[bool] = False,
+        save_as: str = "",
     ) -> Optional[tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]]:
         """Plot the Dataset.
 
         Possible values for the parameters describing the line used in the plot
-        (e.g. *line_color_input* , *alpha_output*. etc)
+        (e.g. *line_color_input* , *alpha_output*. etc).
         are the same for the corresponding plot function in matplotlib.
 
         Parameters
@@ -694,13 +694,16 @@ class Dataset:
             Line style for the output signals.
         alpha_output:
             Alpha channel value for the output signals.
-        return_figure:
-            If *True* it returns the figure parameters.
+        save_as:
+            Save the figure with a specified name.
+            You must specify the complete *filename*, including the path.
         """
-        # Extract dataset
-        df = self.dataset
-
+        # Validatioon
         u_labels, y_labels = self._validate_signals(u_labels, y_labels)
+
+        # df points to self.dataset. There is no inplace here but
+        # using df makes the code more readable.
+        df = self.dataset
 
         # Input-output length
         p = len(u_labels)
@@ -750,6 +753,10 @@ class Dataset:
             y_labels,
             color=line_color_output,
         )
+
+        # Eventually save and return figures.
+        if save_as:
+            save_plot_as(fig, save_as)  # noqa
         if return_figure:
             return fig, axes
         else:
@@ -766,6 +773,7 @@ class Dataset:
         line_color_output: Optional[str] = "g",
         alpha_output: Optional[float] = 1.0,
         return_figure: Optional[bool] = False,
+        save_as: str = "",
     ) -> Optional[
         tuple[
             matplotlib.figure.Figure,
@@ -795,6 +803,11 @@ class Dataset:
             Alpha channel value for the output signals.
         return_figure:
             If *True* it returns the figure parameters.
+        save as:
+            Save the figures with a specified name.
+            It appends the suffix *_in* and *_out* to the input and output figure,
+            respectively.
+            The *filename* shall include the path.
         """
         # Extract dataset
         df = self.dataset
@@ -832,6 +845,10 @@ class Dataset:
         for ii in range(q):
             axes_out[ii].set_xlabel(y_labels[ii][1])
         plt.suptitle("Coverage region (output).")
+
+        if save_as:
+            save_plot_as(fig_in, save_as + "_in")  # noqa
+            save_plot_as(fig_out, save_as + "_out")  # noqa
         if return_figure:
             return fig_in, axes_in, fig_out, axes_out
         else:
@@ -839,6 +856,7 @@ class Dataset:
 
     def fft(
         self,
+        *,
         u_labels: Optional[Union[str, list[str]]] = None,
         y_labels: Optional[Union[str, list[str]]] = None,
         real: Optional[bool] = True,
@@ -856,7 +874,7 @@ class Dataset:
         ValueError
             If the dataset contains *NaN*:s
         """
-
+        # Validation
         u_labels, y_labels = self._validate_signals(u_labels, y_labels)
 
         # Compute FFT
@@ -902,6 +920,7 @@ class Dataset:
         linestyle_output: Optional[str] = "-",
         alpha_output: Optional[float] = 1.0,
         return_figure: Optional[bool] = False,
+        save_as: str = "",
     ) -> Optional[tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, pd.DataFrame]]:
         """
         Plot the amplitude spectrum of the dataset and return the FFT of the
@@ -935,8 +954,10 @@ class Dataset:
             Line style for the output signals.
         alpha_output:
             Alpha channel value for the output signals.
-        return_figure:
-            If *True* it returns the figure parameters.
+        save_as:
+            Save the figure with a specified name.
+            You must specify the complete *filename*, including the path.
+
 
         Raises
         ------
@@ -952,14 +973,15 @@ class Dataset:
         df_freq :
             FFT of the dataset.
         """
-
+        # validation
         u_labels, y_labels = self._validate_signals(u_labels, y_labels)
+
         # Input-output length
         p = len(u_labels)
         q = len(y_labels)
 
         # Compute FFT
-        df_freq = self.fft(real=real)
+        df_freq = self.fft(u_labels=u_labels, y_labels=y_labels, real=real)
 
         # Start plot ritual
         if overlap:
@@ -993,6 +1015,10 @@ class Dataset:
         plt.suptitle(
             "Amplitude spectrum. \n Blue lines are input and green lines are output. "
         )
+
+        # Save and return
+        if save_as:
+            save_plot_as(fig, save_as)  # noqa
         if return_figure:
             return fig, axes, df_freq
         else:
@@ -1027,8 +1053,11 @@ class Dataset:
         # Arguments validation
         u_labels, y_labels = self._validate_signals(u_labels, y_labels)
 
-        # Copy the dataframe
-        df_temp = deepcopy(self.dataset)
+        # Check if inplace
+        if inplace:
+            df_temp = self.dataset
+        else:
+            df_temp = deepcopy(self.dataset)
 
         # Remove means from input signals
         cols = list(zip(len(u_labels) * ["INPUT"], u_labels))
@@ -1045,7 +1074,6 @@ class Dataset:
         df_temp.round(decimals=NUM_DECIMALS)
 
         if inplace:
-            self.dataset = deepcopy(df_temp)
             return None
         else:
             return df_temp
@@ -1089,8 +1117,12 @@ class Dataset:
             If no arguments are passed.
         """
 
-        # Make a copy of the dataset
-        df_temp = deepcopy(self.dataset)
+        # Make a copy of the dataset if not inplace.
+        if inplace:
+            df_temp = self.dataset
+        else:
+            df_temp = deepcopy(self.dataset)
+
         # Validate passed arguments
         (
             u_labels,
@@ -1117,8 +1149,9 @@ class Dataset:
             )
 
         df_temp.round(NUM_DECIMALS)
+
+        # Inplace thing
         if inplace:
-            self.dataset = deepcopy(df_temp)
             return None
         else:
             return df_temp
@@ -1164,8 +1197,12 @@ class Dataset:
         TypeError
             If no arguments are passed.
         """
-        # Make a copy of the dataset
-        df_temp = deepcopy(self.dataset)
+        # Make a copy of the dataset if not inplace.
+        if inplace:
+            df_temp = self.dataset
+        else:
+            df_temp = deepcopy(self.dataset)
+
         # Validate passed arguments
         (
             u_labels,
@@ -1212,7 +1249,6 @@ class Dataset:
         df_temp = np.round(self.dataset, NUM_DECIMALS)  # noqa
 
         if inplace:
-            self.dataset = deepcopy(df_temp)
             return None
         else:
             return df_temp
