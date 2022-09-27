@@ -98,7 +98,8 @@ def rsquared(x: np.ndarray, y: np.ndarray) -> float:
     # Compute r-square fit (%)
     x_mean = np.mean(x, axis=0)
     r2 = np.round(
-        (1.0 - np.linalg.norm(eps) ** 2 / np.linalg.norm(x - x_mean) ** 2) * 100,
+        (1.0 - np.linalg.norm(eps) ** 2 / np.linalg.norm(x - x_mean) ** 2)
+        * 100,
         NUM_DECIMALS,  # noqa
     )
     return r2  # type: ignore
@@ -149,7 +150,9 @@ def xcorr_norm(
     R_matrix = np.zeros((nrows, ncols))
     for ii in range(nrows):
         for jj in range(ncols):
-            R_matrix[ii, jj] = np.linalg.norm(R[:, ii, jj], l_norm) / len(R[:, ii, jj])
+            R_matrix[ii, jj] = np.linalg.norm(R[:, ii, jj], l_norm) / len(
+                R[:, ii, jj]
+            )
     R_norm = np.linalg.norm(R_matrix, matrix_norm)
     return R_norm  # type: ignore
 
@@ -197,7 +200,9 @@ class ValidationSession:
 
         # Initialize validation results DataFrame.
         idx = ["r-square (%)", "Residuals Auto-corr", "Input-Res. Cross-corr"]
-        self.validation_results: pd.DataFrame = pd.DataFrame(index=idx, columns=[])
+        self.validation_results: pd.DataFrame = pd.DataFrame(
+            index=idx, columns=[]
+        )
         """The validation results.
         This attribute is automatically set
         and it should be considered as a *read-only* attribute."""
@@ -272,14 +277,18 @@ class ValidationSession:
                 "HINT: check the loaded simulations names with"
                 "'get_simulations_names()' method."
             )
-        if len(set(y_labels)) != len(set(self.Dataset.dataset["OUTPUT"].columns)):
+        if len(set(y_labels)) != len(
+            set(self.Dataset.dataset["OUTPUT"].columns)
+        ):
             raise IndexError(
                 "The number of outputs of your simulation must be equal to "
                 "the number of outputs in the dataset AND "
                 "the name of each simulation output shall be unique."
             )
         if not isinstance(y_data, np.ndarray):
-            raise ValueError("The type the input signal values must be a numpy ndarray.")
+            raise ValueError(
+                "The type the input signal values must be a numpy ndarray."
+            )
         if len(y_labels) not in y_data.shape:
             raise IndexError(
                 "The number of labels and the number of signals must be the same."
@@ -384,14 +393,14 @@ class ValidationSession:
         cmap = plt.get_cmap(COLORMAP)  # noqa
         nrows, ncols = factorize(max(p, q))  # noqa
         # Plot the output signals
-        fig_out, axes_out = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        axes_out = axes_out.flat
+        fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
+        axes = axes.flat
         for ii, sim_name in enumerate(list_sims):
             # Scan simulation names.
             df_sim.loc[:, (sim_name, df_sim[sim_name].columns)].plot(
                 subplots=True,
                 grid=True,
-                ax=axes_out[0:q],
+                ax=axes[0:q],
                 color=cmap(ii),
                 title="Simulations results.",
             )
@@ -402,7 +411,7 @@ class ValidationSession:
                 subplots=True,
                 grid=True,
                 color="k",
-                ax=axes_out[0:q],
+                ax=axes[0:q],
             )
 
         if dataset == "all":
@@ -410,19 +419,19 @@ class ValidationSession:
                 subplots=True,
                 grid=True,
                 color="gray",
-                ax=axes_out[0:p],
+                ax=axes[0:p],
             )
         # I would be attempted to raise an error if dataset is a weird string,
         # but I will not.
 
         # Plot the last details: x-axis legend
         for ii in range((nrows - 1) * ncols, nrows * ncols):
-            axes_out[ii].set_xlabel("Time")
+            axes[ii].set_xlabel("Time")
         # Plot the last details: shade NaN:s areas.
         self.Dataset._shade_output_nans(
             self.Dataset.dataset,
             self.Dataset._nan_intervals,
-            axes_out[0:q],
+            axes[0:q],
             list(df_val["OUTPUT"].columns),
             color="k",
         )
@@ -430,9 +439,9 @@ class ValidationSession:
         # Save and eventually return figures.
         # ===============================================================
         if save_as:
-            save_plot_as(fig_out, save_as)  # noqa
+            save_plot_as(fig, save_as)  # noqa
         if return_figure:
-            return fig_out, axes_out
+            return fig, axes
         else:
             return None
 
@@ -513,7 +522,9 @@ class ValidationSession:
                     )
                     ax1[ii, jj].grid(True)
                     ax1[ii, jj].set_xlabel("Lags")
-                    ax1[ii, jj].set_title(rf"$\hat r_{{\epsilon_{ii}\epsilon_{jj}}}$")
+                    ax1[ii, jj].set_title(
+                        rf"$\hat r_{{\epsilon_{ii}\epsilon_{jj}}}$"
+                    )
                     ax1[ii, jj].legend()
         plt.suptitle("Residuals auto-correlation")
 
@@ -544,7 +555,9 @@ class ValidationSession:
 
         return None
 
-    def get_simulation_signals_list(self, sim_name: Union[str, list[str]]) -> list[str]:
+    def get_simulation_signals_list(
+        self, sim_name: Union[str, list[str]]
+    ) -> list[str]:
         """
         Return the signal name list of a given simulation result.
 

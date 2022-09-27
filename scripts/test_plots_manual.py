@@ -9,10 +9,12 @@ from copy import deepcopy
 import dymoval as dmv
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # ===========================================================================
 # Arange
 # ===========================================================================
+plt.ion()
 # Setup the test type
 dataset_type = ["MIMO", "SISO", "SIMO", "MISO"]
 fixture_type = "SISO"
@@ -21,7 +23,7 @@ fixture_type = "SISO"
 nan_thing = np.empty(200)
 nan_thing[:] = np.NaN
 
-input_signal_names = ["u1", "u2", "u3"]
+input_signal_names = [("u1", "s"), ("u2", "Kg"), ("u3", "m/s")]
 input_sampling_periods = [0.01, 0.1, 0.1]
 input_signal_values = [
     np.hstack((np.random.rand(50), nan_thing, np.random.rand(400), nan_thing)),
@@ -104,7 +106,12 @@ ds = dmv.Dataset(
     overlap=True,
 )
 
-ds.replace_NaNs("fillna", 0.0)
+# This shall raise
+ds.plot_amplitude_spectrum()
+
+
+# %%
+ds.replace_NaNs("fillna", 0.0, inplace=True)
 
 ds.plot()
 ds.plot(
@@ -115,15 +122,20 @@ ds.plot(
     overlap=True,
 )
 
+ds.plot(return_figure=True)
+
 # Conditional plot
 if fixture_type == "MIMO" or fixture_type == "MISO":
     ds.plot(u_labels=["u1", "u2"], y_labels="y1", overlap=True)
 else:
     ds.plot(u_labels="u1", y_labels="y1")
+
+ds.plot(save_as="c:/vas/github/dymoval/dataset_plot")
 # %% Coverage
 
 ds.plot_coverage()
 ds.plot_coverage(line_color_input="r", line_color_output="c", alpha_output=0.5)
+ds.plot_coverage(save_as="./coverage_test")
 
 # ===========================================================================
 # Act: ValidatonSession plots test
@@ -152,9 +164,11 @@ sim2_values = vs.Dataset.dataset["OUTPUT"].values + np.random.rand(
 vs.append_simulation(sim1_name, sim1_labels, sim1_values)
 vs.append_simulation(sim2_name, sim2_labels, sim2_values)
 
-vs.plot_simulations("Model 1", "Model 2")
-vs.plot_simulations("Model 1")
-vs.plot_simulations(plotdataset=True, plot_input=True)
+vs.plot_simulations(["Model 1", "Model 2"])
+vs.plot_simulations("Model 1", save_as="./sim_test")
+vs.plot_simulations(dataset="only_out")
+vs.plot_simulations(dataset="all")
+vs.plot_simulations()
 # %%
 vs.clear()
 
@@ -203,4 +217,4 @@ ds.plot_amplitude_spectrum(u_labels="u1", y_labels="y4")
 # Remove means and offset
 u_list = ("u1", 2.0)
 
-ds.remove_offset(u_list=u_list)
+ds.remove_offset(u_list=u_list, inplace=True)
