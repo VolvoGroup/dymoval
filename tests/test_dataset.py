@@ -187,14 +187,18 @@ class Test_Dataset_nominal:
             name_ds, df, u_labels, y_labels, full_time_interval=True
         )
         # Function call with inplace = False
-        df_actual = ds.remove_offset(u_list=u_list[fixture], y_list=y_list[fixture])
+        df_actual = ds.remove_offset(
+            u_list=u_list[fixture], y_list=y_list[fixture]
+        )
 
         # Assert
         assert np.allclose(df_actual, df_expected)
         # Assert that the internally stored dataset is not overwritten
         assert np.allclose(ds.dataset, df)
         # Test inplace = True
-        ds.remove_offset(u_list=u_list[fixture], y_list=y_list[fixture], inplace=True)
+        ds.remove_offset(
+            u_list=u_list[fixture], y_list=y_list[fixture], inplace=True
+        )
         assert np.allclose(df_actual, ds.dataset)
 
     def test_remove_offset_only_input(
@@ -214,7 +218,9 @@ class Test_Dataset_nominal:
         N = len(df.index)
         idx = np.linspace(0, df.index[-1], N)
         if fixture == "SISO":
-            values = np.hstack((-1.0 * np.ones((N, 1)), np.ones((N, 1))))  # Expected
+            values = np.hstack(
+                (-1.0 * np.ones((N, 1)), np.ones((N, 1)))
+            )  # Expected
             df_expected = pd.DataFrame(
                 index=idx, columns=[u_labels, y_labels], data=values
             )
@@ -231,7 +237,9 @@ class Test_Dataset_nominal:
             )
             df_expected.index.name = "Time (s)"
         if fixture == "MISO":
-            values = np.hstack((-1.0 * np.ones((N, 3)), np.ones((N, 1))))  # Expected
+            values = np.hstack(
+                (-1.0 * np.ones((N, 3)), np.ones((N, 1)))
+            )  # Expected
             df_expected = pd.DataFrame(
                 index=idx, columns=[*u_labels, y_labels], data=values
             )
@@ -282,7 +290,9 @@ class Test_Dataset_nominal:
         N = len(df.index)
         idx = np.linspace(0, df.index[-1], N)
         if fixture == "SISO":
-            values = np.hstack((np.ones((N, 1)), -1.0 * np.ones((N, 1))))  # Expected
+            values = np.hstack(
+                (np.ones((N, 1)), -1.0 * np.ones((N, 1)))
+            )  # Expected
             df_expected = pd.DataFrame(
                 index=idx, columns=[u_labels, y_labels], data=values
             )
@@ -301,7 +311,9 @@ class Test_Dataset_nominal:
             )
             df_expected.index.name = "Time (s)"
         if fixture == "MISO":
-            values = np.hstack((np.ones((N, 3)), -1.0 * np.ones((N, 1))))  # Expected
+            values = np.hstack(
+                (np.ones((N, 3)), -1.0 * np.ones((N, 1)))
+            )  # Expected
             df_expected = pd.DataFrame(
                 index=idx, columns=[*u_labels, y_labels], data=values
             )
@@ -515,7 +527,9 @@ class Test_Dataset_raise:
 
 class Test_Dataset_plots:
     @pytest.mark.plot
-    def test_plot_nominal(self, good_signals: list[Signal], tmp_path: str) -> None:
+    def test_plot_nominal(
+        self, good_signals: list[Signal], tmp_path: str
+    ) -> None:
         # You should just get a plot.
         signal_list, u_labels, y_labels, fixture = good_signals
 
@@ -533,59 +547,57 @@ class Test_Dataset_plots:
         # =============================
         # plot
         # =============================
-        _ = ds.plot(return_figure=True)
+
+        _ = ds.plot()
         plt.close("all")
 
-        ds.plot()
-        plt.close("all")
-
-        ds.plot(u_labels="u1")
+        _ = ds.plot(u_labels="u1")
         plt.close("all")
 
         if fixture == "MIMO":
-            ds.plot(u_labels=["u1", "u2"], y_labels=["y1", "y2"])
+            _ = ds.plot(u_labels=["u1", "u2"], y_labels=["y1", "y2"])
             plt.close("all")
 
-        ds.plot(overlap=True)
+        _ = ds.plot(overlap=True)
         plt.close("all")
 
         # save on disk
         tmp_path_str = str(tmp_path)
         filename = tmp_path_str + "/potato"
-        ds.plot(save_as=filename)
+        _ = ds.plot(save_as=filename)
         assert os.path.exists(filename + ".png")
 
         # =============================
         # plot_coverage
         # =============================
-        ds.plot_coverage()
+        _ = ds.plot_coverage()
         plt.close("all")
 
         _ = ds.plot_coverage(u_labels="u1")
         plt.close("all")
 
         if fixture == "MIMO":
-            ds.plot_coverage(u_labels=["u1", "u2"], y_labels=["y1", "y2"])
+            _ = ds.plot_coverage(u_labels=["u1", "u2"], y_labels=["y1", "y2"])
             plt.close("all")
-            ds.plot_coverage(u_labels=["u1", "u2"], y_labels="y1")
+            _ = ds.plot_coverage(u_labels=["u1", "u2"], y_labels="y1")
             plt.close("all")
 
         _ = ds.plot_coverage(y_labels="y1")
         plt.close("all")
 
-        _ = ds.plot_coverage(return_figure=True)
-        plt.close("all")
-
         # save on disk
         tmp_path_str = str(tmp_path)
         filename = tmp_path_str + "/potato"
-        ds.plot_coverage(save_as=filename)
+        _ = ds.plot_coverage(save_as=filename)
         assert os.path.exists(filename + "_in.png")
         assert os.path.exists(filename + "_out.png")
 
     @pytest.mark.plot
-    def test_plot_amplitude_spectrum(
-        self, good_dataframe: pd.DataFrame, good_signals: list[Signal], tmp_path: str
+    def test_plot_spectrum(
+        self,
+        good_dataframe: pd.DataFrame,
+        good_signals: list[Signal],
+        tmp_path: str,
     ) -> None:
         # You should just get a plot.
         df, u_labels, y_labels, fixture = good_dataframe
@@ -603,16 +615,16 @@ class Test_Dataset_plots:
 
         # This is only valid if ds does not contain NaN:s, i.e.
         # it is good_dataframe.
-        ds.plot_amplitude_spectrum()
+        _ = ds.plot_spectrum()
         plt.close("all")
 
-        _ = ds.plot_amplitude_spectrum(return_figure=True, overlap=True)
+        _ = ds.plot_spectrum(overlap=True)
         plt.close("all")
 
         # save on disk
         tmp_path_str = str(tmp_path)
         filename = tmp_path_str + "/potato"
-        ds.plot_amplitude_spectrum(save_as=filename)
+        _ = ds.plot_spectrum(save_as=filename)
         assert os.path.exists(filename + ".png")
 
         # ======= If NaN:s raise =====================
@@ -631,7 +643,7 @@ class Test_Dataset_plots:
         )
 
         with pytest.raises(ValueError):
-            _ = ds.plot_amplitude_spectrum(return_figure=True, overlap=True)
+            _ = ds.plot_spectrum(overlap=True)
 
 
 class Test_plot_Signal:
@@ -699,11 +711,15 @@ class Test_plot_Signal:
 
         # Assert in error
         with pytest.raises(KeyError):
-            dmv.plot_signals(signal_list, bad_input_signal_name, output_signal_names)
+            dmv.plot_signals(
+                signal_list, bad_input_signal_name, output_signal_names
+            )
 
         # Assert in error
         with pytest.raises(KeyError):
-            dmv.plot_signals(signal_list, input_signal_names, bad_output_signal_name)
+            dmv.plot_signals(
+                signal_list, input_signal_names, bad_output_signal_name
+            )
 
 
 class Test_Signal_validation:
@@ -809,7 +825,9 @@ class Test_Dataframe_validation:
         with pytest.raises(ValueError):
             dmv.dataframe_validation(df, u_labels_test, y_labels_test)
 
-    def test_input_or_output_not_found(self, good_dataframe: pd.DataFrame) -> None:
+    def test_input_or_output_not_found(
+        self, good_dataframe: pd.DataFrame
+    ) -> None:
         # Nominal values
         df, u_labels, y_labels, fixture = good_dataframe
         u_labels_test = u_labels
@@ -823,7 +841,9 @@ class Test_Dataframe_validation:
         with pytest.raises(ValueError):
             dmv.dataframe_validation(df, u_labels_test, y_labels)
 
-    def test_dataframe_one_level_indices(self, good_dataframe: pd.DataFrame) -> None:
+    def test_dataframe_one_level_indices(
+        self, good_dataframe: pd.DataFrame
+    ) -> None:
         # Nominal values
         df, u_labels, y_labels, _ = good_dataframe
         df_test = df
@@ -835,14 +855,18 @@ class Test_Dataframe_validation:
         with pytest.raises(IndexError):
             dmv.dataframe_validation(df_test, u_labels, y_labels)
 
-    def test_at_least_two_samples_per_signal(self, good_dataframe: pd.DataFrame) -> None:
+    def test_at_least_two_samples_per_signal(
+        self, good_dataframe: pd.DataFrame
+    ) -> None:
         # Nominal values
         df, u_labels, y_labels, _ = good_dataframe
         df_test = df.head(1)
         with pytest.raises(IndexError):
             dmv.dataframe_validation(df_test, u_labels, y_labels)
 
-    def test_labels_exist_in_dataframe(self, good_dataframe: pd.DataFrame) -> None:
+    def test_labels_exist_in_dataframe(
+        self, good_dataframe: pd.DataFrame
+    ) -> None:
         # Nominal values
         df, u_labels, y_labels, fixture = good_dataframe
         if fixture == "SISO":
@@ -903,7 +927,9 @@ class Test_fix_sampling_periods:
         ]
 
         # Assert
-        actual_resampled, actual_excluded = dmv.fix_sampling_periods(signal_list)
+        actual_resampled, actual_excluded = dmv.fix_sampling_periods(
+            signal_list
+        )
         actual_resampled = [s["name"] for s in actual_resampled]
         assert sorted(actual_excluded) == sorted(expected_excluded)
         assert sorted(actual_resampled) == sorted(expected_resampled)
@@ -964,7 +990,9 @@ class Test_fix_sampling_periods:
         signal_list, _, _, _ = good_signals
 
         with pytest.raises(ValueError):
-            dmv.fix_sampling_periods(signal_list, target_sampling_period="potato")
+            dmv.fix_sampling_periods(
+                signal_list, target_sampling_period="potato"
+            )
 
         with pytest.raises(ValueError):
             dmv.fix_sampling_periods(signal_list, target_sampling_period=-0.6)

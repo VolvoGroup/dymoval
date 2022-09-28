@@ -357,7 +357,7 @@ class TestPlots:
         vs.plot_simulations()
         plt.close("all")
 
-        _ = vs.plot_simulations(dataset="all", return_figure=True)
+        _ = vs.plot_simulations(dataset="all")
         plt.close("all")
 
         # Test plot - filtered
@@ -399,7 +399,7 @@ class TestPlots:
         plt.close("all")
         vs.plot_residuals(["Model 1", "Model 2"])
         plt.close("all")
-        _ = vs.plot_residuals(["Model 1", "Model 2"], return_figure=True)
+        _ = vs.plot_residuals(["Model 1", "Model 2"])
         plt.close("all")
         # =============================
         # save residuals

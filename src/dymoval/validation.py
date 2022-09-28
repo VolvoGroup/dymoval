@@ -310,8 +310,7 @@ class ValidationSession:
         line_color_output: Optional[str] = "k",
         linestyle_output: Optional[str] = "-",
         alpha_output: Optional[float] = 1.0,
-        return_figure: Optional[bool] = False,
-        save_as: str = "",
+        save_as: Optional[str] = "",
     ) -> Optional[
         Union[
             tuple[matplotlib.figure.Figure, matplotlib.axes.Axes],
@@ -353,8 +352,6 @@ class ValidationSession:
             Line style for the output signals.
         alpha_output:
             Alpha channel value for the output signals.
-        return_figure:
-            If *True* it returns the figure parameters.
         save_as:
             Save the figure with a specified name.
             You must specify the complete *filename*, including the path.
@@ -440,18 +437,15 @@ class ValidationSession:
         # ===============================================================
         if save_as:
             save_plot_as(fig, save_as)  # noqa
-        if return_figure:
-            return fig, axes
-        else:
-            return None
+
+        return fig, axes
 
     def plot_residuals(
         self,
         list_sims: Optional[Union[str, list[str]]] = None,
         *,
-        return_figure: Optional[bool] = False,
         save_figure: Optional[bool] = False,
-        save_as: str = "",
+        save_as: Optional[str] = "",
     ) -> Optional[
         tuple[
             matplotlib.figure.Figure,
@@ -467,8 +461,6 @@ class ValidationSession:
         list_sims :
             List of simulations.
             If empty, all the simulations are plotted.
-        return_figure:
-            If *True* it returns the figure parameters.
         save_as:
             Save both figures with a specified name.
             It appends the suffix *_eps_eps* and *_u_eps* to the residuals
@@ -550,10 +542,8 @@ class ValidationSession:
         if save_as:
             save_plot_as(fig1, save_as + "_eps_eps")  # noqa
             save_plot_as(fig2, save_as + "_u_eps")  # noqa
-        if return_figure:
-            return fig1, ax1, fig2, ax2
 
-        return None
+        return fig1, ax1, fig2, ax2
 
     def get_simulation_signals_list(
         self, sim_name: Union[str, list[str]]
