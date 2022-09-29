@@ -621,6 +621,12 @@ class Test_Dataset_plots:
         _ = ds.plot_spectrum(overlap=True)
         plt.close("all")
 
+        _ = ds.plot_spectrum("amplitude")
+        plt.close("all")
+
+        _ = ds.plot_spectrum("psd")
+        plt.close("all")
+
         # save on disk
         tmp_path_str = str(tmp_path)
         filename = tmp_path_str + "/potato"

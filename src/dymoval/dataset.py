@@ -943,10 +943,10 @@ class Dataset:
 
     def plot_spectrum(
         self,
+        kind: Optional[Literal["amplitude", "power", "psd"]] = "power",
         *,
         u_labels: Optional[Union[str, list[str]]] = None,
         y_labels: Optional[Union[str, list[str]]] = None,
-        kind: Optional[Literal["amplitude", "power", "psd"]] = "power",
         overlap: Optional[bool] = False,
         line_color_input: Optional[str] = "b",
         linestyle_input: Optional[str] = "-",
@@ -1006,42 +1006,34 @@ class Dataset:
         """
         # validation
         u_labels, y_labels = self._validate_signals(u_labels, y_labels)
-
-        # TODO Try with None as well.
-        # allowed_kind = ["amplitude", "power", "psd", None]
-        allowed_kind = ["amplitude", "power", "psd"]
-        if kind:
-            if kind not in allowed_kind:
-                raise ValueError(f"kind must be one of {allowed_kind}")
+        allowed_kind = ["amplitude", "power", "psd", None]
+        if kind not in allowed_kind:
+            raise ValueError(f"kind must be one of {allowed_kind}")
 
         # Input-output length
         p = len(u_labels)
         q = len(y_labels)
 
         # Compute FFT.
+        # For real signals, the spectrum is Hermitian anti-simmetric, i.e.
+        # the amplitude is symmetric wrt f=0 and the phase is antisymmetric wrt f=0.
+        # See e.g. https://ccrma.stanford.edu/~jos/ReviewFourier/Symmetries_Real_Signals.html
         df_freq = self.fft(u_labels=u_labels, y_labels=y_labels)
 
         # Frequency and number of samples
         Ts = self.dataset.index[1] - self.dataset.index[0]
         N = len(self.dataset.index)  # number of samples
-
-        # Adjust the frequency index
-        # If we need amplitude and phase spectrum, then we must consider
-        # the negative frequencies as well.
-        if kind == "amplitude":
-            f_bins = fft.fftfreq(N, Ts)
-            f_bins = fft.fftshift(f_bins)
-        else:
-            f_bins = fft.rfftfreq(N, Ts)
+        # Compute frequency bins
+        f_bins = fft.rfftfreq(N, Ts)
+        # Update DataFame index
         df_freq.index = f_bins
 
         # Switch between the kind
         if kind == "amplitude":
-            pass  # TODO
+            # DataFrame.abs() compute the abs element-wise
+            df_freq = df_freq.abs()
         elif kind == "power":
-            df_freq = (
-                df_freq.abs() ** 2
-            )  # TODO check how abs() work with pandas DataFrames!
+            df_freq = df_freq.abs() ** 2
             # We take half spectrum, so for conserving the energy we must consider
             # also the negative frequencies with the exception of the DC compontent
             # because that is not mirrored. This is why we multiply by 2.
@@ -1053,6 +1045,10 @@ class Dataset:
             df_freq[1:-1] = 2 * df_freq[1:-1]
 
         # Start plot ritual
+        # Input-output length
+        p = len(u_labels)
+        q = len(y_labels)
+
         if overlap:
             n = max(p, q)
             range_out = np.arange(0, q)
