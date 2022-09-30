@@ -205,7 +205,7 @@ vs.plot_simulations()
 
 # %% ... or we can get validation metrics
 
-vs.get_validation_metrics()
+vs.validation_results
 
 # %% At this point we can clear the simulations list
 vs.clear()

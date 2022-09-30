@@ -421,6 +421,77 @@ class Test_Dataset_nominal:
         # Assert that no NaN:s left
         assert not ds_actual.dataset.isna().any().any()
 
+    def test_lowpass_filter(
+        self,
+        sine_dataframe: pd.DataFrame,
+    ) -> None:
+        # Check if the passed dataset DataFrame is correctly stored as class attribute.
+
+        # Arrange
+        df, u_labels, y_labels, fixture = sine_dataframe
+        ds = dmv.dataset.Dataset(
+            "my_dataset", df, u_labels, y_labels, tin=0.0, tout=1.1
+        )
+
+        # Filter cutoff frequency
+        fc_u = 0.1
+        fc_y = 1.5
+
+        # TODO: you need at least one input and one output
+        # You cannot just pass only ONE signal.
+        # Computed from Matlab based on the fixture.
+        u_expected = np.array(
+            [
+                0,
+                0.1903,
+                0.5480,
+                0.7541,
+                0.7232,
+                0.7305,
+                0.9419,
+                1.1681,
+                1.2171,
+                1.1898,
+            ]
+        )
+
+        y_expected = np.array(
+            [
+                0,
+                0.2786,
+                0.6683,
+                0.9010,
+                1.0235,
+                0.9599,
+                1.1867,
+                1.3371,
+                1.6186,
+                1.4723,
+            ]
+        )
+
+        # Test
+        print("u_in = ", ds.dataset["INPUT"]["u1"].to_numpy())
+        ds = ds.low_pass_filter(u_list=("u1", fc_u), y_list=("y1", fc_y))
+        (t, u, y) = ds.get_dataset_values()
+        if fixture == "SISO" or fixture == "SIMO":
+            u_actual = u
+        else:
+            u_actual = u[:, 0]
+
+        if fixture == "SISO" or fixture == "MISO":
+            y_actual = y
+        else:
+            y_actual = y[:, 0]
+
+        print("u_actual = ", u_actual)
+        print("u_expected = ", u_expected)
+        print("y_actual = ", y_actual)
+        print("y_expected = ", y_expected)
+        # assert
+        assert np.allclose(u_actual, u_expected)
+        assert np.allclose(y_actual, y_expected)
+
 
 class Test_Dataset_raise:
     def test__validate_signals_raise(
@@ -872,7 +943,7 @@ class Test_Dataframe_validation:
     def test_index_monotonicity(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal values
         df, u_labels, y_labels, _ = good_dataframe
-        df.index.values[0:1] = df.index[1]
+        df.index.values[0:2] = df.index[0]
         with pytest.raises(ValueError):
             dmv.dataframe_validation(df, u_labels, y_labels)
 

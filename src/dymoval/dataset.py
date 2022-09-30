@@ -428,6 +428,9 @@ class Dataset:
 
         # Arguments validation
         if bool(tin) != bool(tout):
+            # if (tin is None and tout is not None) or (
+            #    tin is None and tout is not None
+            # ):
             raise Exception("You cannot pass only 'tin' or only 'tout'.")
         if tin and tout and tin > tout:
             raise ValueError(
@@ -1547,6 +1550,8 @@ def dataframe_validation(
     if output_not_found:
         raise ValueError(f"Output(s) {output_not_found} not found.")
     # 6. The index is a 1D vector of monotonically increasing floats.
+    # OBS! Builtin methds df.index.is_monotonic_increasing combined with
+    # df.index.is_unique won't work due to floats.
     sampling_period = df.index[1] - df.index[0]
     if not np.all(np.isclose(np.diff(df.index), sampling_period)):
         raise ValueError(

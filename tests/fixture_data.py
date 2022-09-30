@@ -178,7 +178,6 @@ def sine_dataframe(request):  # type: ignore
         c1 + np.sin(w2 * t),
         c1 + np.sin(w3 * t),
     ]
-    u_values = [u.round(dmv.NUM_DECIMALS) for u in u_values]
 
     y_labels = ["y1", "y2", "y3", "y4"]
     y_values = [
@@ -187,9 +186,12 @@ def sine_dataframe(request):  # type: ignore
         c1 + np.sin(w1 * t) + np.sin(w2 * t) + c2 * np.sin(w3 * t),
         np.sin(w1 * t) - np.sin(w2 * t) - np.sin(w3 * t),
     ]
-    y_values = [y.round(dmv.NUM_DECIMALS) for y in y_values]
 
-    data = np.vstack((np.asarray(u_values), np.asarray(y_values))).transpose()
+    data = (
+        np.vstack((np.asarray(u_values), np.asarray(y_values)))
+        .transpose()
+        .round(dmv.NUM_DECIMALS)
+    )
     df = pd.DataFrame(index=t, columns=[*u_labels, *y_labels], data=data)
     df.index.name = "Time"
 
