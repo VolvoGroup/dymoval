@@ -103,20 +103,15 @@ class Test_Dataset_nominal:
             name_ds, df, u_labels, y_labels, full_time_interval=True
         )
         # You should get a dataframe with zero mean.
-        # Stored dataframe shall be left unchanged since inplace = False
-        df_expected = ds.remove_means()
+        # Stored dataframe shall be left unchanged.
+        ds_expected = ds.remove_means()
 
         # Lets see if it is true (the mean of a signal with removed mean is 0.0)
-        assert np.allclose(df_expected.droplevel(0, axis=1).mean(), 0.0)
+        assert np.allclose(ds_expected.dataset.droplevel(0, axis=1).mean(), 0.0)
 
-        # Lets check that the stored DataFrame has not been changed (inplace=False)
+        # Lets check that the stored DataFrame has not been changed.
         df_actual = ds.dataset.droplevel(0, axis=1)
         assert np.allclose(df_actual.to_numpy(), df.to_numpy())
-
-        # inplace = True test
-        ds.remove_means(inplace=True)
-        # Lets see if it is also true
-        assert np.allclose(ds.dataset.droplevel(0, axis=1).mean(), 0.0)
 
     def test_remove_offset(self, constant_ones_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = constant_ones_dataframe
@@ -186,20 +181,15 @@ class Test_Dataset_nominal:
         ds = dmv.dataset.Dataset(
             name_ds, df, u_labels, y_labels, full_time_interval=True
         )
-        # Function call with inplace = False
-        df_actual = ds.remove_offset(
+        # Function call.
+        ds_actual = ds.remove_offset(
             u_list=u_list[fixture], y_list=y_list[fixture]
         )
 
         # Assert
-        assert np.allclose(df_actual, df_expected)
+        assert np.allclose(ds_actual.dataset, df_expected)
         # Assert that the internally stored dataset is not overwritten
         assert np.allclose(ds.dataset, df)
-        # Test inplace = True
-        ds.remove_offset(
-            u_list=u_list[fixture], y_list=y_list[fixture], inplace=True
-        )
-        assert np.allclose(df_actual, ds.dataset)
 
     def test_remove_offset_only_input(
         self, constant_ones_dataframe: pd.DataFrame
@@ -262,16 +252,13 @@ class Test_Dataset_nominal:
             name_ds, df, u_labels, y_labels, full_time_interval=True
         )
         # Function call
-        df_actual = ds.remove_offset(u_list=u_list[fixture])
+        ds_actual = ds.remove_offset(u_list=u_list[fixture])
 
         # Assert
-        assert np.allclose(df_actual, df_expected)
+        assert np.allclose(ds_actual.dataset, df_expected)
 
         # Assert that the internally stored dataset is not overwritten
         assert np.allclose(ds.dataset, df)
-        # Test inplace = True
-        ds.remove_offset(u_list=u_list[fixture], inplace=True)
-        assert np.allclose(df_actual, ds.dataset)
 
     def test_remove_offset_only_output(
         self, constant_ones_dataframe: pd.DataFrame
@@ -338,16 +325,12 @@ class Test_Dataset_nominal:
             name_ds, df, u_labels, y_labels, full_time_interval=True
         )
         # Function call
-        df_actual = ds.remove_offset(y_list=y_list[fixture])
+        ds_actual = ds.remove_offset(y_list=y_list[fixture])
 
         # Assert that the offsets are removed
-        assert np.allclose(df_actual, df_expected)
+        assert np.allclose(ds_actual.dataset, df_expected)
         # Assert that the internally stored dataset is not overwritten
         assert np.allclose(ds.dataset, df)
-
-        # Now assert th inplace = True
-        ds.remove_offset(y_list=y_list[fixture], inplace=True)
-        assert np.allclose(df_actual, ds.dataset)
 
     def test_get_dataset_values(self, sine_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = sine_dataframe
@@ -428,18 +411,15 @@ class Test_Dataset_nominal:
             plot_raw=True,
             full_time_interval=True,
         )
-        # TODO: add inplace test
         # Interpolate
-        ds_test = deepcopy(ds)
-        df_actual = ds_test.replace_NaNs(method="interpolate")
+        ds_actual = ds.replace_NaNs(method="interpolate")
         # Assert that no NaN:s left
-        assert not df_actual.isna().any().any()
+        assert not ds_actual.dataset.isna().any().any()
 
         # Fill
-        ds_test = deepcopy(ds)
-        df_actual = ds_test.replace_NaNs(method="fillna")
+        ds_actual = ds.replace_NaNs(method="fillna")
         # Assert that no NaN:s left
-        assert not df_actual.isna().any().any()
+        assert not ds_actual.dataset.isna().any().any()
 
 
 class Test_Dataset_raise:
@@ -616,6 +596,9 @@ class Test_Dataset_plots:
         # This is only valid if ds does not contain NaN:s, i.e.
         # it is good_dataframe.
         _ = ds.plot_spectrum()
+        plt.close("all")
+
+        _ = ds.plot_spectrum(u_labels="u1")
         plt.close("all")
 
         _ = ds.plot_spectrum(overlap=True)

@@ -1,4 +1,4 @@
 [flake8]
-extend-ignore = F403,F405, E501, W291
+extend-ignore = F403,F405, E501, W291,E203, W503 
 exclude = .git,__pycache__,docs/source/conf.py,build
 

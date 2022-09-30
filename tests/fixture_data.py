@@ -131,7 +131,7 @@ def good_dataframe(request):  # type: ignore
         index=idx,
         columns=cols_name,
     )
-    df.index.name = "Time (s)"
+    df.index.name = "Time"
 
     if fixture_type == "SISO":
         # Slice signal list
@@ -191,7 +191,7 @@ def sine_dataframe(request):  # type: ignore
 
     data = np.vstack((np.asarray(u_values), np.asarray(y_values))).transpose()
     df = pd.DataFrame(index=t, columns=[*u_labels, *y_labels], data=data)
-    df.index.name = "Time (s)"
+    df.index.name = "Time"
 
     if fixture_type == "SISO":
         # Slice signal list
@@ -225,7 +225,7 @@ def constant_ones_dataframe(request):  # type: ignore
     y_labels = ["y1", "y2", "y3"]
     values = np.ones((N, 6))
     df = pd.DataFrame(index=idx, columns=[*u_labels, *y_labels], data=values)
-    df.index.name = "Time (s)"
+    df.index.name = "Time"
 
     if fixture_type == "SISO":
         # Slice signal list

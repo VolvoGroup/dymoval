@@ -279,14 +279,14 @@ class Dataset:
                 range_out = np.arange(p, p + q)
             nrows, ncols = factorize(n)  # noqa
             _, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-            axes = axes.flat
+            axes = axes.T.flat
             df["INPUT"].plot(subplots=True, grid=True, color="b", ax=axes[0:p])
             df["OUTPUT"].plot(
                 subplots=True, grid=True, color="g", ax=axes[range_out]
             )
 
-            for ii in range((ncols - 1) * nrows, ncols * nrows):
-                axes[ii].set_xlabel("Time")
+            for ii in range(ncols):
+                axes[nrows - 1 :: nrows][ii].set_xlabel("Frequency")
             plt.suptitle(
                 "Sampling time "
                 f"= {np.round(df.index[1]-df.index[0],NUM_DECIMALS)}.\n"  # noqa
@@ -378,9 +378,9 @@ class Dataset:
         # ===================================================================
         tin_sel = df.index[0]
         timeVectorFromZero = df.index - tin_sel
-        df.set_index(
-            np.round(timeVectorFromZero, NUM_DECIMALS), inplace=True  # noqa
-        )  # noqa
+        df.index = pd.Index(
+            np.round(timeVectorFromZero, NUM_DECIMALS), name=df.index.name
+        )
 
         # Shift also the NaN_intervals to zero.
         for k in NaN_intervals["INPUT"].keys():
@@ -557,7 +557,8 @@ class Dataset:
         # exist in the current dataset.
         df = self.dataset
 
-        # Input: check if the signal names exist
+        # Small check
+        # Input labels passed
         if u_labels:
             u_labels = str2list(u_labels)  # noqa
             input_not_found = difference_lists_of_str(
@@ -569,10 +570,8 @@ class Dataset:
                     f"Signal(s) {input_not_found} not found in the input signals dataset. "
                     "Use 'get_signal_list()' to get the list of all available signals. "
                 )
-        else:
-            u_labels = list(df["INPUT"].columns)
 
-        # Output: check if the signal names exist
+        # Output labels passed
         if y_labels:
             y_labels = str2list(y_labels)  # noqa
             output_not_found = difference_lists_of_str(  # noqa
@@ -584,8 +583,21 @@ class Dataset:
                     f"Signal(s) {output_not_found} not found in the output signal dataset. "
                     "Use 'get_signal_list()' to get the list of all available signals "
                 )
-        else:
+
+        # Nothing passed => take all.
+        if not y_labels and not u_labels:
+            u_labels = list(df["INPUT"].columns)
             y_labels = list(df["OUTPUT"].columns)
+
+        # Switch the remaining cases
+        # TODO: check if it is possible to pass only one signal.
+        if u_labels and not y_labels:
+            # u_label already fixed, carry only the first output
+            y_labels = [df["OUTPUT"].columns[0]]
+
+        if y_labels and not u_labels:
+            # u_label already fixed, carry only the first input
+            u_labels = [df["INPUT"].columns[0]]
 
         return u_labels, y_labels
 
@@ -713,6 +725,9 @@ class Dataset:
     ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
         """Plot the Dataset.
 
+        This function always plot at least one input and output signal.
+        It is not possible to plot only one signal.
+
         Possible values for the parameters describing the line used in the plot
         (e.g. *line_color_input* , *alpha_output*. etc).
         are the same for the corresponding plot function in matplotlib.
@@ -741,11 +756,10 @@ class Dataset:
             Save the figure with a specified name.
             You must specify the complete *filename*, including the path.
         """
-        # Validatioon
+        # Validation
         u_labels, y_labels = self._validate_signals(u_labels, y_labels)
 
-        # df points to self.dataset. There is no inplace here but
-        # using df makes the code more readable.
+        # df points to self.dataset.
         df = self.dataset
 
         # Input-output length
@@ -760,7 +774,7 @@ class Dataset:
             range_out = np.arange(p, p + q)
         nrows, ncols = factorize(n)  # noqa
         fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        axes = axes.flat
+        axes = axes.T.flat
         df["INPUT"].loc[:, u_labels].plot(
             subplots=True,
             grid=True,
@@ -778,8 +792,8 @@ class Dataset:
             ax=axes[range_out],
         )
 
-        for ii in range((ncols - 1) * nrows, ncols * nrows):
-            axes[ii].set_xlabel("Time")  # Fix with  df.index.name
+        for ii in range(ncols):
+            axes[nrows - 1 :: nrows][ii].set_xlabel(df.index.name)
         plt.suptitle("Blue lines are input and green lines are output. ")
 
         self._shade_input_nans(
@@ -822,6 +836,9 @@ class Dataset:
     ]:
         """
         Plot the dataset coverage as histograms.
+
+        This function always plot at least one input and output signal.
+        It is not possible to plot only one signal.
 
         Parameters
         ----------
@@ -938,8 +955,10 @@ class Dataset:
         cols = pd.MultiIndex.from_tuples(
             [*u_extended_labels, *y_extended_labels]
         )
+        df_freq = pd.DataFrame(data=vals, columns=cols)
+        df_freq.index.name = "Frequency"
 
-        return pd.DataFrame(data=vals, columns=cols)
+        return df_freq
 
     def plot_spectrum(
         self,
@@ -955,12 +974,15 @@ class Dataset:
         linestyle_output: Optional[str] = "-",
         alpha_output: Optional[float] = 1.0,
         save_as: Optional[str] = "",
-    ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes, pd.DataFrame]:
+    ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
         """
         Plot the spectrum of the specified signals in the dataset in different format.
 
         If some signals have *NaN* values, then the FFT cannot be computed and
         an error is raised.
+
+        This function always plot at least one input and output signal.
+        It is not possible to plot only one signal.
 
 
         Parameters
@@ -977,6 +999,7 @@ class Dataset:
 
             - *amplitude* plot both the amplitude and phase spectrum.
               If the signal has unit V, then the amplitude has unit *V*.
+              Phase is in radians.
             - *power* plot the autopower spectrum.
               If the signal has unit V, then the amplitude has unit *V^2*.
             - *psd* plot the power density spectrum.
@@ -1010,28 +1033,34 @@ class Dataset:
         if kind not in allowed_kind:
             raise ValueError(f"kind must be one of {allowed_kind}")
 
-        # Input-output length
-        p = len(u_labels)
-        q = len(y_labels)
+        # Input-output lengths.
+        # If we want to plot abs and phase, then we need to double
+        # the number of axes in the figure
+        p = 2 * len(u_labels) if kind == "amplitude" else len(u_labels)
+        q = 2 * len(y_labels) if kind == "amplitude" else len(y_labels)
 
+        print("u_labels = ", u_labels)
+        print("y_labels = ", y_labels)
         # Compute FFT.
         # For real signals, the spectrum is Hermitian anti-simmetric, i.e.
         # the amplitude is symmetric wrt f=0 and the phase is antisymmetric wrt f=0.
         # See e.g. https://ccrma.stanford.edu/~jos/ReviewFourier/Symmetries_Real_Signals.html
         df_freq = self.fft(u_labels=u_labels, y_labels=y_labels)
-
         # Frequency and number of samples
         Ts = self.dataset.index[1] - self.dataset.index[0]
         N = len(self.dataset.index)  # number of samples
         # Compute frequency bins
         f_bins = fft.rfftfreq(N, Ts)
-        # Update DataFame index
-        df_freq.index = f_bins
+        # Update DataFame index.
+        # NOTE: I had to use pd.Index to preserve the name and being able to
+        # replace the values
+        df_freq.index = pd.Index(f_bins, name=df_freq.index.name)
 
         # Switch between the kind
         if kind == "amplitude":
-            # DataFrame.abs() compute the abs element-wise
-            df_freq = df_freq.abs()
+            # Add another level to specify abs and phase
+            df_freq = df_freq.agg([np.abs, np.angle])
+
         elif kind == "power":
             df_freq = df_freq.abs() ** 2
             # We take half spectrum, so for conserving the energy we must consider
@@ -1045,10 +1074,6 @@ class Dataset:
             df_freq[1:-1] = 2 * df_freq[1:-1]
 
         # Start plot ritual
-        # Input-output length
-        p = len(u_labels)
-        q = len(y_labels)
-
         if overlap:
             n = max(p, q)
             range_out = np.arange(0, q)
@@ -1056,16 +1081,26 @@ class Dataset:
             n = p + q
             range_out = np.arange(p, p + q)
         nrows, ncols = factorize(n)  # noqa
+
+        # To have the phase plot below the abs, the number of rows must be an
+        # even number, otherwise the plot got screwed.
+        if kind == "amplitude":
+            if np.mod(nrows, 2) != 0:
+                nrows -= 1
+                ncols += int(np.ceil(nrows / ncols))
+
         fig, axes = plt.subplots(
             nrows, ncols, sharex=True, sharey=True, squeeze=False
         )
-        axes = axes.flat
+        axes = axes.T.flat
+
         df_freq["INPUT"].loc[:, u_labels].plot(
             subplots=True,
             grid=True,
             color=line_color_input,
             linestyle=linestyle_input,
             alpha=alpha_input,
+            legend=u_labels,
             ax=axes[0:p],
         )
         df_freq["OUTPUT"].loc[:, y_labels].plot(
@@ -1074,27 +1109,26 @@ class Dataset:
             color=line_color_output,
             linestyle=linestyle_output,
             alpha=alpha_output,
+            legend=y_labels,
             ax=axes[range_out],
         )
 
-        for ii in range((ncols - 1) * nrows, ncols * nrows):
-            axes[ii].set_xlabel("Frequency")  # Fix with  df.index.name
-        plt.suptitle(
-            "Amplitude spectrum. \n Blue lines are input and green lines are output. "
-        )
+        for ii in range(ncols):
+            axes[nrows - 1 :: nrows][ii].set_xlabel(df_freq.index.name)
+
+        plt.suptitle(f"{kind.upper()} spectrum.")  # noqa
 
         # Save and return
         if save_as:
-            save_plot_as(fig, save_as)  # noqa
+            save_plot_as(fig, save_as)
 
-        return fig, axes, df_freq
+        return fig, axes
 
     def remove_means(
         self,
         *,
         u_labels: Optional[Union[str, list[str]]] = None,
         y_labels: Optional[Union[str, list[str]]] = None,
-        inplace: Optional[bool] = False,
     ) -> Optional[pd.DataFrame]:
         """
         Remove the mean value to the specified signals.
@@ -1110,19 +1144,13 @@ class Dataset:
             List of the output signal names.
             If not specified, then the mean value is removed to all
             the output signals in the dataset.
-
-        inplace :
-            If *True* the function modifies the stored dataset.
-            Otherwise, it return a pandas Dataframe.
         """
         # Arguments validation
         u_labels, y_labels = self._validate_signals(u_labels, y_labels)
 
-        # Check if inplace
-        if inplace:
-            df_temp = self.dataset
-        else:
-            df_temp = deepcopy(self.dataset)
+        # Safe copy
+        ds_temp = deepcopy(self)
+        df_temp = ds_temp.dataset
 
         # Remove means from input signals
         cols = list(zip(len(u_labels) * ["INPUT"], u_labels))
@@ -1136,12 +1164,10 @@ class Dataset:
             self.dataset.loc[:, cols] - self.dataset.loc[:, cols].mean()
         )
 
+        # round result
         df_temp.round(decimals=NUM_DECIMALS)
 
-        if inplace:
-            return None
-        else:
-            return df_temp
+        return ds_temp
 
     def remove_offset(
         self,
@@ -1152,7 +1178,6 @@ class Dataset:
         y_list: Optional[
             Union[list[tuple[str, float]], tuple[str, float]]
         ] = None,
-        inplace: Optional[bool] = False,
     ) -> Optional[pd.DataFrame]:
         # At least one argument shall be passed.
         # This is the reason why they are both specified as Optional.
@@ -1176,9 +1201,6 @@ class Dataset:
             List of tuples of the form *(name, offset)*.
             The *name* parameter must match the name of any output signal stored
             in the dataset.
-        inplace :
-            If *True* the function modifies the stored dataset.
-            Otherwise, it return a pandas Dataframe.
 
         Raises
         ------
@@ -1186,11 +1208,9 @@ class Dataset:
             If no arguments are passed.
         """
 
-        # Make a copy of the dataset if not inplace.
-        if inplace:
-            df_temp = self.dataset
-        else:
-            df_temp = deepcopy(self.dataset)
+        # Safe copy
+        ds_temp = deepcopy(self)
+        df_temp = ds_temp.dataset
 
         # Validate passed arguments
         (
@@ -1219,11 +1239,7 @@ class Dataset:
 
         df_temp.round(NUM_DECIMALS)
 
-        # Inplace thing
-        if inplace:
-            return None
-        else:
-            return df_temp
+        return ds_temp
 
     def low_pass_filter(
         self,
@@ -1234,7 +1250,6 @@ class Dataset:
         y_list: Optional[
             Union[list[tuple[str, float]], tuple[str, float]]
         ] = None,
-        inplace: Optional[bool] = False,
     ) -> Optional[pd.DataFrame]:
         """
         Low-pass filter a list of specified signals.
@@ -1261,20 +1276,15 @@ class Dataset:
             Such a signal is filtered with a low-pass
             filter whose cutoff frequency is specified by the *cutoff_frequency*
             parameter.
-        inplace :
-            If *True* the function modifies the stored dataset.
-            Otherwise, it return a pandas Dataframe.
 
         Raises
         ------
         TypeError
             If no arguments are passed.
         """
-        # Make a copy of the dataset if not inplace.
-        if inplace:
-            df_temp = self.dataset
-        else:
-            df_temp = deepcopy(self.dataset)
+        # Safe copy
+        ds_temp = deepcopy(self)
+        df_temp = ds_temp.dataset
 
         # Validate passed arguments
         (
@@ -1321,10 +1331,7 @@ class Dataset:
         # Round value
         df_temp = np.round(self.dataset, NUM_DECIMALS)  # noqa
 
-        if inplace:
-            return None
-        else:
-            return df_temp
+        return ds_temp
 
     # def filter(self) -> Any:
     #     """To be implemented!"""
@@ -1334,7 +1341,6 @@ class Dataset:
         self,
         method: Literal["interpolate", "fillna"] = "interpolate",
         fill_value: float = 0.0,
-        inplace: Optional[bool] = False,
     ) -> Optional[pd.DataFrame]:
         """Replace NaN:s in the dataset.
 
@@ -1345,10 +1351,6 @@ class Dataset:
             Interpolation method.
         fill_value :
             When *method* = "fillna", then the *NaN*:s vales are filled with this value.
-        inplace :
-            If *True* the function modifies the stored dataset.
-            Otherwise, it return a pandas Dataframe.
-
 
         Raises
         ------
@@ -1356,14 +1358,19 @@ class Dataset:
             If the passed method is not 'interpolate' or 'fillna'.
         """
 
+        # Safe copy
+        ds_temp = deepcopy(self)
+
         if method == "interpolate":
-            return self.dataset.interpolate(inplace=inplace)
+            ds_temp.dataset = ds_temp.dataset.interpolate()
         elif method == "fillna":
-            return self.dataset.fillna(fill_value, inplace=inplace)
+            ds_temp.dataset = ds_temp.dataset.fillna(fill_value)
         else:
             raise ValueError(
                 "Unknown method. Choose between 'interpolate' or 'fillna'"
             )
+
+        return ds_temp
 
 
 # ====================================================
@@ -1687,7 +1694,7 @@ def plot_signals(
     n = len(signal_list)
     nrows, ncols = factorize(n)  # noqa
     fig, ax = plt.subplots(nrows, ncols, squeeze=False, sharex=True)
-    ax = ax.flat
+    ax = ax.T.flat
     for ii, sig in enumerate(signal_list):
         timeline = np.linspace(
             0.0, len(sig["values"]) * sig["sampling_period"], len(sig["values"])
@@ -1748,7 +1755,7 @@ def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
     if target in ["all", "time"]:
         nrows, ncols = factorize(p_max)  # noqa
         fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        axes = axes.flat
+        axes = axes.T.flat
         for ii, ds in enumerate(datasets):
             p = len(ds.dataset["INPUT"].columns)
             # Scan simulation names.
@@ -1767,14 +1774,14 @@ def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
                 color=cmap(ii),
             )
 
-            for ii in range((ncols - 1) * nrows, ncols * nrows):
-                axes[ii].set_xlabel("Time")  # Fix with  df.index.name
+            for ii in range(ncols):
+                axes[nrows - 1 :: nrows][ii].set_xlabel("Frequency")
         plt.suptitle("Input signals comparison with respect to time. ")
 
         # Plot the output signals
         nrows, ncols = factorize(q_max)  # noqa
         fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        axes = axes.flat
+        axes = axes.T.flat
         for ii, ds in enumerate(datasets):
             q = len(ds.dataset["OUTPUT"].columns)
             # Scan simulation names.
@@ -1793,8 +1800,8 @@ def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
                 color=cmap(ii),
             )
 
-            for ii in range((ncols - 1) * nrows, ncols * nrows):
-                axes[ii].set_xlabel("Time")  # Fix with  df.index.name
+            for ii in range(ncols):
+                axes[nrows - 1 :: nrows][ii].set_xlabel("Frequency")
         plt.suptitle("Output signals comparison with respect to time. ")
     # =================================================================
     #  Coverage
@@ -1803,7 +1810,7 @@ def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
         # Plot the input signals
         nrows, ncols = factorize(p_max)  # noqa
         fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        axes = axes.flat
+        axes = axes.T.flat
         for ii, ds in enumerate(datasets):
             p = len(ds.dataset["INPUT"].columns)
             # Scan simulation names.
@@ -1813,14 +1820,14 @@ def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
                 ax=axes[0:p],
             )
 
-            for ii in range((ncols - 1) * nrows, ncols * nrows):
-                axes[ii].set_xlabel("Time")  # Fix with  df.index.name
+            for ii in range(ncols):
+                axes[nrows - 1 :: nrows][ii].set_xlabel("Frequency")
         plt.suptitle("Input signals comparison with respect to coverage. ")
 
         # Plot the output signals
         nrows, ncols = factorize(q_max)  # noqa
         fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        axes = axes.flat
+        axes = axes.T.flat
         for ii, ds in enumerate(datasets):
             q = len(ds.dataset["OUTPUT"].columns)
             # Scan simulation names.
@@ -1830,8 +1837,8 @@ def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
                 ax=axes[0:q],
             )
 
-            for ii in range((ncols - 1) * nrows, ncols * nrows):
-                axes[ii].set_xlabel("Time")  # Fix with  df.index.name
+            for ii in range(ncols):
+                axes[nrows - 1 :: nrows][ii].set_xlabel("Frequency")
         plt.suptitle("Output signals comparison with respect to coverage. ")
     # =================================================================
     #  Frequency
@@ -1840,7 +1847,7 @@ def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
         # Inputs
         nrows, ncols = factorize(p_max)  # noqa
         fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        axes = axes.flat
+        axes = axes.T.flat
 
         for ii, ds in enumerate(datasets):
             u_labels = None
@@ -1880,13 +1887,13 @@ def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
                 ax=axes[0:p],
             )
 
-            for ii in range((ncols - 1) * nrows, ncols * nrows):
-                axes[ii].set_xlabel("Frequency")  # Fix with  df.index.name
+            for ii in range(ncols):
+                axes[nrows - 1 :: nrows][ii].set_xlabel("Frequency")
             plt.suptitle("Input signals frequency content.")
         # # Outputs
         nrows, ncols = factorize(q_max)  # noqa
         fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        axes = axes.flat
+        axes = axes.T.flat
         for ii, ds in enumerate(datasets):
             u_labels = None
             y_labels = None
@@ -1923,8 +1930,8 @@ def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
                 ax=axes[0:q],
             )
 
-            for ii in range((ncols - 1) * nrows, ncols * nrows):
-                axes[ii].set_xlabel("Frequency")  # Fix with  df.index.name
+            for ii in range(ncols):
+                axes[nrows - 1 :: nrows][ii].set_xlabel(df_freq.index.name)
             plt.suptitle("Outputs amplitude spectrum.")
 
 
