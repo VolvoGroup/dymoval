@@ -11,7 +11,9 @@ except ModuleNotFoundError:
     import tomli as tomllib  # type:ignore
 
 try:
-    with open(pathlib.Path.home().joinpath(".dymoval/config.toml"), mode="rb") as fp:
+    with open(
+        pathlib.Path.home().joinpath(".dymoval/config.toml"), mode="rb"
+    ) as fp:
         data = tomllib.load(fp)
     for k, val in data.items():
         config[mapping_dict[k]] = val

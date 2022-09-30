@@ -430,43 +430,41 @@ class Test_Dataset_nominal:
         # Arrange
         df, u_labels, y_labels, fixture = sine_dataframe
         ds = dmv.dataset.Dataset(
-            "my_dataset", df, u_labels, y_labels, tin=0.0, tout=1.1
+            "my_dataset", df, u_labels, y_labels, tin=0.0, tout=1.0
         )
 
         # Filter cutoff frequency
-        fc_u = 0.1
+        fc_u = 1
         fc_y = 1.5
 
-        # TODO: you need at least one input and one output
-        # You cannot just pass only ONE signal.
         # Computed from Matlab based on the fixture.
         u_expected = np.array(
             [
                 0,
-                0.1903,
-                0.5480,
-                0.7541,
-                0.7232,
-                0.7305,
-                0.9419,
-                1.1681,
-                1.2171,
-                1.1898,
+                0.2000,
+                0.5754,
+                0.7841,
+                0.7448,
+                0.7580,
+                0.9857,
+                1.2125,
+                1.2481,
+                1.2195,
             ]
         )
 
         y_expected = np.array(
             [
                 0,
-                0.2786,
-                0.6683,
-                0.9010,
-                1.0235,
+                0.3000,
+                0.7165,
                 0.9599,
-                1.1867,
-                1.3371,
-                1.6186,
-                1.4723,
+                1.0829,
+                1.0056,
+                1.2429,
+                1.3964,
+                1.6907,
+                1.5223,
             ]
         )
 
@@ -484,13 +482,9 @@ class Test_Dataset_nominal:
         else:
             y_actual = y[:, 0]
 
-        print("u_actual = ", u_actual)
-        print("u_expected = ", u_expected)
-        print("y_actual = ", y_actual)
-        print("y_expected = ", y_expected)
-        # assert
-        assert np.allclose(u_actual, u_expected)
-        assert np.allclose(y_actual, y_expected)
+        # Assert if ||y_act-y_exp||**2 < 0.1**2
+        assert np.linalg.norm(u_actual - u_expected) ** 2 < 0.1**2
+        assert np.linalg.norm(y_actual - y_expected) ** 2 < 0.1**2
 
 
 class Test_Dataset_raise:

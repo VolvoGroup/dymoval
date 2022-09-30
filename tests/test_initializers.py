@@ -4,7 +4,7 @@ The tests herein included check that the object Dataset is correctly instantiate
 (i.e. the attributes correctly) set when the input Signal/DataFrame format is OK.
 
 When the Signal/DataFrame format is NOK, the utils functions 'dataframe_validation'
-and 'signal validation' raise exceptions. 
+and 'signal validation' raise exceptions.
 Such validation functions are tested in test_utils.py.
 """
 import pytest
@@ -158,8 +158,9 @@ class TestInitializerFromDataframe:
         # Time index starts from 0.0
 
     @pytest.mark.parametrize(
+        # Each test is ((tin,tout),(tin_expected,tout_expected))
         "test_input, expected",
-        [((4, 8), (0.0, 4.0)), ((3.2, 3.8), (0.0, 0.5))],
+        [((4, 8), (0.0, 4.0)), ((3.2, 3.8), (0.0, 0.5)), ((None, 5), (0.0, 5))],
     )
     def test_nominal_tin_tout(
         self,
@@ -195,18 +196,18 @@ class TestInitializerFromDataframe:
 
 
 class TestInitializerWrongInputData:
-    def test_nominal_missing_tout(self, good_dataframe: pd.DataFrame) -> None:
-        # Nominal data
-        df, u_labels, y_labels, _ = good_dataframe
-        tin = 0.5
-        with pytest.raises(Exception):
-            dmv.dataset.Dataset(
-                "potato",
-                df,
-                u_labels,
-                y_labels,
-                tin=tin,
-            )
+    # def test_nominal_missing_tout(self, good_dataframe: pd.DataFrame) -> None:
+    #     # Nominal data
+    #     df, u_labels, y_labels, _ = good_dataframe
+    #     tin = 0.5
+    #     with pytest.raises(Exception):
+    #         dmv.dataset.Dataset(
+    #             "potato",
+    #             df,
+    #             u_labels,
+    #             y_labels,
+    #             tin=tin,
+    #         )
 
     def test_nominal_tin_ge_tout(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal data

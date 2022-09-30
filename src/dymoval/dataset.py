@@ -248,9 +248,8 @@ class Dataset:
         # Number of inputs and outputs
         p = len(df["INPUT"].columns)
         q = len(df["OUTPUT"].columns)
-
         # Check if there is some argument.
-        if tin and tout:
+        if tin is not None and tout is not None:
             tin_sel = np.round(tin, NUM_DECIMALS)  # noqa
             tout_sel = np.round(tout, NUM_DECIMALS)  # noqa
         elif full_time_interval:
@@ -427,11 +426,11 @@ class Dataset:
         # ==============================================================
 
         # Arguments validation
-        if bool(tin) != bool(tout):
-            # if (tin is None and tout is not None) or (
-            #    tin is None and tout is not None
-            # ):
-            raise Exception("You cannot pass only 'tin' or only 'tout'.")
+        if tin is None and tout is not None:
+            tin = df.index[0]
+        # If only tin is passed, then set tout to the last time sample.
+        if tin is not None and tout is None:
+            tout = df.index[-1]
         if tin and tout and tin > tout:
             raise ValueError(
                 f" Value of tin ( ={tin}) shall be smaller than the value of tout ( ={tout})."
