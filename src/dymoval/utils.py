@@ -45,7 +45,9 @@ def difference_lists_of_str(
     elements_not_found = set()
     if not A_set.issubset(B_set):
         elements_found = B_set & A_set  # Set intersection
-        elements_not_found = A_set - elements_found  # Elements in A but not in B
+        elements_not_found = (
+            A_set - elements_found
+        )  # Elements in A but not in B
     return list(elements_not_found)
 
 
@@ -65,7 +67,9 @@ def str2list(x: Union[str, list[str]]) -> list[str]:
     return x
 
 
-def save_plot_as(fig: matplotlib.figure.Figure, name: str) -> None:
+def save_plot_as(
+    fig: matplotlib.figure.Figure, name: str, **kwargs: Any
+) -> None:
     """Save matplotlib figure on disk.
 
     Parameters
@@ -76,9 +80,12 @@ def save_plot_as(fig: matplotlib.figure.Figure, name: str) -> None:
         Figure filename.
     """
     if not name:
-        raise Exception("You must specify a filename for the figure you want to save.")
+        raise Exception(
+            "You must specify a filename for the figure you want to save."
+        )
+    # fig.set_layout_engine("tight")
     fig.tight_layout()
-    fig.savefig(name)
+    fig.savefig(name, **kwargs)
     plt.close()
 
 

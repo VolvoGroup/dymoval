@@ -401,13 +401,17 @@ class Test_Dataset_nominal:
             fixture,
         ) = good_signals
 
+        # TODO: use a standard dataframe instead
         target_sampling_period = 0.1
+        resampled_signals, _ = dmv.fix_sampling_periods(
+            good_signals, target_sampling_period
+        )
+
         ds = dmv.Dataset(
             "my_dataset",
-            signal_list,
+            resampled_signals,
             input_signal_names,
             output_signal_names,
-            target_sampling_period=target_sampling_period,
             plot_raw=True,
             full_time_interval=True,
         )
@@ -515,13 +519,16 @@ class Test_Dataset_raise:
             fixture,
         ) = good_signals
 
+        # TODO: use a standard dataframe instead
         target_sampling_period = 0.1
+        resampled_signals, _ = dmv.fix_sampling_periods(
+            good_signals, target_sampling_period
+        )
         ds = dmv.Dataset(
             "my_dataset",
-            signal_list,
+            resampled_signals,
             input_signal_names,
             output_signal_names,
-            target_sampling_period=target_sampling_period,
             plot_raw=True,
             full_time_interval=True,
         )

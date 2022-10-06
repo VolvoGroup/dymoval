@@ -21,6 +21,32 @@ class Signal(TypedDict):
     """Signals are used to represent real-world signals and are used for
     instantiate :py:class:`Dataset <dymoval.dataset.Dataset>` class objects.
 
+    Signals shall be used in the following two cases:
+
+        #. The signals are not sampled with the same sampling period,
+        #. You are not very familiar with pandas.
+
+    Although Signals have compulsory attribues that must be set, there is freedom
+    to append additional attributes.
+
+
+    Example
+    -------
+    >>> import dymoval as dmv
+    >>> my_signal: dmv.Signal = {
+    "name": "speed",
+    "values": np.random.rand(100),
+    "signal_unit": "mps",
+    "sampling_period": 0.1,
+    "time_unit": "s",
+    }
+    >>> # We create a time vector key for plotting the Signal
+    >>> my_signal["time_vec"] = my_signal["sampling_period"]
+    *np.arange(0,len(my_signal["values"]))
+    >>> # Let's plot
+    >>> plt.plot(my_signal["time_vec"], my_signal["values"])
+    >>> plt.show()
+
 
     Attributes
     ----------
@@ -96,7 +122,6 @@ class Dataset:
         signal_list: Union[list[Signal], pd.DataFrame],
         u_labels: Union[str, list[str]],
         y_labels: Union[str, list[str]],
-        target_sampling_period: Optional[float] = None,
         plot_raw: Optional[bool] = False,
         tin: Optional[float] = None,
         tout: Optional[float] = None,
@@ -109,14 +134,14 @@ class Dataset:
                 signal_list,
                 u_labels,
                 y_labels,
-                target_sampling_period,
                 plot_raw,
                 tin,
                 tout,
                 full_time_interval,
                 overlap,
             )
-            df, nan_intervals, excluded_signals, dataset_coverage = attr_sign
+            # df, nan_intervals, excluded_signals, dataset_coverage = attr_sign
+            df, nan_intervals, dataset_coverage = attr_sign
         # Initialization by pandas DataFrame
         elif isinstance(signal_list, pd.DataFrame):
             attr_df = self._new_dataset_from_dataframe(
@@ -129,7 +154,7 @@ class Dataset:
                 overlap,
             )
             df, nan_intervals, dataset_coverage = attr_df
-            excluded_signals = []
+            # excluded_signals = []
         else:
             raise TypeError(
                 "Input signals must be Signal or pandas DataFrame type. \n",
@@ -153,7 +178,7 @@ class Dataset:
         self.information_level: float = 0.0  #: *Not implemented yet!*
         self._nan_intervals: Any = deepcopy(nan_intervals)
         # TODO: Check if _excluded_signals it can be removed.
-        self._excluded_signals: list[str] = excluded_signals
+        # self._excluded_signals: list[str] = excluded_signals
 
     def __str__(self) -> str:
         return f"Dymoval dataset called '{self.name}'."
@@ -424,7 +449,7 @@ class Dataset:
         # This is the Dataset initializer when the signals are arranged
         # in a pandas DataFrame
         # ==============================================================
-
+        print("Stocazzoooo")
         # Arguments validation
         if tin is None and tout is not None:
             tin = df.index[0]
@@ -471,7 +496,6 @@ class Dataset:
         signal_list: list[Signal],
         u_labels: Union[str, list[str]],
         y_labels: Union[str, list[str]],
-        target_sampling_period: Optional[float],
         plot_raw: Optional[bool],
         tin: Optional[float],
         tout: Optional[float],
@@ -480,7 +504,6 @@ class Dataset:
     ) -> tuple[
         pd.DataFrame,
         dict[str, dict[str, list[np.ndarray]]],
-        list[str],
         tuple[pd.Series, pd.DataFrame, pd.Series, pd.DataFrame],
     ]:
 
@@ -497,43 +520,37 @@ class Dataset:
         # Try to align the sampling periods, whenever possible
         # Note! resampled_signals:list[Signals], whereas
         # excluded_signals: list[str]
-        resampled_signals, excluded_signals = fix_sampling_periods(
-            signal_list, target_sampling_period
-        )
+        # resampled_signals, excluded_signals = fix_sampling_periods(
+        #    signal_list, target_sampling_period
+        # )
 
         # Check that you you have at least one input and one output
         # after re-sampling.
-        input_leftovers = [
-            u for u in resampled_signals if u["name"] in u_labels
-        ]
-        output_leftovers = [
-            y for y in resampled_signals if y["name"] in y_labels
-        ]
+        # input_leftovers = [
+        #     u for u in resampled_signals if u["name"] in u_labels
+        # ]
+        sampling_periods = np.asarray(
+            [s["sampling_period"] for s in signal_list]
+        )
 
         # Check that you don't have zero inputs or zero outputs
-        if not input_leftovers or not output_leftovers:
+        if not np.allclose(sampling_periods, sampling_periods[0]):
             raise IndexError(
-                "Re-sampling issue. "
-                "The current 'target_sampling_period' would lead "
-                "to a dataset with zero inputs or zero outputs."
+                "All signals in the dataset must have the same sampling period."
             )
 
         # After fix_sampling_periods call all the signals in the resampled_signals
         # have the same sampling period.
         # Ts is the current sampling period for all the signals.
-        Ts = list(resampled_signals)[0]["sampling_period"]
+        Ts = list(signal_list)[0]["sampling_period"]
 
         # Drop excluded signals from u_labels and y_labels
-        u_labels = [
-            x["name"] for x in resampled_signals if x["name"] in u_labels
-        ]
-        y_labels = [
-            x["name"] for x in resampled_signals if x["name"] in y_labels
-        ]
+        u_labels = [x["name"] for x in signal_list if x["name"] in u_labels]
+        y_labels = [x["name"] for x in signal_list if x["name"] in y_labels]
 
         # Trim the signals to have equal length and
         # then build the DataFrame for inizializing the Dataset class.
-        nsamples = [len(x["values"]) for x in resampled_signals]
+        nsamples = [len(x["values"]) for x in signal_list]
         max_idx = min(nsamples)
 
         # Create DataFrame with trimmed and re-sampled signals
@@ -541,27 +558,28 @@ class Dataset:
             index=np.arange(max_idx) * Ts, columns=[*u_labels, *y_labels]
         )
         df.index.name = "Time"
-        for s in resampled_signals:
+        for s in signal_list:
             df[s["name"]] = s["values"][0:max_idx]
 
         # Call the initializer from dataframe to get a Dataset object.
         df, nan_intervals, dataset_coverage = self._new_dataset_from_dataframe(
             df, u_labels, y_labels, tin, tout, full_time_interval, overlap
         )
-        return df, nan_intervals, excluded_signals, dataset_coverage
+        # return df, nan_intervals, excluded_signals, dataset_coverage
+        return df, nan_intervals, dataset_coverage
 
     def _validate_signals(
         self,
         u_labels: Optional[Union[str, list[str]]],
         y_labels: Optional[Union[str, list[str]]],
-    ) -> tuple[list[str], list[str]]:
+    ) -> tuple[Optional[list[str]], Optional[list[str]]]:
         # This function check if the signals (labels) from the user
         # exist in the current dataset.
         df = self.dataset
 
         # Small check
         # Input labels passed
-        if u_labels:
+        if u_labels is not None:
             u_labels = str2list(u_labels)  # noqa
             input_not_found = difference_lists_of_str(
                 u_labels, list(df["INPUT"].columns)
@@ -574,7 +592,7 @@ class Dataset:
                 )
 
         # Output labels passed
-        if y_labels:
+        if y_labels is not None:
             y_labels = str2list(y_labels)  # noqa
             output_not_found = difference_lists_of_str(  # noqa
                 y_labels, list(df["OUTPUT"].columns)
@@ -587,19 +605,9 @@ class Dataset:
                 )
 
         # Nothing passed => take all.
-        if not y_labels and not u_labels:
+        if y_labels is None and u_labels is None:
             u_labels = list(df["INPUT"].columns)
             y_labels = list(df["OUTPUT"].columns)
-
-        # Switch the remaining cases
-        # TODO: check if it is possible to pass only one signal.
-        if u_labels and not y_labels:
-            # u_label already fixed, carry only the first output
-            y_labels = [df["OUTPUT"].columns[0]]
-
-        if y_labels and not u_labels:
-            # u_label already fixed, carry only the first input
-            u_labels = [df["INPUT"].columns[0]]
 
         return u_labels, y_labels
 
@@ -612,29 +620,33 @@ class Dataset:
             Union[list[tuple[str, float]], tuple[str, float]]
         ] = None,
     ) -> tuple[
-        list[str],
-        list[str],
+        Optional[list[str]],
+        Optional[list[str]],
         Optional[list[tuple[str, float]]],
         Optional[list[tuple[str, float]]],
     ]:
         # This function is needed to validate inputs like [("u1",3.2), ("y1", 0.5)]
         # Think for example to the "remove_offset" function.
         # Return both the list of input and output names and the validated tuples.
-        if u_list:
+
+        u_labels: Optional[list[srt]] = None
+        y_labels: Optional[list[srt]] = None
+
+        if u_list is not None:
             if not isinstance(u_list, list):
                 u_list = [u_list]
             u_labels = [u[0] for u in u_list]
             u_labels, y_labels = self._validate_signals(u_labels, None)
-        if y_list:
+        if y_list is not None:
             if not isinstance(y_list, list):
                 y_list = [y_list]
             y_labels = [y[0] for y in y_list]
             u_labels, y_labels = self._validate_signals(None, y_labels)
-        if u_list and y_list:
+        if u_list is not None and y_list is not None:
             u_labels = [u[0] for u in u_list]
             y_labels = [y[0] for y in y_list]
             u_labels, y_labels = self._validate_signals(u_labels, y_labels)
-        if not u_list and not y_list:
+        if u_list is None and y_list is None:
             raise TypeError(
                 "At least one input or output list must be provided."
             )
@@ -756,6 +768,7 @@ class Dataset:
             Alpha channel value for the output signals.
         save_as:
             Save the figure with a specified name.
+            The saved figure will have a 16:9 ratio aspect.
             You must specify the complete *filename*, including the path.
         """
         # Validation
@@ -765,8 +778,8 @@ class Dataset:
         df = self.dataset
 
         # Input-output length
-        p = len(u_labels)
-        q = len(y_labels)
+        p = len(u_labels) if u_labels is not None else 0
+        q = len(y_labels) if y_labels is not None else 0
 
         if overlap:
             n = max(p, q)
@@ -777,44 +790,55 @@ class Dataset:
         nrows, ncols = factorize(n)  # noqa
         fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
         axes = axes.T.flat
-        df["INPUT"].loc[:, u_labels].plot(
-            subplots=True,
-            grid=True,
-            color=line_color_input,
-            linestyle=linestyle_input,
-            alpha=alpha_input,
-            ax=axes[0:p],
-        )
-        df["OUTPUT"].loc[:, y_labels].plot(
-            subplots=True,
-            grid=True,
-            color=line_color_output,
-            linestyle=linestyle_output,
-            alpha=alpha_output,
-            ax=axes[range_out],
-        )
+
+        if u_labels is not None:
+            df["INPUT"].loc[:, u_labels].plot(
+                subplots=True,
+                grid=True,
+                color=line_color_input,
+                linestyle=linestyle_input,
+                alpha=alpha_input,
+                ax=axes[0:p],
+            )
+
+            self._shade_input_nans(
+                self.dataset,
+                self._nan_intervals,
+                axes[0:p],
+                u_labels,
+                color=line_color_input,
+            )
+
+        if y_labels is not None:
+            df["OUTPUT"].loc[:, y_labels].plot(
+                subplots=True,
+                grid=True,
+                color=line_color_output,
+                linestyle=linestyle_output,
+                alpha=alpha_output,
+                ax=axes[range_out],
+            )
+
+            self._shade_output_nans(
+                self.dataset,
+                self._nan_intervals,
+                axes[range_out],
+                y_labels,
+                color=line_color_output,
+            )
 
         for ii in range(ncols):
             axes[nrows - 1 :: nrows][ii].set_xlabel(df.index.name)
         plt.suptitle("Blue lines are input and green lines are output. ")
 
-        self._shade_input_nans(
-            self.dataset,
-            self._nan_intervals,
-            axes[0:p],
-            u_labels,
-            color=line_color_input,
-        )
-        self._shade_output_nans(
-            self.dataset,
-            self._nan_intervals,
-            axes[range_out],
-            y_labels,
-            color=line_color_output,
-        )
-
         # Eventually save and return figures.
         if save_as:
+            pass
+            # Expand figure size
+            # Keep 16:9 ratio
+            height = 2.5
+            width = 1.778 * height
+            fig.set_size_inches(ncols * width, nrows * height)
             save_plot_as(fig, save_as)  # noqa
 
         return fig, axes
@@ -833,8 +857,8 @@ class Dataset:
     ) -> tuple[
         matplotlib.figure.Figure,
         matplotlib.axes.Axes,
-        matplotlib.figure.Figure,
-        matplotlib.axes.Axes,
+        Optional[matplotlib.figure.Figure],
+        Optional[matplotlib.axes.Axes],
     ]:
         """
         Plot the dataset coverage as histograms.
@@ -869,45 +893,68 @@ class Dataset:
 
         u_labels, y_labels = self._validate_signals(u_labels, y_labels)
 
-        p = len(u_labels)
-        nrows, ncols = factorize(p)  # noqa
-        fig_in, axes_in = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        axes_in = axes_in.flat
-        df["INPUT"].loc[:, u_labels].hist(
-            grid=True,
-            bins=nbins,
-            color=line_color_input,
-            alpha=alpha_input,
-            ax=axes_in[0:p],
-        )
+        if u_labels is not None:
+            p = len(u_labels)
+            nrows_in, ncols_in = factorize(p)  # noqa
+            fig_in, axes_in = plt.subplots(nrows_in, ncols_in, squeeze=False)
+            axes_in = axes_in.flat
+            df["INPUT"].loc[:, u_labels].hist(
+                grid=True,
+                bins=nbins,
+                color=line_color_input,
+                alpha=alpha_input,
+                ax=axes_in[0:p],
+            )
 
-        for ii in range(p):
-            axes_in[ii].set_xlabel(u_labels[ii][1])
-        plt.suptitle("Coverage region (input).")
+            for ii in range(p):
+                axes_in[ii].set_xlabel(u_labels[ii][1])
+            plt.suptitle("Coverage region (input).")
 
-        q = len(y_labels)
-        nrows, ncols = factorize(q)  # noqa
-        fig_out, axes_out = plt.subplots(
-            nrows, ncols, sharex=True, squeeze=False
-        )
-        axes_out = axes_out.flat
-        df["OUTPUT"].loc[:, y_labels].hist(
-            grid=True,
-            bins=nbins,
-            color=line_color_output,
-            alpha=alpha_output,
-            ax=axes_out[0:q],
-        )
+        if y_labels is not None:
+            q = len(y_labels)
+            nrows_out, ncols_out = factorize(q)  # noqa
+            fig_out, axes_out = plt.subplots(
+                nrows_out, ncols_out, squeeze=False
+            )
+            axes_out = axes_out.flat
+            df["OUTPUT"].loc[:, y_labels].hist(
+                grid=True,
+                bins=nbins,
+                color=line_color_output,
+                alpha=alpha_output,
+                ax=axes_out[0:q],
+            )
 
-        for ii in range(q):
-            axes_out[ii].set_xlabel(y_labels[ii][1])
-        plt.suptitle("Coverage region (output).")
+            for ii in range(q):
+                axes_out[ii].set_xlabel(y_labels[ii][1])
+            plt.suptitle("Coverage region (output).")
 
         if save_as:
+            # Expand figure size
+            # Keep 16:9 ratio
+            # TODO Move height to the config file
+            height = 2.5
+            width = 1.778 * height
+            fig_in.set_size_inches(ncols_in * width, nrows_in * height)
             save_plot_as(fig_in, save_as + "_in")  # noqa
+
+            fig_out.set_size_inches(ncols_out * width, nrows_out * height)
             save_plot_as(fig_out, save_as + "_out")  # noqa
 
-        return fig_in, axes_in, fig_out, axes_out
+        # Return stuff
+        if u_labels is not None and y_labels is not None:
+            return fig_in, axes_in, fig_out, axes_out
+
+        elif u_labels is None and y_labels is not None:
+            return fig_out, axes_out, None, None
+
+        elif u_labels is not None and y_labels is None:
+            return fig_in, axes_in, None, None
+
+        elif u_labels is None and y_labels is None:
+            return fig_in, axes_in, fig_out, axes_out
+        else:
+            return None, None, None, None
 
     def fft(
         self,
@@ -1021,6 +1068,7 @@ class Dataset:
             Alpha channel value for the output signals.
         save_as:
             Save the figure with a specified name.
+            The saved figure will have a 16:9 ratio aspect.
             You must specify the complete *filename*, including the path.
 
 
@@ -1091,9 +1139,7 @@ class Dataset:
                 nrows -= 1
                 ncols += int(np.ceil(nrows / ncols))
 
-        fig, axes = plt.subplots(
-            nrows, ncols, sharex=True, sharey=True, squeeze=False
-        )
+        fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
         axes = axes.T.flat
 
         df_freq["INPUT"].loc[:, u_labels].plot(

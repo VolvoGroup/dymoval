@@ -8,6 +8,7 @@
 from copy import deepcopy
 import dymoval as dmv
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 # ===========================================================================
@@ -28,8 +29,8 @@ import numpy as np
 #                   "time_unit": str
 #                     }
 # ===========================================================================
-
-
+# %%
+plt.ion()
 # Let's create some Signal
 nan_intervals = np.empty(200)
 nan_intervals[:] = np.NaN
@@ -64,6 +65,7 @@ for ii, val in enumerate(input_signal_names):
         "sampling_period": input_sampling_periods[ii],
         "time_unit": "s",
     }
+
     in_lst.append(deepcopy(temp_in))
 # OUTPUT signals
 output_signal_names = ["y1", "y2", "y3", "y4"]
@@ -109,6 +111,7 @@ for ii, val in enumerate(output_signal_names):
         "sampling_period": output_sampling_periods[ii],
         "time_unit": "s",
     }
+
     out_lst.append(deepcopy(temp_out))
 signal_list = [*in_lst, *out_lst]
 first_output_idx = len(input_signal_names)
@@ -145,10 +148,9 @@ resampled_signals, excluded_signals = dmv.fix_sampling_periods(
 
 ds = dmv.Dataset(
     "my_dataset",
-    signal_list,
+    resampled_signals,
     input_signal_names,
     output_signal_names,
-    target_sampling_period=0.1,
     overlap=True,
 )
 
