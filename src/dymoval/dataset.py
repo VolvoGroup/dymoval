@@ -1249,7 +1249,8 @@ class Dataset:
         for ii in range(ncols):
             axes[nrows - 1 :: nrows][ii].set_xlabel(df_freq.index.name)
 
-        plt.suptitle(f"{kind.upper()} spectrum.")  # noqa
+        # TODO: fix this error message
+        plt.suptitle(f"{kind.upper()} spectrum.")  # type: ignore
 
         # Save and return
         if save_as:
