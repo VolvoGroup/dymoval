@@ -956,35 +956,42 @@ class Test_fix_sampling_periods:
             signal_list,
             input_signal_names,
             output_signal_names,
-            fixture_instance,
+            fixture,
         ) = good_signals
 
         # Test data
-        # Always the first two signals to allow the same test also for SISO case.
+        # If more than one input, then we exclude the second input,
+        if fixture == "MISO" or fixture == "MIMO":
+            signal_list[1]["sampling_period"] = 0.017
+            expected_excluded = [signal_list[1]["name"]]
 
-        signal_list[0]["sampling_period"] = 0.017
-        expected_excluded_1 = signal_list[0]["name"]
+        # If more than one output, then we exclude the second output,
+        if fixture == "SIMO" or fixture == "MIMO":
+            signal_list[1]["sampling_period"] = 0.021
+            expected_excluded = [signal_list[1]["name"]]
 
-        signal_list[1]["sampling_period"] = 0.021
-        expected_excluded_2 = signal_list[1]["name"]
+        # Build Dataset
+        ds = dmv.Dataset(
+            "my_dataset",
+            signal_list,
+            input_signal_names,
+            output_signal_names,
+            plot_raw=True,
+            full_time_interval=True,
+        )
 
-        # Identify MIMO, SISO, MISO or SIMO case and set the expected exlcuded signal
-        if fixture_instance == "SISO":
-            expected_excluded = [expected_excluded_1]
-        else:
-            expected_excluded = [
-                expected_excluded_1,
-                expected_excluded_2,
-            ]
+        # IS SISO no exclusion. We need at least one IN and one OUT.
+        if fixture == "SISO":
+            expected_excluded = []
+
         expected_resampled = [
             s["name"] for s in signal_list if s["name"] not in expected_excluded
         ]
 
-        # Assert
-        actual_resampled, actual_excluded = dmv.fix_sampling_periods(
-            signal_list
-        )
-        actual_resampled = [s["name"] for s in actual_resampled]
+        # Assert. Check that all signals are either re-sampled or excluded.
+        actual_excluded = ds.excluded_signals
+        actual_resampled = list(ds.dataset.droplevel(level=0, axis=1))
+
         assert sorted(actual_excluded) == sorted(expected_excluded)
         assert sorted(actual_resampled) == sorted(expected_resampled)
 
@@ -997,30 +1004,42 @@ class Test_fix_sampling_periods:
             fixture,
         ) = good_signals
 
-        test_value = 0.2  # target_sampling_period
+        # If more than one input, then we exclude the second input,
+        if fixture == "MISO" or fixture == "MIMO":
+            signal_list[1]["sampling_period"] = 0.017
+            expected_excluded = [signal_list[1]["name"]]
+
+        # If more than one output, then we exclude the second output,
+        if fixture == "SIMO" or fixture == "MIMO":
+            signal_list[1]["sampling_period"] = 0.021
+            expected_excluded = [signal_list[1]["name"]]
+
         # Test data.
-        # Always the first two signals to allow the same test also for SISO case.
-        signal_list[0]["sampling_period"] = 0.017
-        expected_excluded_1 = signal_list[0]["name"]
+        test_value = 0.2  # target_sampling_period
 
-        # first_output_idx = len(input_signal_names)
-        signal_list[1]["sampling_period"] = 0.023
-        expected_excluded_2 = signal_list[1]["name"]
+        # Build Dataset
+        ds = dmv.Dataset(
+            "my_dataset",
+            signal_list,
+            input_signal_names,
+            output_signal_names,
+            target_sampling_period=test_value,
+            plot_raw=True,
+            full_time_interval=True,
+        )
 
-        #
-        expected_excluded = [
-            expected_excluded_1,
-            expected_excluded_2,
-        ]
+        # IS SISO no exclusion. We need at least one IN and one OUT.
+        if fixture == "SISO":
+            expected_excluded = []
+
         expected_resampled = [
             s["name"] for s in signal_list if s["name"] not in expected_excluded
         ]
 
-        # Assert
-        actual_resampled, actual_excluded = dmv.fix_sampling_periods(
-            signal_list, test_value
-        )
-        actual_resampled = [s["name"] for s in actual_resampled]
+        # Assert. Check that all signals are either re-sampled or excluded.
+        actual_excluded = ds.excluded_signals
+        actual_resampled = list(ds.dataset.droplevel(level=0, axis=1))
+
         assert sorted(actual_excluded) == sorted(expected_excluded)
         assert sorted(actual_resampled) == sorted(expected_resampled)
 
@@ -1041,12 +1060,33 @@ class Test_fix_sampling_periods:
 
     def test_wrong_sampling_period(self, good_signals: list[Signal]) -> None:
         # Nominal values
-        signal_list, _, _, _ = good_signals
+        (
+            signal_list,
+            input_signal_names,
+            output_signal_names,
+            fixture,
+        ) = good_signals
 
         with pytest.raises(ValueError):
-            dmv.fix_sampling_periods(
-                signal_list, target_sampling_period="potato"
+            # Build Dataset
+            _ = dmv.Dataset(
+                "my_dataset",
+                signal_list,
+                input_signal_names,
+                output_signal_names,
+                target_sampling_period="potato",
+                plot_raw=True,
+                full_time_interval=True,
             )
 
         with pytest.raises(ValueError):
-            dmv.fix_sampling_periods(signal_list, target_sampling_period=-0.6)
+            # Build Dataset
+            _ = dmv.Dataset(
+                "my_dataset",
+                signal_list,
+                input_signal_names,
+                output_signal_names,
+                target_sampling_period=-0.8,
+                plot_raw=True,
+                full_time_interval=True,
+            )

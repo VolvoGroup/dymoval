@@ -354,6 +354,7 @@ class ValidationSession:
             Alpha channel value for the output signals.
         save_as:
             Save the figure with a specified name.
+            The figure is automatically resized with a 16:9 aspect ratio.
             You must specify the complete *filename*, including the path.
         """
 
@@ -436,6 +437,11 @@ class ValidationSession:
         # Save and eventually return figures.
         # ===============================================================
         if save_as:
+            # Keep 16:9 ratio
+            height = 2.5
+            width = 1.778 * height
+
+            fig.set_size_inches(ncols * width, nrows * height)
             save_plot_as(fig, save_as)  # noqa
 
         return fig, axes
@@ -466,6 +472,7 @@ class ValidationSession:
             It appends the suffix *_eps_eps* and *_u_eps* to the residuals
             auto-correlation and to the input-residuals cross-correlation figure,
             respectively.
+            The figure is automatically resized with a 16:9 aspect ratio.
             The *filename* shall include the path.
         Raises
         ------
@@ -540,7 +547,14 @@ class ValidationSession:
         plt.suptitle("Input-residuals cross-correlation")
 
         if save_as:
+            # Keep 16:9 ratio
+            height = 2.5
+            width = 1.778 * height
+
+            fig1.set_size_inches(q * width, q * height)
             save_plot_as(fig1, save_as + "_eps_eps")  # noqa
+
+            fig2.set_size_inches(q * width, p * height)
             save_plot_as(fig2, save_as + "_u_eps")  # noqa
 
         return fig1, ax1, fig2, ax2

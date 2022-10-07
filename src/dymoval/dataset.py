@@ -18,7 +18,7 @@ from copy import deepcopy
 
 
 class Signal(TypedDict):
-    """Signals are used to represent real-world signals and are used for
+    """Signals are used to represent real-world signals and are used to
     instantiate :py:class:`Dataset <dymoval.dataset.Dataset>` class objects.
 
 
@@ -43,12 +43,20 @@ class Dataset:
     (i.e. signal names), in order to differentiate which signal(s) shall be considered
     as input and which signal(s) shall be considered as output.
 
-    The signals list can be either a list
-    of dymoval :py:class:`Signal <dymoval.dataset.Signal>` type or a
-    pandas DataFrame with a well-defined structure.
+    The signal list is firstly validated (see :py:meth:`~dymoval.dataset.signals_validation` )
+    and then all the signals in such a list are re-sampled to the same sampling period.
+    If no sampling period is passed, then the slowest sampling period is considered as
+    target sampling period.
+    If some signal could not be resampled, then its name will be stored in the
+    attribute *excluded_signal* and it will be excluded from the dataset.
 
-    See :py:meth:`~dymoval.dataset.signals_validation` and
-    :py:meth:`~dymoval.dataset.dataframe_validation` for more
+
+    Note
+    ----
+    If the signals are already sampled with the same sampling period, then they can be also
+    arranged in a pandas DataFrame with a specific structure and such a DataFrame can be
+    directly used for instantiate a Dataset Object.
+    See :py:meth:`~dymoval.dataset.dataframe_validation` for more
     information.
 
 
@@ -153,7 +161,7 @@ class Dataset:
         self.information_level: float = 0.0  #: *Not implemented yet!*
         self._nan_intervals: Any = deepcopy(nan_intervals)
         # TODO: Check if _excluded_signals it can be removed.
-        self._excluded_signals: list[str] = excluded_signals
+        self.excluded_signals: list[str] = excluded_signals
 
     def __str__(self) -> str:
         return f"Dymoval dataset called '{self.name}'."
@@ -497,7 +505,7 @@ class Dataset:
         # Try to align the sampling periods, whenever possible
         # Note! resampled_signals:list[Signals], whereas
         # excluded_signals: list[str]
-        resampled_signals, excluded_signals = fix_sampling_periods(
+        resampled_signals, excluded_signals = self._fix_sampling_periods(
             signal_list, target_sampling_period
         )
 
@@ -641,6 +649,92 @@ class Dataset:
 
         return u_labels, y_labels, u_list, y_list
 
+    def _fix_sampling_periods(
+        self,
+        signal_list: list[Signal],
+        target_sampling_period: Optional[float] = None,
+    ) -> tuple[list[Signal], list[str]]:
+        # TODO: Implement some other re-sampling mechanism.
+        """
+        Resample the :py:class:`Signals <dymoval.dataset.Signal>` in the *signal_list*.
+
+        The signals are resampled either with the slowest sampling period as target,
+        or towards the sampling period specified by the *target_sampling_period*
+        parameter, if specified.
+
+        Nevertheless, signals whose sampling period is not a divisor of the
+        the target sampling period will not be resampled and a list with the names
+        of such signals is returned.
+
+        Parameters
+        ----------
+        signal_list :
+            List of :py:class:`Signals <dymoval.dataset.Signal>` to be resampled.
+        target_sampling_period :
+            Target sampling period.
+
+        Raises
+        ------
+        ValueError
+            If the *target_sampling_period* value is not positive.
+
+        Returns
+        -------
+        resampled_signals:
+            List of :py:class:`Signal <dymoval.dataset.Signal>` with adjusted
+            sampling period.
+        excluded_signals:
+            List of signal names that could not be resampled.
+        """
+        # ===========================================================
+        # arguments Validation
+        #
+        if target_sampling_period:
+            if (
+                not isinstance(target_sampling_period, float)
+                or target_sampling_period < 0
+            ):
+                raise ValueError("'target_sampling_period' must be positive.")
+        # ==========================================================
+
+        # Initialization
+        excluded_signals = []
+
+        # Downsample to the slowest period if target_sampling_period
+        # is not given.
+        if not target_sampling_period:
+            target_sampling_period = 0.0
+            for sig in signal_list:
+                target_sampling_period = max(
+                    target_sampling_period, sig["sampling_period"]
+                )
+                print(f"target_sampling_period = {target_sampling_period}")
+        # Separate sigs
+        for sig in signal_list:
+            N = target_sampling_period / sig["sampling_period"]
+            # Check if N is integer
+            if np.isclose(N, round(N)):
+                sig["values"] = sig["values"][:: int(N)]
+                sig["sampling_period"] = target_sampling_period
+            else:
+                excluded_signals.append(sig["name"])
+        resampled_signals = [
+            sig
+            for sig in list(signal_list)
+            if not (sig["name"] in excluded_signals)
+        ]
+        print(
+            "\nre-sampled signals =",
+            f"{[sig['name'] for sig in resampled_signals]}",
+        )
+        print(
+            "excluded signals from dataset ="
+            f"{[sig for sig in excluded_signals]}"
+        )
+        print(f"actual sampling period = {target_sampling_period}")
+
+        return resampled_signals, excluded_signals
+
     def get_dataset_values(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Return the dataset values as a tuple of *numpy ndarrays* corresponding
@@ -756,6 +850,7 @@ class Dataset:
             Alpha channel value for the output signals.
         save_as:
             Save the figure with a specified name.
+            The figure is automatically resized with a 16:9 aspect ratio.
             You must specify the complete *filename*, including the path.
         """
         # Validation
@@ -815,6 +910,10 @@ class Dataset:
 
         # Eventually save and return figures.
         if save_as:
+            # Keep 16:9 ratio
+            height = 2.5
+            width = 1.778 * height
+            fig.set_size_inches(ncols * width, nrows * height)
             save_plot_as(fig, save_as)  # noqa
 
         return fig, axes
@@ -870,8 +969,10 @@ class Dataset:
         u_labels, y_labels = self._validate_signals(u_labels, y_labels)
 
         p = len(u_labels)
-        nrows, ncols = factorize(p)  # noqa
-        fig_in, axes_in = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
+        nrows_in, ncols_in = factorize(p)  # noqa
+        fig_in, axes_in = plt.subplots(
+            nrows_in, ncols_in, sharex=True, squeeze=False
+        )
         axes_in = axes_in.flat
         df["INPUT"].loc[:, u_labels].hist(
             grid=True,
@@ -886,9 +987,9 @@ class Dataset:
         plt.suptitle("Coverage region (input).")
 
         q = len(y_labels)
-        nrows, ncols = factorize(q)  # noqa
+        nrows_out, ncols_out = factorize(q)  # noqa
         fig_out, axes_out = plt.subplots(
-            nrows, ncols, sharex=True, squeeze=False
+            nrows_out, ncols_out, sharex=True, squeeze=False
         )
         axes_out = axes_out.flat
         df["OUTPUT"].loc[:, y_labels].hist(
@@ -904,7 +1005,14 @@ class Dataset:
         plt.suptitle("Coverage region (output).")
 
         if save_as:
+            # Keep 16:9 ratio
+            height = 2.5
+            width = 1.778 * height
+
+            fig_in.set_size_inches(ncols_in * width, nrows_in * height)
             save_plot_as(fig_in, save_as + "_in")  # noqa
+
+            fig_out.set_size_inches(ncols_out * width, nrows_out * height)
             save_plot_as(fig_out, save_as + "_out")  # noqa
 
         return fig_in, axes_in, fig_out, axes_out
@@ -1021,6 +1129,7 @@ class Dataset:
             Alpha channel value for the output signals.
         save_as:
             Save the figure with a specified name.
+            The figure is automatically resized with a 16:9 aspect ratio.
             You must specify the complete *filename*, including the path.
 
 
@@ -1122,6 +1231,11 @@ class Dataset:
 
         # Save and return
         if save_as:
+            # Keep 16:9 ratio
+            height = 2.5
+            width = 1.778 * height
+
+            fig.set_size_inches(ncols * width, nrows * height)
             save_plot_as(fig, save_as)
 
         return fig, axes
@@ -1560,92 +1674,6 @@ def dataframe_validation(
     # 7. The dataframe elements are all floats
     if not all(df.dtypes == float):
         raise TypeError("Elements of the DataFrame must be float.")
-
-
-def fix_sampling_periods(
-    signal_list: list[Signal],
-    target_sampling_period: Optional[float] = None,
-) -> tuple[list[Signal], list[str]]:
-    # TODO: Implement some other re-sampling mechanism.
-    """
-    Resample the :py:class:`Signals <dymoval.dataset.Signal>` in the *signal_list*.
-
-    The signals are resampled either with the slowest sampling period as target,
-    or towards the sampling period specified by the *target_sampling_period*
-    parameter, if specified.
-
-    Nevertheless, signals whose sampling period is not a divisor of the
-    the target sampling period will not be resampled and a list with the names
-    of such signals is returned.
-
-    Parameters
-    ----------
-    signal_list :
-        List of :py:class:`Signals <dymoval.dataset.Signal>` to be resampled.
-    target_sampling_period :
-        Target sampling period.
-
-    Raises
-    ------
-    ValueError
-        If the *target_sampling_period* value is not positive.
-
-    Returns
-    -------
-    resampled_signals:
-        List of :py:class:`Signal <dymoval.dataset.Signal>` with adjusted
-        sampling period.
-    excluded_signals:
-        List of signal names that could not be resampled.
-    """
-    # ===========================================================
-    # arguments Validation
-    signals_validation(signal_list)
-    #
-    if target_sampling_period:
-        if (
-            not isinstance(target_sampling_period, float)
-            or target_sampling_period < 0
-        ):
-            raise ValueError("'target_sampling_period' must be positive.")
-    # ==========================================================
-
-    # Initialization
-    excluded_signals = []
-
-    # Downsample to the slowest period if target_sampling_period
-    # is not given.
-    if not target_sampling_period:
-        target_sampling_period = 0.0
-        for sig in signal_list:
-            target_sampling_period = max(
-                target_sampling_period, sig["sampling_period"]
-            )
-            print(f"target_sampling_period = {target_sampling_period}")
-    # Separate sigs
-    for sig in signal_list:
-        N = target_sampling_period / sig["sampling_period"]
-        # Check if N is integer
-        if np.isclose(N, round(N)):
-            sig["values"] = sig["values"][:: int(N)]
-            sig["sampling_period"] = target_sampling_period
-        else:
-            excluded_signals.append(sig["name"])
-    resampled_signals = [
-        sig
-        for sig in list(signal_list)
-        if not (sig["name"] in excluded_signals)
-    ]
-    print(
-        "\nre-sampled signals =",
-        f"{[sig['name'] for sig in resampled_signals]}",
-    )
-    print(
-        "excluded signals from dataset =" f"{[sig for sig in excluded_signals]}"
-    )
-    print(f"actual sampling period = {target_sampling_period}")
-
-    return resampled_signals, excluded_signals
 
 
 def plot_signals(

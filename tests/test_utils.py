@@ -79,7 +79,9 @@ class Test_str2list:
             ),  # list input
         ],
     )
-    def test_str2list(self, x: Union[str, list[str]], expected: list[str]) -> None:
+    def test_str2list(
+        self, x: Union[str, list[str]], expected: list[str]
+    ) -> None:
         actual = dmv.str2list(x)
         assert sorted(actual) == sorted(expected)
 
