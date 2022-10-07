@@ -578,7 +578,7 @@ class Dataset:
 
         # Small check
         # Input labels passed
-        if u_labels is not None:
+        if u_labels:
             u_labels = str2list(u_labels)  # noqa
             input_not_found = difference_lists_of_str(
                 u_labels, list(df["INPUT"].columns)
@@ -593,7 +593,7 @@ class Dataset:
             u_labels = []
 
         # Output labels passed
-        if y_labels is not None:
+        if y_labels:
             y_labels = str2list(y_labels)  # noqa
             output_not_found = difference_lists_of_str(  # noqa
                 y_labels, list(df["OUTPUT"].columns)
@@ -608,7 +608,7 @@ class Dataset:
             y_labels = []
 
         # Nothing passed => take all.
-        if y_labels is None and u_labels is None:
+        if not y_labels and not u_labels:
             u_labels = list(df["INPUT"].columns)
             y_labels = list(df["OUTPUT"].columns)
 
@@ -855,12 +855,14 @@ class Dataset:
         # Validation
         u_labels, y_labels = self._validate_signals(u_labels, y_labels)
 
+        print("u = ", u_labels)
+        print("y = ", y_labels)
         # df points to self.dataset.
         df = self.dataset
 
         # Input-output length
-        p = len(u_labels) if not u_labels else 0
-        q = len(y_labels) if not y_labels else 0
+        p = len(u_labels)
+        q = len(y_labels)
 
         if overlap:
             n = max(p, q)
@@ -872,7 +874,7 @@ class Dataset:
         fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
         axes = axes.T.flat
 
-        if u_labels is not None:
+        if u_labels:
             df["INPUT"].loc[:, u_labels].plot(
                 subplots=True,
                 grid=True,
@@ -890,7 +892,7 @@ class Dataset:
                 color=line_color_input,
             )
 
-        if y_labels is not None:
+        if y_labels:
             df["OUTPUT"].loc[:, y_labels].plot(
                 subplots=True,
                 grid=True,
@@ -970,7 +972,7 @@ class Dataset:
 
         u_labels, y_labels = self._validate_signals(u_labels, y_labels)
 
-        if u_labels is not None:
+        if u_labels:
             p = len(u_labels)
             nrows_in, ncols_in = factorize(p)  # noqa
             fig_in, axes_in = plt.subplots(nrows_in, ncols_in, squeeze=False)
@@ -987,7 +989,7 @@ class Dataset:
                 axes_in[ii].set_xlabel(u_labels[ii][1])
             plt.suptitle("Coverage region (input).")
 
-        if y_labels is not None:
+        if y_labels:
             q = len(y_labels)
             nrows_out, ncols_out = factorize(q)  # noqa
             fig_out, axes_out = plt.subplots(
@@ -1019,16 +1021,16 @@ class Dataset:
             save_plot_as(fig_out, save_as + "_out")  # noqa
 
         # Return stuff
-        if u_labels is not None and y_labels is not None:
+        if u_labels and y_labels:
             return fig_in, axes_in, fig_out, axes_out
 
-        elif u_labels is None and y_labels is not None:
+        elif not u_labels and y_labels:
             return fig_out, axes_out, None, None
 
-        elif u_labels is not None and y_labels is None:
+        elif u_labels and not y_labels:
             return fig_in, axes_in, None, None
 
-        elif u_labels is None and y_labels is None:
+        elif not u_labels and not y_labels:
             return fig_in, axes_in, fig_out, axes_out
         else:
             return None, None, None, None
@@ -1160,12 +1162,12 @@ class Dataset:
         # Input-output lengths.
         # If we want to plot abs and phase, then we need to double
         # the number of axes in the figure
-        if u_labels is not None:
+        if u_labels:
             p = 2 * len(u_labels) if kind == "amplitude" else len(u_labels)
         else:
             p = 1
 
-        if y_labels is not None:
+        if y_labels:
             q = 2 * len(y_labels) if kind == "amplitude" else len(y_labels)
         else:
             q = 1
@@ -1222,24 +1224,27 @@ class Dataset:
         fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
         axes = axes.T.flat
 
-        df_freq["INPUT"].loc[:, u_labels].plot(
-            subplots=True,
-            grid=True,
-            color=line_color_input,
-            linestyle=linestyle_input,
-            alpha=alpha_input,
-            legend=u_labels,
-            ax=axes[0:p],
-        )
-        df_freq["OUTPUT"].loc[:, y_labels].plot(
-            subplots=True,
-            grid=True,
-            color=line_color_output,
-            linestyle=linestyle_output,
-            alpha=alpha_output,
-            legend=y_labels,
-            ax=axes[range_out],
-        )
+        if u_labels:
+            df_freq["INPUT"].loc[:, u_labels].plot(
+                subplots=True,
+                grid=True,
+                color=line_color_input,
+                linestyle=linestyle_input,
+                alpha=alpha_input,
+                legend=u_labels,
+                ax=axes[0:p],
+            )
+
+        if y_labels:
+            df_freq["OUTPUT"].loc[:, y_labels].plot(
+                subplots=True,
+                grid=True,
+                color=line_color_output,
+                linestyle=linestyle_output,
+                alpha=alpha_output,
+                legend=y_labels,
+                ax=axes[range_out],
+            )
 
         for ii in range(ncols):
             axes[nrows - 1 :: nrows][ii].set_xlabel(df_freq.index.name)
