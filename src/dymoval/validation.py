@@ -354,11 +354,7 @@ class ValidationSession:
             Alpha channel value for the output signals.
         save_as:
             Save the figure with a specified name.
-<<<<<<< HEAD
-            The saved figure will have a 16:9 ratio aspect.
-=======
             The figure is automatically resized with a 16:9 aspect ratio.
->>>>>>> move_fix_sampling_periods
             You must specify the complete *filename*, including the path.
         """
 
@@ -441,22 +437,12 @@ class ValidationSession:
         # Save and eventually return figures.
         # ===============================================================
         if save_as:
-<<<<<<< HEAD
-            # Expand figure size
-            # Keep 16:9 ratio
-            height = 2.5
-            width = 1.778 * height
-            fig.set_size_inches(ncols * width, nrows * height)
-
-            save_plot_as(fig, save_as)
-=======
             # Keep 16:9 ratio
             height = 2.5
             width = 1.778 * height
 
             fig.set_size_inches(ncols * width, nrows * height)
             save_plot_as(fig, save_as)  # noqa
->>>>>>> move_fix_sampling_periods
 
         return fig, axes
 
@@ -464,10 +450,6 @@ class ValidationSession:
         self,
         list_sims: Optional[Union[str, list[str]]] = None,
         *,
-<<<<<<< HEAD
-=======
-
->>>>>>> move_fix_sampling_periods
         save_as: Optional[str] = "",
     ) -> Optional[
         tuple[
@@ -489,11 +471,7 @@ class ValidationSession:
             It appends the suffix *_eps_eps* and *_u_eps* to the residuals
             auto-correlation and to the input-residuals cross-correlation figure,
             respectively.
-<<<<<<< HEAD
-            The saved figure will have a 16:9 ratio aspect.
-=======
             The figure is automatically resized with a 16:9 aspect ratio.
->>>>>>> move_fix_sampling_periods
             The *filename* shall include the path.
         Raises
         ------
@@ -568,10 +546,6 @@ class ValidationSession:
         plt.suptitle("Input-residuals cross-correlation")
 
         if save_as:
-<<<<<<< HEAD
-            # Expand figure size
-=======
->>>>>>> move_fix_sampling_periods
             # Keep 16:9 ratio
             height = 2.5
             width = 1.778 * height
@@ -579,11 +553,7 @@ class ValidationSession:
             fig1.set_size_inches(q * width, q * height)
             save_plot_as(fig1, save_as + "_eps_eps")  # noqa
 
-<<<<<<< HEAD
-            fig2.set_size_inches(q * width, q * height)
-=======
             fig2.set_size_inches(q * width, p * height)
->>>>>>> move_fix_sampling_periods
             save_plot_as(fig2, save_as + "_u_eps")  # noqa
 
         return fig1, ax1, fig2, ax2

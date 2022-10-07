@@ -132,9 +132,9 @@ dmv.plot_signals(signal_list, input_signal_names[0:1], output_signal_names)
 # the function fix_sampling_period.
 # Such a function will tell you what signals were resampled and what not.
 
-resampled_signals, excluded_signals = dmv.fix_sampling_periods(
-    signal_list, target_sampling_period=0.1
-)
+# resampled_signals, excluded_signals = dmv.fix_sampling_periods(
+#     signal_list, target_sampling_period=0.1
+# )
 
 
 # %% At this point we can create a dymoval Dataset.
@@ -148,9 +148,10 @@ resampled_signals, excluded_signals = dmv.fix_sampling_periods(
 
 ds = dmv.Dataset(
     "my_dataset",
-    resampled_signals,
+    signal_list,
     input_signal_names,
     output_signal_names,
+    target_sampling_period=0.1,
     overlap=True,
 )
 

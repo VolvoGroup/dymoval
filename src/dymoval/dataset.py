@@ -95,13 +95,12 @@ class Dataset:
         List of input signal names. Each signal name must be unique and must be
         contained in the signal_list.
     target_sampling_period :
-        This parameter is passed to :py:meth:`~dymoval.dataset.fix_sampling_period`.
+        The passed signals will be re-sampled towards this target sampling period.
     plot_raw :
         If *True*, then the :py:class:`Signal <dymoval.dataset.Signal>`
         contained in the *signal_list* will be plotted.
         This parameter only have effect when the *signal_list* parameter is
         a list of :py:class:`Signal <dymoval.dataset.Signal>` objects.
-
     tin :
         Initial time instant of the Dataset.
     tout :
@@ -122,6 +121,7 @@ class Dataset:
         signal_list: Union[list[Signal], pd.DataFrame],
         u_labels: Union[str, list[str]],
         y_labels: Union[str, list[str]],
+        target_sampling_period: Optional[float] = None,
         plot_raw: Optional[bool] = False,
         tin: Optional[float] = None,
         tout: Optional[float] = None,
@@ -134,14 +134,14 @@ class Dataset:
                 signal_list,
                 u_labels,
                 y_labels,
+                target_sampling_period,
                 plot_raw,
                 tin,
                 tout,
                 full_time_interval,
                 overlap,
             )
-            # df, nan_intervals, excluded_signals, dataset_coverage = attr_sign
-            df, nan_intervals, dataset_coverage = attr_sign
+            df, nan_intervals, excluded_signals, dataset_coverage = attr_sign
         # Initialization by pandas DataFrame
         elif isinstance(signal_list, pd.DataFrame):
             attr_df = self._new_dataset_from_dataframe(
@@ -153,8 +153,7 @@ class Dataset:
                 full_time_interval,
                 overlap,
             )
-            df, nan_intervals, dataset_coverage = attr_df
-            # excluded_signals = []
+            df, nan_intervals, excluded_signals, dataset_coverage = attr_df
         else:
             raise TypeError(
                 "Input signals must be Signal or pandas DataFrame type. \n",
@@ -178,11 +177,7 @@ class Dataset:
         self.information_level: float = 0.0  #: *Not implemented yet!*
         self._nan_intervals: Any = deepcopy(nan_intervals)
         # TODO: Check if _excluded_signals it can be removed.
-<<<<<<< HEAD
-        # self._excluded_signals: list[str] = excluded_signals
-=======
         self.excluded_signals: list[str] = excluded_signals
->>>>>>> move_fix_sampling_periods
 
     def __str__(self) -> str:
         return f"Dymoval dataset called '{self.name}'."
@@ -446,6 +441,7 @@ class Dataset:
     ) -> tuple[
         pd.DataFrame,
         dict[str, dict[str, list[np.ndarray]]],
+        list[str],
         tuple[pd.Series, pd.DataFrame, pd.Series, pd.DataFrame],
     ]:
 
@@ -453,7 +449,6 @@ class Dataset:
         # This is the Dataset initializer when the signals are arranged
         # in a pandas DataFrame
         # ==============================================================
-        print("Stocazzoooo")
         # Arguments validation
         if tin is None and tout is not None:
             tin = df.index[0]
@@ -493,13 +488,18 @@ class Dataset:
 
         # Initialize coverage region
         dataset_coverage = self._init_dataset_coverage(df)
-        return df, NaN_intervals, dataset_coverage
+
+        # The DataFrame has been built with signals sampled with the same period,
+        # therefore there are no excluded signals due to re-sampling
+        excluded_signals: list[str] = []
+        return df, NaN_intervals, excluded_signals, dataset_coverage
 
     def _new_dataset_from_signals(
         self,
         signal_list: list[Signal],
         u_labels: Union[str, list[str]],
         y_labels: Union[str, list[str]],
+        target_sampling_period: Optional[float],
         plot_raw: Optional[bool],
         tin: Optional[float],
         tout: Optional[float],
@@ -508,6 +508,7 @@ class Dataset:
     ) -> tuple[
         pd.DataFrame,
         dict[str, dict[str, list[np.ndarray]]],
+        list[str],
         tuple[pd.Series, pd.DataFrame, pd.Series, pd.DataFrame],
     ]:
 
@@ -524,59 +525,55 @@ class Dataset:
         # Try to align the sampling periods, whenever possible
         # Note! resampled_signals:list[Signals], whereas
         # excluded_signals: list[str]
-<<<<<<< HEAD
-        # resampled_signals, excluded_signals = fix_sampling_periods(
-        #    signal_list, target_sampling_period
-        # )
-=======
         resampled_signals, excluded_signals = self._fix_sampling_periods(
             signal_list, target_sampling_period
         )
->>>>>>> move_fix_sampling_periods
 
-        # Check that you you have at least one input and one output
-        # after re-sampling.
-        # input_leftovers = [
-        #     u for u in resampled_signals if u["name"] in u_labels
-        # ]
-        sampling_periods = np.asarray(
-            [s["sampling_period"] for s in signal_list]
-        )
-
-        # Check that you don't have zero inputs or zero outputs
-        if not np.allclose(sampling_periods, sampling_periods[0]):
-            raise IndexError(
-                "All signals in the dataset must have the same sampling period."
-            )
-
-        # After fix_sampling_periods call all the signals in the resampled_signals
-        # have the same sampling period.
-        # Ts is the current sampling period for all the signals.
-        Ts = list(signal_list)[0]["sampling_period"]
+        Ts = list(resampled_signals)[0]["sampling_period"]
 
         # Drop excluded signals from u_labels and y_labels
-        u_labels = [x["name"] for x in signal_list if x["name"] in u_labels]
-        y_labels = [x["name"] for x in signal_list if x["name"] in y_labels]
-
-        # Trim the signals to have equal length and
+        u_labels = [
+            x["name"] for x in resampled_signals if x["name"] in u_labels
+        ]
+        y_labels = [
+            x["name"] for x in resampled_signals if x["name"] in y_labels
+        ]
+        print("u_labels", u_labels)
+        # Trim the signals to have equal length,
         # then build the DataFrame for inizializing the Dataset class.
-        nsamples = [len(x["values"]) for x in signal_list]
-        max_idx = min(nsamples)
+        nsamples = [len(x["values"]) for x in resampled_signals]
+        max_idx = min(nsamples)  # Shortest signal
+        n = len(resampled_signals)  # number of signals
+        print("max_idx = ", max_idx)
+        print("n = ", n)
 
-        # Create DataFrame with trimmed and re-sampled signals
+        df_data: np.ndarray = np.zeros((max_idx, n))
+        for ii, s in enumerate(resampled_signals):
+            df_data[:, ii] = s["values"][0:max_idx]
+
+        # Create actual DataFrame
         df = pd.DataFrame(
-            index=np.arange(max_idx) * Ts, columns=[*u_labels, *y_labels]
+            data=df_data,
+            columns=[*u_labels, *y_labels],
         )
-        df.index.name = "Time"
-        for s in signal_list:
-            df[s["name"]] = s["values"][0:max_idx]
+        df.index = pd.Index(data=np.arange(max_idx) * Ts, name="Time")
+        print("df = ", df)
 
-        # Call the initializer from dataframe to get a Dataset object.
-        df, nan_intervals, dataset_coverage = self._new_dataset_from_dataframe(
+        # Add some robustness: we validate the built DataFrame, even if
+        # it should be correct by construction.
+        dataframe_validation(df, u_labels=u_labels, y_labels=y_labels)
+
+        # Call the initializer from DataFrame to get a Dataset object.
+        (
+            df,
+            nan_intervals,
+            _,
+            dataset_coverage,
+        ) = self._new_dataset_from_dataframe(
             df, u_labels, y_labels, tin, tout, full_time_interval, overlap
         )
-        # return df, nan_intervals, excluded_signals, dataset_coverage
-        return df, nan_intervals, dataset_coverage
+
+        return df, nan_intervals, excluded_signals, dataset_coverage
 
     def _validate_signals(
         self,
@@ -619,11 +616,6 @@ class Dataset:
             u_labels = list(df["INPUT"].columns)
             y_labels = list(df["OUTPUT"].columns)
 
-<<<<<<< HEAD
-=======
-
-
->>>>>>> move_fix_sampling_periods
         return u_labels, y_labels
 
     def _validate_name_value_tuples(
@@ -643,13 +635,7 @@ class Dataset:
         # This function is needed to validate inputs like [("u1",3.2), ("y1", 0.5)]
         # Think for example to the "remove_offset" function.
         # Return both the list of input and output names and the validated tuples.
-<<<<<<< HEAD
 
-        u_labels: Optional[list[srt]] = None
-        y_labels: Optional[list[srt]] = None
-
-=======
->>>>>>> move_fix_sampling_periods
         if u_list is not None:
             if not isinstance(u_list, list):
                 u_list = [u_list]
@@ -720,7 +706,7 @@ class Dataset:
         # ==========================================================
 
         # Initialization
-        excluded_signals = []
+        excluded_signals: list[str] = []
 
         # Downsample to the slowest period if target_sampling_period
         # is not given.
@@ -843,9 +829,6 @@ class Dataset:
     ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
         """Plot the Dataset.
 
-        This function always plot at least one input and output signal.
-        It is not possible to plot only one signal.
-
         Possible values for the parameters describing the line used in the plot
         (e.g. *line_color_input* , *alpha_output*. etc).
         are the same for the corresponding plot function in matplotlib.
@@ -872,11 +855,7 @@ class Dataset:
             Alpha channel value for the output signals.
         save_as:
             Save the figure with a specified name.
-<<<<<<< HEAD
-            The saved figure will have a 16:9 ratio aspect.
-=======
             The figure is automatically resized with a 16:9 aspect ratio.
->>>>>>> move_fix_sampling_periods
             You must specify the complete *filename*, including the path.
         """
         # Validation
@@ -898,10 +877,7 @@ class Dataset:
         nrows, ncols = factorize(n)  # noqa
         fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
         axes = axes.T.flat
-<<<<<<< HEAD
 
-=======
->>>>>>> move_fix_sampling_periods
         if u_labels is not None:
             df["INPUT"].loc[:, u_labels].plot(
                 subplots=True,
@@ -942,17 +918,8 @@ class Dataset:
             axes[nrows - 1 :: nrows][ii].set_xlabel(df.index.name)
         plt.suptitle("Blue lines are input and green lines are output. ")
 
-<<<<<<< HEAD
         # Eventually save and return figures.
         if save_as:
-            pass
-            # Expand figure size
-=======
-
-
-        # Eventually save and return figures.
-        if save_as:
->>>>>>> move_fix_sampling_periods
             # Keep 16:9 ratio
             height = 2.5
             width = 1.778 * height
@@ -981,8 +948,6 @@ class Dataset:
         """
         Plot the dataset coverage as histograms.
 
-        This function always plot at least one input and output signal.
-        It is not possible to plot only one signal.
 
         Parameters
         ----------
@@ -1048,18 +1013,11 @@ class Dataset:
             plt.suptitle("Coverage region (output).")
 
         if save_as:
-<<<<<<< HEAD
-            # Expand figure size
-=======
->>>>>>> move_fix_sampling_periods
             # Keep 16:9 ratio
             # TODO Move height to the config file
             height = 2.5
             width = 1.778 * height
-<<<<<<< HEAD
-=======
 
->>>>>>> move_fix_sampling_periods
             fig_in.set_size_inches(ncols_in * width, nrows_in * height)
             save_plot_as(fig_in, save_as + "_in")  # noqa
 
@@ -1155,9 +1113,6 @@ class Dataset:
         If some signals have *NaN* values, then the FFT cannot be computed and
         an error is raised.
 
-        This function always plot at least one input and output signal.
-        It is not possible to plot only one signal.
-
 
         Parameters
         ----------
@@ -1193,11 +1148,7 @@ class Dataset:
             Alpha channel value for the output signals.
         save_as:
             Save the figure with a specified name.
-<<<<<<< HEAD
-            The saved figure will have a 16:9 ratio aspect.
-=======
             The figure is automatically resized with a 16:9 aspect ratio.
->>>>>>> move_fix_sampling_periods
             You must specify the complete *filename*, including the path.
 
 
@@ -1594,7 +1545,7 @@ def signals_validation(signal_list: list[Signal]) -> None:
     if len(signal_names) > len(set(signal_names)):
         raise ValueError("Signal names are not unique")
     #
-    ALLOWED_KEYS = Signal.__required_keys__
+    ALLOWED_KEYS = Signal.__required_keys__  # type: ignore
     for sig in signal_list:
         keys = sig.keys()
         #
@@ -1692,7 +1643,7 @@ def dataframe_validation(
     u_labels = str2list(u_labels)  # noqa
     y_labels = str2list(y_labels)  # noqa
     # 1. Check that you have at least one input and one output
-    if not u_labels or not y_labels:
+    if len(u_labels) == 0 or len(y_labels) == 0:
         raise IndexError(
             "You need at least one input and one output signal."
             "Check 'u_labels' and 'y_labels'."

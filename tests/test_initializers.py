@@ -109,7 +109,7 @@ class TestInitializerFromSignals:
 
         target_sampling_period = 0.0001
         with pytest.raises(IndexError):
-            ds = dmv.Dataset(
+            _ = dmv.Dataset(
                 "potato",
                 signal_list,
                 input_signal_names,
@@ -118,9 +118,6 @@ class TestInitializerFromSignals:
                 plot_raw=True,
                 full_time_interval=True,
             )
-            # To make flake8 happy otherwise it complains that a variable
-            # has been declared but not used.
-            ds.coverage
 
 
 class TestInitializerFromDataframe:
