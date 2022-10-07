@@ -13,7 +13,7 @@ from matplotlib import pyplot as plt
 from scipy import io, fft
 from .config import *  # noqa
 from .utils import *  # noqa
-from typing import TypedDict, Optional, Union, Any, Literal
+from typing import TypedDict, Optional, Union, Any, Literal, overload
 from copy import deepcopy
 
 
@@ -613,6 +613,34 @@ class Dataset:
             y_labels = list(df["OUTPUT"].columns)
 
         return u_labels, y_labels
+
+    @overload
+    def _validate_name_value_tuples(
+        self,
+        u_list: Union[list[tuple[str, float]], tuple[str, float]],
+        y_list: Optional[
+            Union[list[tuple[str, float]], tuple[str, float]]
+        ] = None,
+    ) -> tuple[
+        Optional[list[str]],
+        Optional[list[str]],
+        Optional[list[tuple[str, float]]],
+        Optional[list[tuple[str, float]]],
+    ]:
+        ...
+
+    @overload
+    def _validate_name_value_tuples(
+        self,
+        u_list: Optional[Union[list[tuple[str, float]], tuple[str, float]]],
+        y_list: Union[list[tuple[str, float]], tuple[str, float]],
+    ) -> tuple[
+        Optional[list[str]],
+        Optional[list[str]],
+        Optional[list[tuple[str, float]]],
+        Optional[list[tuple[str, float]]],
+    ]:
+        ...
 
     def _validate_name_value_tuples(
         self,
@@ -1307,6 +1335,24 @@ class Dataset:
         df_temp.round(decimals=NUM_DECIMALS)
 
         return ds_temp
+
+    @overload
+    def remove_offset(
+        self,
+        *,
+        u_list: Union[list[tuple[str, float]], tuple[str, float]],
+        y_list: Optional[Union[list[tuple[str, float]], tuple[str, float]]],
+    ) -> Optional[pd.DataFrame]:
+        ...
+
+    @overload
+    def remove_offset(
+        self,
+        *,
+        u_list: Optional[Union[list[tuple[str, float]], tuple[str, float]]],
+        y_list: Union[list[tuple[str, float]], tuple[str, float]],
+    ) -> Optional[pd.DataFrame]:
+        ...
 
     def remove_offset(
         self,
