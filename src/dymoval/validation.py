@@ -450,7 +450,7 @@ class ValidationSession:
         self,
         list_sims: Optional[Union[str, list[str]]] = None,
         *,
-        save_figure: Optional[bool] = False,
+
         save_as: Optional[str] = "",
     ) -> Optional[
         tuple[
