@@ -156,11 +156,7 @@ class Dataset:
             df, nan_intervals, excluded_signals, dataset_coverage = attr_df
         else:
             raise TypeError(
-                "Input signals must be Signal or pandas DataFrame type. \n",
-                "A Signal type is a dict with the following fields: \n\n",
-                "name: str \n",
-                "values: 1D numpy.ndarray \n",
-                "sampling_period: float.\n\n ",
+                "Input must be a Signal list or a pandas DataFrame type.",
             )
         # ================================================
         # Class attributes
@@ -538,14 +534,11 @@ class Dataset:
         y_labels = [
             x["name"] for x in resampled_signals if x["name"] in y_labels
         ]
-        print("u_labels", u_labels)
         # Trim the signals to have equal length,
         # then build the DataFrame for inizializing the Dataset class.
         nsamples = [len(x["values"]) for x in resampled_signals]
         max_idx = min(nsamples)  # Shortest signal
         n = len(resampled_signals)  # number of signals
-        print("max_idx = ", max_idx)
-        print("n = ", n)
 
         df_data: np.ndarray = np.zeros((max_idx, n))
         for ii, s in enumerate(resampled_signals):
@@ -557,7 +550,6 @@ class Dataset:
             columns=[*u_labels, *y_labels],
         )
         df.index = pd.Index(data=np.arange(max_idx) * Ts, name="Time")
-        print("df = ", df)
 
         # Add some robustness: we validate the built DataFrame, even if
         # it should be correct by construction.
@@ -579,7 +571,7 @@ class Dataset:
         self,
         u_labels: Optional[Union[str, list[str]]],
         y_labels: Optional[Union[str, list[str]]],
-    ) -> tuple[Optional[list[str]], Optional[list[str]]]:
+    ) -> tuple[list[str], list[str]]:
         # This function check if the signals (labels) from the user
         # exist in the current dataset.
         df = self.dataset
@@ -597,6 +589,8 @@ class Dataset:
                     f"Signal(s) {input_not_found} not found in the input signals dataset. "
                     "Use 'get_signal_list()' to get the list of all available signals. "
                 )
+        else:
+            u_labels = []
 
         # Output labels passed
         if y_labels is not None:
@@ -610,6 +604,8 @@ class Dataset:
                     f"Signal(s) {output_not_found} not found in the output signal dataset. "
                     "Use 'get_signal_list()' to get the list of all available signals "
                 )
+        else:
+            y_labels = []
 
         # Nothing passed => take all.
         if y_labels is None and u_labels is None:
@@ -712,32 +708,30 @@ class Dataset:
         # is not given.
         if not target_sampling_period:
             target_sampling_period = 0.0
-            for sig in signal_list:
+            for s in signal_list:
                 target_sampling_period = max(
-                    target_sampling_period, sig["sampling_period"]
+                    target_sampling_period, s["sampling_period"]
                 )
                 print(f"target_sampling_period = {target_sampling_period}")
-        # Separate sigs
-        for sig in signal_list:
-            N = target_sampling_period / sig["sampling_period"]
+
+        for s in signal_list:
+            N = target_sampling_period / s["sampling_period"]
             # Check if N is integer
             if np.isclose(N, round(N)):
-                sig["values"] = sig["values"][:: int(N)]
-                sig["sampling_period"] = target_sampling_period
+                s["values"] = s["values"][:: int(N)]
+                s["sampling_period"] = target_sampling_period
             else:
-                excluded_signals.append(sig["name"])
+                excluded_signals.append(s["name"])
+
         resampled_signals = [
-            sig
-            for sig in list(signal_list)
-            if not (sig["name"] in excluded_signals)
+            s for s in list(signal_list) if not (s["name"] in excluded_signals)
         ]
         print(
             "\nre-sampled signals =",
-            f"{[sig['name'] for sig in resampled_signals]}",
+            f"{[s['name'] for s in resampled_signals]}",
         )
         print(
-            "excluded signals from dataset ="
-            f"{[sig for sig in excluded_signals]}"
+            "excluded signals from dataset =" f"{[s for s in excluded_signals]}"
         )
         print(f"actual sampling period = {target_sampling_period}")
 
@@ -865,8 +859,8 @@ class Dataset:
         df = self.dataset
 
         # Input-output length
-        p = len(u_labels) if u_labels is not None else 0
-        q = len(y_labels) if y_labels is not None else 0
+        p = len(u_labels) if not u_labels else 0
+        q = len(y_labels) if not y_labels else 0
 
         if overlap:
             n = max(p, q)
@@ -1064,7 +1058,6 @@ class Dataset:
         """
         # Validation
         u_labels, y_labels = self._validate_signals(u_labels, y_labels)
-
         # Remove 'INPUT' 'OUTPUT' columns level from dataframe
         df_temp = self.dataset.droplevel(level=0, axis=1)
 
@@ -1079,7 +1072,8 @@ class Dataset:
         # namely it must hold "int_T x(t) = int_F X(f)".
         # See https://stackoverflow.com/questions/20165193/fft-normalization
         N = len(df_temp.index)
-        vals = fft.rfftn(df_temp.loc[:, [*u_labels, *y_labels]], axes=0) / N
+
+        vals = fft.rfftn(df_temp.loc[:, u_labels + y_labels], axes=0) / N
 
         # Create a new Dataframe
         u_extended_labels = list(zip(["INPUT"] * len(u_labels), u_labels))
@@ -1166,9 +1160,15 @@ class Dataset:
         # Input-output lengths.
         # If we want to plot abs and phase, then we need to double
         # the number of axes in the figure
-        p = 2 * len(u_labels) if kind == "amplitude" else len(u_labels)
-        q = 2 * len(y_labels) if kind == "amplitude" else len(y_labels)
+        if u_labels is not None:
+            p = 2 * len(u_labels) if kind == "amplitude" else len(u_labels)
+        else:
+            p = 1
 
+        if y_labels is not None:
+            q = 2 * len(y_labels) if kind == "amplitude" else len(y_labels)
+        else:
+            q = 1
         print("u_labels = ", u_labels)
         print("y_labels = ", y_labels)
         # Compute FFT.
@@ -1546,8 +1546,8 @@ def signals_validation(signal_list: list[Signal]) -> None:
         raise ValueError("Signal names are not unique")
     #
     ALLOWED_KEYS = Signal.__required_keys__  # type: ignore
-    for sig in signal_list:
-        keys = sig.keys()
+    for s in signal_list:
+        keys = s.keys()
         #
         # Existence
         not_found_keys = difference_lists_of_str(
@@ -1555,26 +1555,26 @@ def signals_validation(signal_list: list[Signal]) -> None:
         )  # noqa
         if not_found_keys:
             raise KeyError(
-                f"Key {not_found_keys} not found in signal {sig['name']}."
+                f"Key {not_found_keys} not found in signal {s['name']}."
             )
         for key in keys:
             if key == "values":
                 cond = (
-                    not isinstance(sig[key], np.ndarray) or sig[key].ndim != 1  # type: ignore
+                    not isinstance(s[key], np.ndarray) or s[key].ndim != 1  # type: ignore
                 )
                 if cond:
                     raise TypeError("Key {key} must be 1-D numpy array'.")
-                if sig[key].size < 2:  # type: ignore
+                if s[key].size < 2:  # type: ignore
                     raise IndexError(
-                        "Signal {sig[name']} has only one sample.",
+                        "Signal {s[name']} has only one sample.",
                         "A signal must have at least two samples.",
                     )
             if key == "sampling_period":
-                if not isinstance(sig[key], float):  # type: ignore
+                if not isinstance(s[key], float):  # type: ignore
                     raise TypeError(
                         "Key 'sampling_period' must be a positive float."
                     )
-                if sig[key] < 0.0 or np.isclose(sig[key], 0.0):  # type: ignore
+                if s[key] < 0.0 or np.isclose(s[key], 0.0):  # type: ignore
                     raise ValueError(
                         "Key 'sampling_period' must be a positive float."
                     )
@@ -1718,7 +1718,7 @@ def plot_signals(
     """
     # Validate signals first
     signals_validation(signal_list)
-    signal_names = [sig["name"] for sig in signal_list]
+    signal_names = [s["name"] for s in signal_list]
     if u_labels:
         u_labels = str2list(u_labels)  # noqa
         inputs_not_found = difference_lists_of_str(
@@ -1744,24 +1744,24 @@ def plot_signals(
     nrows, ncols = factorize(n)  # noqa
     fig, ax = plt.subplots(nrows, ncols, squeeze=False, sharex=True)
     ax = ax.T.flat
-    for ii, sig in enumerate(signal_list):
+    for ii, s in enumerate(signal_list):
         timeline = np.linspace(
-            0.0, len(sig["values"]) * sig["sampling_period"], len(sig["values"])
+            0.0, len(s["values"]) * s["sampling_period"], len(s["values"])
         )
-        if u_labels and sig["name"] in u_labels:
+        if u_labels and s["name"] in u_labels:
             line_color = "blue"
-            sig_label = (sig["name"], "input")
-        elif y_labels and sig["name"] in y_labels:
+            sig_label = (s["name"], "input")
+        elif y_labels and s["name"] in y_labels:
             line_color = "green"
-            sig_label = (sig["name"], "output")
+            sig_label = (s["name"], "output")
         else:
             line_color = "k"
-            sig_label = (sig["name"], "")
-        ax[ii].plot(timeline, sig["values"], label=sig_label, color=line_color)
+            sig_label = (s["name"], "")
+        ax[ii].plot(timeline, s["values"], label=sig_label, color=line_color)
         ax[ii].text(
             0.8,
             0.8,
-            f"$T_s$ = {sig['sampling_period']} s",
+            f"$T_s$ = {s['sampling_period']} s",
             bbox=dict(facecolor="yellow", alpha=0.8),
         )
         ax[ii].grid()
