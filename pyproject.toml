@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 # General info
 name = "dymoval"
-version = "0.2.0"
+version = "0.3.0"
 
 # Requirements
 requires-python = ">=3.9"
