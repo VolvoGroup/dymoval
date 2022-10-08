@@ -565,7 +565,9 @@ class Test_Dataset_raise:
 
         # Try to remove very weird signals.
         with pytest.raises(KeyError):
-            ds._validate_name_value_tuples(u_list[fixture], y_list[fixture])
+            ds._validate_name_value_tuples(
+                u_list=u_list[fixture], y_list=y_list[fixture]
+            )
 
     def test_remove_offset_raise(self, sine_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = sine_dataframe

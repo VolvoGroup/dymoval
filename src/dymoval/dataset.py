@@ -18,16 +18,14 @@ from copy import deepcopy
 
 
 class Signal(TypedDict):
-    """Signals are used to represent real-world signals and are used to
-    instantiate :py:class:`Dataset <dymoval.dataset.Dataset>` class objects.
+    """Signals are used to represent real-world signals.
+    They are used to instantiate :py:class:`Dataset <dymoval.dataset.Dataset>` class objects.
 
-    Signals shall be used in the following two cases:
-
-        #. The signals are not sampled with the same sampling period,
-        #. You are not very familiar with pandas.
+    It is possible to validate signals through :py:meth:`~dymoval.dataset.signals_validation`.
 
     Although Signals have compulsory attribues that must be set, there is freedom
     to append additional attributes.
+
 
 
     Example
@@ -66,15 +64,13 @@ class Dataset:
     and it provides methods for analyzing and manipulating them.
 
     A *Signal* list shall be passed to the initializer along with two lists of labels
-    (signal names) that specified which signal(s) shall be considered
+    defining which signal(s) shall be consiedered
     as input and which signal(s) shall be considered as output.
 
-    The signals lists can be either lists
+    The signals list can be either a list
     of dymoval :py:class:`Signals <dymoval.dataset.Signal>` type or a
     pandas DataFrame with a well-defined structure.
-
-    See :py:meth:`~dymoval.dataset.signals_validation` and
-    :py:meth:`~dymoval.dataset.dataframe_validation` for more
+    See  :py:meth:`~dymoval.dataset.dataframe_validation` for more
     information.
 
 
@@ -172,8 +168,8 @@ class Dataset:
         """Coverage statistics in terms of mean value and variance"""
         self.information_level: float = 0.0  #: *Not implemented yet!*
         self._nan_intervals: Any = deepcopy(nan_intervals)
-        # TODO: Check if _excluded_signals it can be removed.
         self.excluded_signals: list[str] = excluded_signals
+        """Signals that could not be re-sampled."""
 
     def __str__(self) -> str:
         return f"Dymoval dataset called '{self.name}'."
@@ -270,13 +266,11 @@ class Dataset:
         q = len(df["OUTPUT"].columns)
         # Check if there is some argument.
         if tin is not None and tout is not None:
-            tin_sel = np.round(tin, NUM_DECIMALS)  # noqa
-            tout_sel = np.round(tout, NUM_DECIMALS)  # noqa
+            tin_sel = np.round(tin, NUM_DECIMALS)
+            tout_sel = np.round(tout, NUM_DECIMALS)
         elif full_time_interval:
-            tin_sel = np.round(df.index[0], NUM_DECIMALS)  # noqa
-            tout_sel = np.round(
-                df.index[-1], NUM_DECIMALS
-            )  # noqa  # noqa, type: ignore
+            tin_sel = np.round(df.index[0], NUM_DECIMALS)
+            tout_sel = np.round(df.index[-1], NUM_DECIMALS)
         else:  # pragma: no cover
             # OBS! This part cannot be automatically tested because the it require
             # manual action from the user (resize window).
@@ -308,7 +302,7 @@ class Dataset:
                 axes[nrows - 1 :: nrows][ii].set_xlabel("Frequency")
             plt.suptitle(
                 "Sampling time "
-                f"= {np.round(df.index[1]-df.index[0],NUM_DECIMALS)}.\n"  # noqa
+                f"= {np.round(df.index[1]-df.index[0],NUM_DECIMALS)}.\n"
                 "Select the dataset time interval by resizing "
                 "the picture."
             )
@@ -325,7 +319,7 @@ class Dataset:
             # It can be better done perhaps.
             def close_event(event):  # type:ignore
                 time_interval = np.round(
-                    axes[0].get_xlim(), NUM_DECIMALS  # noqa
+                    axes[0].get_xlim(), NUM_DECIMALS
                 )  # noqa
                 close_event.tin, close_event.tout = time_interval
                 close_event.tin = max(close_event.tin, 0.0)
@@ -362,9 +356,9 @@ class Dataset:
         # ===================================================================
         # Trim dataset and NaN intervals based on (tin,tout)
         # ===================================================================
-        # Trim dataset
         df = df.loc[tin_sel:tout_sel, :]
         # Trim NaN_intevals
+        # TODO: code repetition
         for u_name in NaN_intervals["INPUT"].keys():
             # In the following, nan_chunks are time-interval.
             # Note! For a given signal, you may have many nan_chunks.
@@ -508,7 +502,7 @@ class Dataset:
         tuple[pd.Series, pd.DataFrame, pd.Series, pd.DataFrame],
     ]:
 
-        # If the user passed a string, we need to convert into list
+        # If the user pass a string, we need to convert into list
         u_labels = str2list(u_labels)  # noqa
         y_labels = str2list(y_labels)  # noqa
 
@@ -640,8 +634,37 @@ class Dataset:
     #     ]:
     #         ...
     #
+    @overload
     def _validate_name_value_tuples(
         self,
+        *,
+        u_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
+        y_list: Union[list[tuple[str, float]], tuple[str, float]],
+    ) -> tuple[
+        list[str],
+        list[str],
+        list[tuple[str, float]],
+        list[tuple[str, float]],
+    ]:
+        ...
+
+    @overload
+    def _validate_name_value_tuples(
+        self,
+        *,
+        u_list: Union[list[tuple[str, float]], tuple[str, float]],
+        y_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
+    ) -> tuple[
+        list[str],
+        list[str],
+        list[tuple[str, float]],
+        list[tuple[str, float]],
+    ]:
+        ...
+
+    def _validate_name_value_tuples(
+        self,
+        *,
         u_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
         y_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
     ) -> tuple[
@@ -681,41 +704,41 @@ class Dataset:
         target_sampling_period: Optional[float] = None,
     ) -> tuple[list[Signal], list[str]]:
         # TODO: Implement some other re-sampling mechanism.
-        """
-        Resample the :py:class:`Signals <dymoval.dataset.Signal>` in the *signal_list*.
+        # """
+        # Resample the :py:class:`Signals <dymoval.dataset.Signal>` in the *signal_list*.
 
-        The signals are resampled either with the slowest sampling period as target,
-        or towards the sampling period specified by the *target_sampling_period*
-        parameter, if specified.
+        # The signals are resampled either with the slowest sampling period as target,
+        # or towards the sampling period specified by the *target_sampling_period*
+        # parameter, if specified.
 
-        Nevertheless, signals whose sampling period is not a divisor of the
-        the target sampling period will not be resampled and a list with the names
-        of such signals is returned.
+        # Nevertheless, signals whose sampling period is not a divisor of the
+        # the target sampling period will not be resampled and a list with the names
+        # of such signals is returned.
 
-        Parameters
-        ----------
-        signal_list :
-            List of :py:class:`Signals <dymoval.dataset.Signal>` to be resampled.
-        target_sampling_period :
-            Target sampling period.
+        # Parameters
+        # ----------
+        # signal_list :
+        #     List of :py:class:`Signals <dymoval.dataset.Signal>` to be resampled.
+        # target_sampling_period :
+        #     Target sampling period.
 
-        Raises
-        ------
-        ValueError
-            If the *target_sampling_period* value is not positive.
+        # Raises
+        # ------
+        # ValueError
+        #     If the *target_sampling_period* value is not positive.
 
-        Returns
-        -------
-        resampled_signals:
-            List of :py:class:`Signal <dymoval.dataset.Signal>` with adjusted
-            sampling period.
-        excluded_signals:
-            List of signal names that could not be resampled.
-        """
+        # Returns
+        # -------
+        # resampled_signals:
+        #     List of :py:class:`Signal <dymoval.dataset.Signal>` with adjusted
+        #     sampling period.
+        # excluded_signals:
+        #     List of signal names that could not be resampled.
+        # """
         # ===========================================================
         # arguments Validation
         #
-        if target_sampling_period:
+        if target_sampling_period is not None:
             if (
                 not isinstance(target_sampling_period, float)
                 or target_sampling_period < 0
@@ -728,13 +751,10 @@ class Dataset:
 
         # Downsample to the slowest period if target_sampling_period
         # is not given.
-        if not target_sampling_period:
-            target_sampling_period = 0.0
-            for s in signal_list:
-                target_sampling_period = max(
-                    target_sampling_period, s["sampling_period"]
-                )
-                print(f"target_sampling_period = {target_sampling_period}")
+        if target_sampling_period is None:
+            sampling_periods = [s["sampling_period"] for s in signal_list]
+            target_sampling_period = max(sampling_periods)
+            print(f"target_sampling_period = {target_sampling_period}")
 
         for s in signal_list:
             N = target_sampling_period / s["sampling_period"]
@@ -881,8 +901,6 @@ class Dataset:
         # Validation
         u_labels, y_labels = self._validate_signals(u_labels, y_labels)
 
-        print("u = ", u_labels)
-        print("y = ", y_labels)
         # df points to self.dataset.
         df = self.dataset
 
@@ -952,7 +970,6 @@ class Dataset:
 
     def plot_coverage(
         self,
-        /,
         nbins: int = 100,
         line_color_input: str = "b",
         alpha_input: float = 1.0,
@@ -1047,7 +1064,7 @@ class Dataset:
             fig_out.set_size_inches(ncols_out * width, nrows_out * height)
             save_plot_as(fig_out, save_as + "_out")  # noqa
 
-        # Return stuff
+        # Return
         if u_labels and y_labels:
             return fig_in, axes_in, fig_out, axes_out
 
@@ -1117,7 +1134,6 @@ class Dataset:
 
     def plot_spectrum(
         self,
-        /,
         overlap: bool = False,
         line_color_input: str = "b",
         linestyle_input: str = "-",
@@ -1183,7 +1199,8 @@ class Dataset:
         """
         # validation
         u_labels, y_labels = self._validate_signals(u_labels, y_labels)
-        allowed_kind = ["amplitude", "power", "psd", None]
+
+        allowed_kind = ["amplitude", "power", "psd"]
         if kind not in allowed_kind:
             raise ValueError(f"kind must be one of {allowed_kind}")
 
@@ -1199,8 +1216,6 @@ class Dataset:
             q = 2 * len(y_labels) if kind == "amplitude" else len(y_labels)
         else:
             q = 1
-        print("u_labels = ", u_labels)
-        print("y_labels = ", y_labels)
         # Compute FFT.
         # For real signals, the spectrum is Hermitian anti-simmetric, i.e.
         # the amplitude is symmetric wrt f=0 and the phase is antisymmetric wrt f=0.
@@ -1360,7 +1375,7 @@ class Dataset:
         y_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
     ) -> Dataset:
         # At least one argument shall be passed.
-        # This is the reason why they are both specified as Optional.
+        # This is the reason why the @overload is added in that way
         """
         Remove a specified offset to the list of specified signals.
 
@@ -1369,7 +1384,7 @@ class Dataset:
         The value specified in the *offset* parameter is removed from
         the signal with name *name*.
 
-        For multiple signals, the tuple shall be arranged in a list.
+        For multiple signals, the tuples shall be arranged in a list.
 
         Parameters
         ----------
@@ -1398,7 +1413,7 @@ class Dataset:
             y_labels,
             u_list,
             y_list,
-        ) = self._validate_name_value_tuples(u_list, y_list)
+        ) = self._validate_name_value_tuples(u_list=u_list, y_list=y_list)
 
         # First adjust the input columns
         if u_list:
@@ -1486,7 +1501,7 @@ class Dataset:
             y_labels,
             u_list,
             y_list,
-        ) = self._validate_name_value_tuples(u_list, y_list)
+        ) = self._validate_name_value_tuples(u_list=u_list, y_list=y_list)
 
         # Sampling frequency
         fs = 1 / (self.dataset.index[1] - self.dataset.index[0])
@@ -1703,12 +1718,14 @@ def dataframe_validation(
 
     u_labels = str2list(u_labels)  # noqa
     y_labels = str2list(y_labels)  # noqa
+
     # 1. Check that you have at least one input and one output
     if not u_labels or not y_labels:
         raise IndexError(
             "You need at least one input and one output signal."
             "Check 'u_labels' and 'y_labels'."
         )
+
     # 2. Check unicity of signal names
     if (
         len(u_labels) != len(set(u_labels))
@@ -1718,6 +1735,7 @@ def dataframe_validation(
         raise ValueError(
             "Signal names must be unique." "Check 'u_labels' and 'y_labels'."
         )
+
     # 3. The DataFrame must have only one index and columns levels
     if df.columns.nlevels > 1 or df.index.nlevels > 1:
         raise IndexError(
@@ -1725,9 +1743,11 @@ def dataframe_validation(
             "The index shall represent a time vector of equi-distant time instants",
             "and each column shall correspond to one signal values.",
         )
+
     # 4. At least two samples
     if df.index.size < 2:
         raise IndexError("A signal needs at least two samples.")
+
     # 5. Check if u_labels and y_labels exist in the passed DataFrame
     input_not_found = difference_lists_of_str(
         u_labels, list(df.columns)
@@ -1740,6 +1760,7 @@ def dataframe_validation(
     # Check output
     if output_not_found:
         raise ValueError(f"Output(s) {output_not_found} not found.")
+
     # 6. The index is a 1D vector of monotonically increasing floats.
     # OBS! Builtin methds df.index.is_monotonic_increasing combined with
     # df.index.is_unique won't work due to floats.
@@ -1749,6 +1770,7 @@ def dataframe_validation(
             "Index must be a 1D vector of monotonically",
             "equi-spaced, increasing floats.",
         )
+
     # 7. The dataframe elements are all floats
     if not all(df.dtypes == float):
         raise TypeError("Elements of the DataFrame must be float.")
