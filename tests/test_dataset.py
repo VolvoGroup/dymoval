@@ -8,8 +8,26 @@ from dymoval.dataset import Signal
 from dymoval import NUM_DECIMALS
 from typing import Any
 import random
+import matplotlib
 from matplotlib import pyplot as plt
+
+# from matplotlib import get_backend
 import os
+
+matplotlib.use("Agg")
+
+
+# import warnings
+# show_kw = True
+# # show_kw=False
+#
+# if show_kw:
+#     curr_backend = get_backend()
+#     # switch to non-Gui, preventing plots being displayed
+#     plt.switch_backend("Agg")
+#     # suppress UserWarning that agg cannot show plots
+#     warnings.filterwarnings("ignore", "Matplotlib is currently using agg")
+#
 
 
 class Test_Dataset_nominal:
@@ -585,6 +603,7 @@ class Test_Dataset_plots:
     def test_plot_nominal(
         self, good_signals: list[Signal], tmp_path: str
     ) -> None:
+
         # You should just get a plot.
         signal_list, u_labels, y_labels, fixture = good_signals
 
@@ -603,47 +622,68 @@ class Test_Dataset_plots:
         # plot
         # =============================
 
-        _ = ds.plot()
+        fig, _ = ds.plot()
+        fig.clf()
         plt.close("all")
 
-        _ = ds.plot(u_labels="u1")
+        fig, _ = ds.plot(u_labels="u1")
+        fig.clf()
         plt.close("all")
 
         if fixture == "MIMO":
-            _ = ds.plot(u_labels=["u1", "u2"], y_labels=["y1", "y2"])
+            fig, _ = ds.plot(u_labels=["u1", "u2"], y_labels=["y1", "y2"])
+            fig.clf()
             plt.close("all")
 
-        _ = ds.plot(overlap=True)
+        fig, _ = ds.plot(overlap=True)
+        fig.clf()
         plt.close("all")
 
         # save on disk
         tmp_path_str = str(tmp_path)
         filename = tmp_path_str + "/potato"
-        _ = ds.plot(save_as=filename)
+        fig, _ = ds.plot(save_as=filename)
         assert os.path.exists(filename + ".png")
-
+        fig.clf()
+        plt.close("all")
         # =============================
         # plot_coverage
         # =============================
-        _ = ds.plot_coverage()
+        fig1, _, fig2, _ = ds.plot_coverage()
+        fig1.clf()
+        fig2.clf()
         plt.close("all")
 
-        _ = ds.plot_coverage(u_labels="u1")
+        fig, _, _, _ = ds.plot_coverage(u_labels="u1")
+        fig.clf()
         plt.close("all")
 
         if fixture == "MIMO":
-            _ = ds.plot_coverage(u_labels=["u1", "u2"], y_labels=["y1", "y2"])
-            plt.close("all")
-            _ = ds.plot_coverage(u_labels=["u1", "u2"], y_labels="y1")
+            fig1, _, fig2, _ = ds.plot_coverage(
+                u_labels=["u1", "u2"], y_labels=["y1", "y2"]
+            )
+            fig1.clf()
+            fig2.clf()
             plt.close("all")
 
-        _ = ds.plot_coverage(y_labels="y1")
+            fig1, _, fig2, _ = ds.plot_coverage(
+                u_labels=["u1", "u2"], y_labels="y1"
+            )
+            fig1.clf()
+            fig2.clf()
+            plt.close("all")
+
+        fig, _, _, _ = ds.plot_coverage(y_labels="y1")
+        fig.clf()
         plt.close("all")
 
         # save on disk
         tmp_path_str = str(tmp_path)
         filename = tmp_path_str + "/potato"
-        _ = ds.plot_coverage(save_as=filename)
+        fig1, _, fig2, _ = ds.plot_coverage(save_as=filename)
+        fig1.clf()
+        fig2.clf()
+        plt.close("all")
         assert os.path.exists(filename + "_in.png")
         assert os.path.exists(filename + "_out.png")
 
@@ -670,26 +710,33 @@ class Test_Dataset_plots:
 
         # This is only valid if ds does not contain NaN:s, i.e.
         # it is good_dataframe.
-        _ = ds.plot_spectrum()
+        fig, _ = ds.plot_spectrum()
+        fig.clf()
         plt.close("all")
 
-        _ = ds.plot_spectrum(u_labels="u1")
+        fig, _ = ds.plot_spectrum(u_labels="u1")
+        fig.clf()
         plt.close("all")
 
-        _ = ds.plot_spectrum(overlap=True)
+        fig, _ = ds.plot_spectrum(overlap=True)
+        fig.clf()
         plt.close("all")
 
-        _ = ds.plot_spectrum("amplitude")
+        fig, _ = ds.plot_spectrum("amplitude")
+        fig.clf()
         plt.close("all")
 
-        _ = ds.plot_spectrum("psd")
+        fig, _ = ds.plot_spectrum("psd")
+        fig.clf()
         plt.close("all")
 
         # save on disk
         tmp_path_str = str(tmp_path)
         filename = tmp_path_str + "/potato"
-        _ = ds.plot_spectrum(save_as=filename)
+        fig, _ = ds.plot_spectrum(save_as=filename)
         assert os.path.exists(filename + ".png")
+        fig.clf()
+        plt.close("all")
 
         # ======= If NaN:s raise =====================
         # good_signals have some NaN:s
@@ -707,7 +754,9 @@ class Test_Dataset_plots:
         )
 
         with pytest.raises(ValueError):
-            _ = ds.plot_spectrum(overlap=True)
+            fig, _ = ds.plot_spectrum(overlap=True)
+            fig.clf()
+            plt.close("all")
 
 
 class Test_plot_Signal:
@@ -715,7 +764,8 @@ class Test_plot_Signal:
     def test_plot_nominal(self, good_signals: list[Signal]) -> None:
         # You should just get a plot.
         signal_list, u_labels, y_labels, fixture = good_signals
-        dmv.plot_signals(signal_list)
+        fig, _ = dmv.plot_signals(signal_list)
+        fig.clf()
         plt.close("all")
 
         # Conditional plot
@@ -726,11 +776,13 @@ class Test_plot_Signal:
             u_labels[-1]
         if fixture == "SIMO":
             del y_labels[-1]
-        dmv.plot_signals(signal_list, u_labels, y_labels)
+        fig, _ = dmv.plot_signals(signal_list, u_labels, y_labels)
+        fig.clf()
         plt.close("all")
 
         # With only args
-        dmv.plot_signals(signal_list, u_labels)
+        fig, _ = dmv.plot_signals(signal_list, u_labels)
+        fig.clf()
         plt.close("all")
 
     @pytest.mark.plot
@@ -753,11 +805,17 @@ class Test_plot_Signal:
             u_labels_test = ["potato"]
             y_labels_test[0] = "banana"
         with pytest.raises(KeyError):
-            dmv.plot_signals(signal_list, u_labels_test, y_labels)
+            fig, _ = dmv.plot_signals(signal_list, u_labels_test, y_labels)
+            fig.clf()
+            plt.close("all")
         with pytest.raises(KeyError):
-            dmv.plot_signals(signal_list, u_labels_test, y_labels_test)
+            fig, _ = dmv.plot_signals(signal_list, u_labels_test, y_labels_test)
+            fig.clf()
+            plt.close("all")
         with pytest.raises(KeyError):
-            dmv.plot_signals(signal_list, u_labels_test, y_labels_test)
+            fig, _ = dmv.plot_signals(signal_list, u_labels_test, y_labels_test)
+            fig.clf()
+            plt.close("all")
 
     @pytest.mark.plot
     def test_plot_raise_more(self, good_signals: list[Signal]) -> None:
@@ -775,15 +833,19 @@ class Test_plot_Signal:
 
         # Assert in error
         with pytest.raises(KeyError):
-            dmv.plot_signals(
+            fig, _ = dmv.plot_signals(
                 signal_list, bad_input_signal_name, output_signal_names
             )
+            fig.clf()
+            plt.close("all")
 
         # Assert in error
         with pytest.raises(KeyError):
-            dmv.plot_signals(
+            fig, _ = dmv.plot_signals(
                 signal_list, input_signal_names, bad_output_signal_name
             )
+            fig.clf()
+            plt.close("all")
 
 
 class Test_Signal_validation:

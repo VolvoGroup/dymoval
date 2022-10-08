@@ -301,16 +301,17 @@ class ValidationSession:
 
     def plot_simulations(
         self,
+        # Cam be a positional or a keyword arg
         list_sims: Optional[Union[str, list[str]]] = None,
         *,
         dataset: Optional[Literal["all", "only_out"]] = None,
-        line_color_input: Optional[str] = "k",
-        linestyle_input: Optional[str] = "-",
-        alpha_input: Optional[float] = 1.0,
-        line_color_output: Optional[str] = "k",
-        linestyle_output: Optional[str] = "-",
-        alpha_output: Optional[float] = 1.0,
-        save_as: Optional[str] = "",
+        line_color_input: str = "k",
+        linestyle_input: str = "-",
+        alpha_input: float = 1.0,
+        line_color_output: str = "k",
+        linestyle_output: str = "-",
+        alpha_output: float = 1.0,
+        save_as: str = "",
     ) -> Optional[
         Union[
             tuple[matplotlib.figure.Figure, matplotlib.axes.Axes],
@@ -377,6 +378,7 @@ class ValidationSession:
                     f"Simulation {sim_not_found} not found. "
                     "Check the available simulations names with 'get_simulations_names()'"
                 )
+
         # Now we start
         df_val = self.Dataset.dataset
         df_sim = self.simulations_results

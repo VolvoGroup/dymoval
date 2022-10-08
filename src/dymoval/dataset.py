@@ -1780,7 +1780,7 @@ def plot_signals(
     signal_list: list[Signal],
     u_labels: Union[str, list[str]] = [],
     y_labels: Union[str, list[str]] = [],
-) -> None:
+) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
     """
     Plot the :py:class:`Signals <dymoval.dataset.Signal>` of a signal list.
 
@@ -1854,6 +1854,8 @@ def plot_signals(
             ax[ii].set_xlabel("Time")
         ax[ii].legend()
     plt.suptitle("Raw signals.")
+
+    return fig, ax
 
 
 # TODO Compare Datasets.
