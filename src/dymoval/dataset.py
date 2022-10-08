@@ -4,7 +4,7 @@
 """Module containing everything related to datasets.
 Here are defined special datatypes, classes and auxiliary functions to deal with datasets.
 """
-
+from __future__ import annotations
 
 import matplotlib
 import numpy as np
@@ -1295,7 +1295,7 @@ class Dataset:
         *,
         u_labels: Union[str, list[str]] = [],
         y_labels: Union[str, list[str]] = [],
-    ) -> Any:
+    ) -> Dataset:
         """
         Remove the mean value to the specified signals.
 
@@ -1341,7 +1341,7 @@ class Dataset:
         *,
         u_list: Union[list[tuple[str, float]], tuple[str, float]],
         y_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
-    ) -> Any:
+    ) -> Dataset:
         ...
 
     @overload
@@ -1350,7 +1350,7 @@ class Dataset:
         *,
         u_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
         y_list: Union[list[tuple[str, float]], tuple[str, float]],
-    ) -> Any:
+    ) -> Dataset:
         ...
 
     def remove_offset(
@@ -1358,7 +1358,7 @@ class Dataset:
         *,
         u_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
         y_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
-    ) -> Any:
+    ) -> Dataset:
         # At least one argument shall be passed.
         # This is the reason why they are both specified as Optional.
         """
@@ -1427,7 +1427,7 @@ class Dataset:
         *,
         u_list: Union[list[tuple[str, float]], tuple[str, float]],
         y_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
-    ) -> Any:
+    ) -> Dataset:
         ...
 
     @overload
@@ -1436,7 +1436,7 @@ class Dataset:
         *,
         u_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
         y_list: Union[list[tuple[str, float]], tuple[str, float]],
-    ) -> Any:
+    ) -> Dataset:
         ...
 
     def low_pass_filter(
@@ -1444,7 +1444,7 @@ class Dataset:
         *,
         u_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
         y_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
-    ) -> Any:
+    ) -> Dataset:
         """
         Low-pass filter a list of specified signals.
 
@@ -1527,7 +1527,7 @@ class Dataset:
 
         return ds_temp
 
-    # def filter(self) -> Any:
+    # def filter(self) -> Dataset:
     #     """To be implemented!"""
     #     print("Not implemented yet!")
 
@@ -1535,7 +1535,7 @@ class Dataset:
         self,
         method: Literal["interpolate", "fillna"] = "interpolate",
         fill_value: float = 0.0,
-    ) -> Any:
+    ) -> Dataset:
         """Replace NaN:s in the dataset.
 
 
@@ -1606,7 +1606,7 @@ def signals_validation(signal_list: list[Signal]) -> None:
     if len(signal_names) > len(set(signal_names)):
         raise ValueError("Signal names are not unique")
     #
-    ALLOWED_KEYS = Signal.__required_keys__  # type: ignore
+    ALLOWED_KEYS = Signal.__required_keys__
     for s in signal_list:
         keys = s.keys()
         #
