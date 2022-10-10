@@ -312,17 +312,7 @@ class ValidationSession:
         linestyle_output: str = "-",
         alpha_output: float = 1.0,
         save_as: str = "",
-    ) -> Optional[
-        Union[
-            tuple[matplotlib.figure.Figure, matplotlib.axes.Axes],
-            tuple[
-                matplotlib.figure.Figure,
-                matplotlib.axes.Axes,
-                matplotlib.figure.Figure,
-                matplotlib.axes.Axes,
-            ],
-        ]
-    ]:
+    ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
         """Plot the stored simulation results.
 
         Possible values of the parameters describing the plot aesthetics,
@@ -453,13 +443,11 @@ class ValidationSession:
         list_sims: Optional[Union[str, list[str]]] = None,
         *,
         save_as: Optional[str] = "",
-    ) -> Optional[
-        tuple[
-            matplotlib.figure.Figure,
-            matplotlib.axes.Axes,
-            matplotlib.figure.Figure,
-            matplotlib.axes.Axes,
-        ]
+    ) -> tuple[
+        matplotlib.figure.Figure,
+        matplotlib.axes.Axes,
+        matplotlib.figure.Figure,
+        matplotlib.axes.Axes,
     ]:
         """Plot the residuals.
 

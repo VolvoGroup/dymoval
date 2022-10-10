@@ -86,7 +86,8 @@ def save_plot_as(
     # fig.set_layout_engine("tight")
     fig.tight_layout()
     fig.savefig(name, **kwargs)
-    plt.close()
+    fig.clf()
+    plt.close("all")
 
 
 def open_tutorial() -> tuple[Any, Any]:
