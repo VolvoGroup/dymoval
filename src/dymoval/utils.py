@@ -94,10 +94,10 @@ def open_tutorial() -> tuple[Any, Any]:
     """Open *Dymoval* tutorial."""
     site_packages = next(p for p in sys.path if "site-packages" in p)
     if sys.platform == "win32":
-        filename = "\\dymoval\\scripts\\tutorial.py"
+        filename = "\\dymoval\\scripts\\tutorial.ipynb"
         shell_process = subprocess.Popen([site_packages + filename], shell=True)
     else:
-        filename = "/dymoval/scripts/tutorial.py"
+        filename = "/dymoval/scripts/tutorial.ipynb"
         opener = "open" if sys.platform == "darwin" else "xdg-open"
         shell_process = subprocess.call([opener, site_packages + filename])
     return shell_process, site_packages + filename
