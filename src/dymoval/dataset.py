@@ -1080,16 +1080,10 @@ class Dataset:
         if u_labels and y_labels:
             return fig_in, axes_in, fig_out, axes_out
 
-        elif not u_labels and y_labels:
-            return fig_out, axes_out, None, None
-
         elif u_labels and not y_labels:
             return fig_in, axes_in, None, None
-
-        elif not u_labels and not y_labels:
-            return fig_in, axes_in, fig_out, axes_out
-        else:
-            return None, None, None, None
+        else:  # The only option left is not u_labels and y_labels
+            return None, None, fig_out, axes_out
 
     def fft(
         self,
@@ -1369,7 +1363,7 @@ class Dataset:
         u_list: Union[list[tuple[str, float]], tuple[str, float]],
         y_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
     ) -> Dataset:
-        ...
+        ...  # pragma: no cover
 
     @overload
     def remove_offset(
@@ -1378,7 +1372,7 @@ class Dataset:
         u_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
         y_list: Union[list[tuple[str, float]], tuple[str, float]],
     ) -> Dataset:
-        ...
+        ...  # pragma: no cover
 
     def remove_offset(
         self,
@@ -1455,7 +1449,7 @@ class Dataset:
         u_list: Union[list[tuple[str, float]], tuple[str, float]],
         y_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
     ) -> Dataset:
-        ...
+        ...  # pragma: no cover
 
     @overload
     def low_pass_filter(
@@ -1464,7 +1458,7 @@ class Dataset:
         u_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
         y_list: Union[list[tuple[str, float]], tuple[str, float]],
     ) -> Dataset:
-        ...
+        ...  # pragma: no cover
 
     def low_pass_filter(
         self,

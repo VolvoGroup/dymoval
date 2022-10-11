@@ -630,7 +630,7 @@ class Test_Dataset_plots:
         plt.close("all")
 
         if fixture == "MIMO":
-            fig, _ = ds.plot(u_labels=["u1", "u2"], y_labels=["y1", "y2"])
+            fig, _ = ds.plot(u_labels=["u1", "u2"], y_labels=["y3", "y4"])
             fig.clf()
             plt.close("all")
 
@@ -672,7 +672,7 @@ class Test_Dataset_plots:
             fig2.clf()
             plt.close("all")
 
-        fig, _, _, _ = ds.plot_coverage(y_labels="y1")
+        _, _, fig, _ = ds.plot_coverage(y_labels="y1")
         fig.clf()
         plt.close("all")
 
@@ -704,7 +704,7 @@ class Test_Dataset_plots:
             u_labels,
             y_labels,
             overlap=True,
-            full_time_interval=True,
+            tin=0.0,
         )
 
         # This is only valid if ds does not contain NaN:s, i.e.
@@ -717,15 +717,19 @@ class Test_Dataset_plots:
         fig.clf()
         plt.close("all")
 
+        fig, _ = ds.plot_spectrum(y_labels="y1")
+        fig.clf()
+        plt.close("all")
+
         fig, _ = ds.plot_spectrum(overlap=True)
         fig.clf()
         plt.close("all")
 
-        fig, _ = ds.plot_spectrum("amplitude")
+        fig, _ = ds.plot_spectrum(kind="amplitude")
         fig.clf()
         plt.close("all")
 
-        fig, _ = ds.plot_spectrum("psd")
+        fig, _ = ds.plot_spectrum(kind="psd")
         fig.clf()
         plt.close("all")
 
@@ -754,8 +758,9 @@ class Test_Dataset_plots:
 
         with pytest.raises(ValueError):
             fig, _ = ds.plot_spectrum(overlap=True)
-            fig.clf()
-            plt.close("all")
+
+        with pytest.raises(ValueError):
+            fig, _ = ds.plot_spectrum(kind="potato")
 
 
 class Test_plot_Signal:
@@ -805,16 +810,10 @@ class Test_plot_Signal:
             y_labels_test[0] = "banana"
         with pytest.raises(KeyError):
             fig, _ = dmv.plot_signals(signal_list, u_labels_test, y_labels)
-            fig.clf()
-            plt.close("all")
         with pytest.raises(KeyError):
             fig, _ = dmv.plot_signals(signal_list, u_labels_test, y_labels_test)
-            fig.clf()
-            plt.close("all")
         with pytest.raises(KeyError):
             fig, _ = dmv.plot_signals(signal_list, u_labels_test, y_labels_test)
-            fig.clf()
-            plt.close("all")
 
     @pytest.mark.plot
     def test_plot_raise_more(self, good_signals: list[Signal]) -> None:
@@ -828,23 +827,19 @@ class Test_plot_Signal:
 
         # test input
         bad_input_signal_name = "potato"
-        bad_output_signal_name = "potato"
+        bad_output_signal_name = bad_input_signal_name
 
         # Assert in error
         with pytest.raises(KeyError):
             fig, _ = dmv.plot_signals(
                 signal_list, bad_input_signal_name, output_signal_names
             )
-            fig.clf()
-            plt.close("all")
 
         # Assert in error
         with pytest.raises(KeyError):
             fig, _ = dmv.plot_signals(
                 signal_list, input_signal_names, bad_output_signal_name
             )
-            fig.clf()
-            plt.close("all")
 
 
 class Test_Signal_validation:

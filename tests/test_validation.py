@@ -409,18 +409,12 @@ class Test_Plots:
         # Test plot - filtered wrong
         with pytest.raises(KeyError):
             fig, _ = vs.plot_simulations("potato")
-            fig.clf()
-            plt.close("all")
         # Test plot - filtered wrong
         vs.clear()
         with pytest.raises(KeyError):
             fig, _ = vs.plot_simulations()
-            fig.clf()
-            plt.close("all")
         with pytest.raises(KeyError):
             fig, _ = vs.plot_simulations("potato")
-            fig.clf()
-            plt.close("all")
 
         # =============================
         # plot residuals
@@ -466,17 +460,11 @@ class Test_Plots:
         # =============================
         with pytest.raises(KeyError):
             fig, _, fig2, _ = vs.plot_residuals("potato")
-            fi1g.clf()
-            fig2.clf()
-            plt.close("all")
 
         # Empty simulation list
         vs.clear()
         with pytest.raises(KeyError):
             fig, _, fig2, _ = vs.plot_residuals()
-            fig1.clf()
-            fig2.clf()
-            plt.close("all")
 
 
 class Test_xcorr:
