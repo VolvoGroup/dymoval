@@ -311,7 +311,7 @@ class ValidationSession:
         line_color_output: str = "k",
         linestyle_output: str = "-",
         alpha_output: float = 1.0,
-        save_as: str = "",
+        save_as: Optional[str] = None,
     ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
         """Plot the stored simulation results.
 
@@ -428,7 +428,7 @@ class ValidationSession:
         # ===============================================================
         # Save and eventually return figures.
         # ===============================================================
-        if save_as:
+        if save_as is not None:
             # Keep 16:9 ratio
             height = 2.5
             width = 1.778 * height
@@ -442,7 +442,7 @@ class ValidationSession:
         self,
         list_sims: Optional[Union[str, list[str]]] = None,
         *,
-        save_as: Optional[str] = "",
+        save_as: Optional[str] = None,
     ) -> tuple[
         matplotlib.figure.Figure,
         matplotlib.axes.Axes,
@@ -535,7 +535,7 @@ class ValidationSession:
                     ax2[ii, jj].legend()
         plt.suptitle("Input-residuals cross-correlation")
 
-        if save_as:
+        if save_as is not None:
             # Keep 16:9 ratio
             height = 2.5
             width = 1.778 * height

@@ -98,6 +98,9 @@ class TestInitializerFromSignals:
             expected_nan_interval[1], ds._nan_intervals["OUTPUT"]["y1"][0][-1]
         )
 
+        # assert sampling period
+        assert np.isclose(ds.sampling_period, target_sampling_period)
+
     def test_no_leftovers(self, good_signals: list[Signal]) -> None:
         # Nominal data
         (
@@ -132,6 +135,7 @@ class TestInitializerFromDataframe:
             fixture,
         ) = good_dataframe
 
+        sampling_period = 0.1  # from good_dataframe fixture
         if fixture == "SISO":
             expected_input_names = [expected_input_names]
             expected_output_names = [expected_output_names]
@@ -152,7 +156,9 @@ class TestInitializerFromDataframe:
         # Names are well placed
         assert sorted(expected_input_names) == sorted(actual_input_names)
         assert sorted(expected_output_names) == sorted(actual_output_names)
-        # Time index starts from 0.0
+
+        # assert sampling period
+        assert np.isclose(ds.sampling_period, sampling_period)
 
     @pytest.mark.parametrize(
         # Each test is ((tin,tout),(tin_expected,tout_expected))

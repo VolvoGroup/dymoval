@@ -10,10 +10,9 @@ from typing import Any
 import random
 import matplotlib
 from matplotlib import pyplot as plt
-
-# from matplotlib import get_backend
 import os
 
+# Use a non-interactive backend
 matplotlib.use("Agg")
 
 
@@ -855,7 +854,7 @@ class Test_Signal_validation:
 
         signal_list[1]["name"] = signal_list[0]["name"]
         with pytest.raises(ValueError):
-            dmv.signals_validation(signal_list)
+            dmv.validate_signals(signal_list)
 
     def test_key_not_found(self, good_signals: list[Signal]) -> None:
         # Nominal values
@@ -865,7 +864,7 @@ class Test_Signal_validation:
         key = "name"
         signal_list[idx].pop(key)
         with pytest.raises(KeyError):
-            dmv.signals_validation(signal_list)
+            dmv.validate_signals(signal_list)
 
     def test_wrong_key(self, good_signals: list[Signal]) -> None:
         # Nominal values
@@ -875,7 +874,7 @@ class Test_Signal_validation:
         k_new = "potato"
         signal_list[idx][k_new] = signal_list[idx].pop("values")
         with pytest.raises(KeyError):
-            dmv.signals_validation(signal_list)
+            dmv.validate_signals(signal_list)
 
     @pytest.mark.parametrize(
         # The dataype for the annotation can be inferred by the
@@ -900,7 +899,7 @@ class Test_Signal_validation:
         idx = random.randrange(0, len(signal_list))
         signal_list[idx]["values"] = test_input
         with pytest.raises(expected):
-            dmv.signals_validation(signal_list)
+            dmv.validate_signals(signal_list)
 
     @pytest.mark.parametrize(
         "test_input, expected",
@@ -919,7 +918,7 @@ class Test_Signal_validation:
         idx = random.randrange(0, len(signal_list))
         signal_list[idx]["sampling_period"] = test_input
         with pytest.raises(expected):
-            dmv.signals_validation(signal_list)
+            dmv.validate_signals(signal_list)
 
 
 class Test_Dataframe_validation:
@@ -1128,7 +1127,7 @@ class Test_fix_sampling_periods:
         # Nominal values
         signal_list, _, _, _ = good_signals
         with pytest.raises(expected):
-            dmv.signals_validation(signal_list, test_input)
+            dmv.validate_signals(signal_list, test_input)
 
     def test_wrong_sampling_period(self, good_signals: list[Signal]) -> None:
         # Nominal values

@@ -21,7 +21,7 @@ class Signal(TypedDict):
     """Signals are used to represent real-world signals.
     They are used to instantiate :py:class:`Dataset <dymoval.dataset.Dataset>` class objects.
 
-    It is possible to validate signals through :py:meth:`~dymoval.dataset.signals_validation`.
+    It is possible to validate signals through :py:meth:`~dymoval.dataset.validate_signals`.
 
     Although Signals have compulsory attribues that must be set, there is freedom
     to append additional attributes.
@@ -80,7 +80,7 @@ class Dataset:
         Dataset name.
     signal_list :
         Signals to be included in the :py:class:`Dataset <dymoval.dataset.Dataset>`.
-        See :py:meth:`~dymoval.dataset.signals_validation` and
+        See :py:meth:`~dymoval.dataset.validate_signals` and
         :py:meth:`~dymoval.dataset.dataframe_validation` to figure out how
         the list of :py:class:`Signal <dymoval.dataset.Signal>` or the pandas
         DataFrame representing the dataset signals shall look like.
@@ -137,7 +137,13 @@ class Dataset:
                 full_time_interval,
                 overlap,
             )
-            df, nan_intervals, excluded_signals, dataset_coverage = attr_sign
+            (
+                df,
+                Ts,
+                nan_intervals,
+                excluded_signals,
+                dataset_coverage,
+            ) = attr_sign
         # Initialization by pandas DataFrame
         elif isinstance(signal_list, pd.DataFrame):
             attr_df = self._new_dataset_from_dataframe(
@@ -149,7 +155,7 @@ class Dataset:
                 full_time_interval,
                 overlap,
             )
-            df, nan_intervals, excluded_signals, dataset_coverage = attr_df
+            df, Ts, nan_intervals, excluded_signals, dataset_coverage = attr_df
         else:
             raise TypeError(
                 "Input must be a Signal list or a pandas DataFrame type.",
@@ -170,6 +176,7 @@ class Dataset:
         self._nan_intervals: Any = deepcopy(nan_intervals)
         self.excluded_signals: list[str] = excluded_signals
         """Signals that could not be re-sampled."""
+        self.sampling_period = Ts  #: Dataset sampling period
 
     def __str__(self) -> str:
         return f"Dymoval dataset called '{self.name}'."
@@ -430,6 +437,7 @@ class Dataset:
         overlap: bool = False,
     ) -> tuple[
         pd.DataFrame,
+        float,
         dict[str, dict[str, list[np.ndarray]]],
         list[str],
         tuple[pd.Series, pd.DataFrame, pd.Series, pd.DataFrame],
@@ -482,7 +490,9 @@ class Dataset:
         # The DataFrame has been built with signals sampled with the same period,
         # therefore there are no excluded signals due to re-sampling
         excluded_signals: list[str] = []
-        return df, NaN_intervals, excluded_signals, dataset_coverage
+        # In case user passes a DataFrame we need to compute the sampling period
+        Ts = df.index[1] - df.index[0]
+        return df, Ts, NaN_intervals, excluded_signals, dataset_coverage
 
     def _new_dataset_from_signals(
         self,
@@ -497,6 +507,7 @@ class Dataset:
         overlap: bool = False,
     ) -> tuple[
         pd.DataFrame,
+        float,
         dict[str, dict[str, list[np.ndarray]]],
         list[str],
         tuple[pd.Series, pd.DataFrame, pd.Series, pd.DataFrame],
@@ -507,7 +518,7 @@ class Dataset:
         y_labels = str2list(y_labels)  # noqa
 
         # Arguments validation
-        signals_validation(signal_list)
+        validate_signals(signal_list)
 
         if plot_raw:
             plot_signals(signal_list, u_labels, y_labels)
@@ -552,6 +563,7 @@ class Dataset:
         # Call the initializer from DataFrame to get a Dataset object.
         (
             df,
+            _,
             nan_intervals,
             _,
             dataset_coverage,
@@ -559,7 +571,7 @@ class Dataset:
             df, u_labels, y_labels, tin, tout, full_time_interval, overlap
         )
 
-        return df, nan_intervals, excluded_signals, dataset_coverage
+        return df, Ts, nan_intervals, excluded_signals, dataset_coverage
 
     def _validate_signals(
         self,
@@ -865,7 +877,7 @@ class Dataset:
         # Only key-word arguments
         u_labels: Union[str, list[str]] = [],
         y_labels: Union[str, list[str]] = [],
-        save_as: str = "",
+        save_as: Optional[str] = None,
     ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
         """Plot the Dataset.
 
@@ -959,7 +971,7 @@ class Dataset:
         plt.suptitle("Blue lines are input and green lines are output. ")
 
         # Eventually save and return figures.
-        if save_as:
+        if save_as is not None:
             # Keep 16:9 ratio
             height = 2.5
             width = 1.778 * height
@@ -978,7 +990,7 @@ class Dataset:
         *,
         u_labels: Union[str, list[str]] = [],
         y_labels: Union[str, list[str]] = [],
-        save_as: str = "",
+        save_as: Optional[str] = None,
     ) -> tuple[
         matplotlib.figure.Figure,
         matplotlib.axes.Axes,
@@ -1052,7 +1064,7 @@ class Dataset:
                 axes_out[ii].set_xlabel(y_labels[ii][1])
             plt.suptitle("Coverage region (output).")
 
-        if save_as:
+        if save_as is not None:
             # Keep 16:9 ratio
             # TODO Move height to the config file
             height = 2.5
@@ -1145,7 +1157,7 @@ class Dataset:
         kind: Literal["amplitude", "power", "psd"] = "power",
         u_labels: Union[str, list[str]] = [],
         y_labels: Union[str, list[str]] = [],
-        save_as: str = "",
+        save_as: Optional[str] = None,
     ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
         """
         Plot the spectrum of the specified signals in the dataset in different format.
@@ -1222,7 +1234,7 @@ class Dataset:
         # See e.g. https://ccrma.stanford.edu/~jos/ReviewFourier/Symmetries_Real_Signals.html
         df_freq = self.fft(u_labels=u_labels, y_labels=y_labels)
         # Frequency and number of samples
-        Ts = self.dataset.index[1] - self.dataset.index[0]
+        Ts = self.sampling_period
         N = len(self.dataset.index)  # number of samples
         # Compute frequency bins
         f_bins = fft.rfftfreq(N, Ts)
@@ -1295,7 +1307,7 @@ class Dataset:
         plt.suptitle(f"{kind.capitalize()} spectrum.")
 
         # Save and return
-        if save_as:
+        if save_as is not None:
             # Keep 16:9 ratio
             height = 2.5
             width = 1.778 * height
@@ -1587,7 +1599,7 @@ class Dataset:
 # ====================================================
 
 
-def signals_validation(signal_list: list[Signal]) -> None:
+def validate_signals(signal_list: list[Signal]) -> None:
     """
     Perform a number of checks to verify that the passed
     list of :py:class:`Signals <dymoval.dataset.Dataset>`
@@ -1800,7 +1812,7 @@ def plot_signals(
         correspond to any :py:class:`Dataset <dymoval.dataset.Dataset>` name.
     """
     # Validate signals first
-    signals_validation(signal_list)
+    validate_signals(signal_list)
     signal_names = [s["name"] for s in signal_list]
     if u_labels:
         u_labels = str2list(u_labels)  # noqa
