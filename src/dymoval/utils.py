@@ -79,10 +79,7 @@ def save_plot_as(
     name:
         Figure filename.
     """
-    if not name:
-        raise Exception(
-            "You must specify a filename for the figure you want to save."
-        )
+
     # fig.set_layout_engine("tight")
     fig.tight_layout()
     fig.savefig(name, **kwargs)

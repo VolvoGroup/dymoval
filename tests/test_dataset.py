@@ -614,6 +614,7 @@ class Test_Dataset_plots:
             y_labels,
             overlap=True,
             full_time_interval=True,
+            verbosity=1,
         )
 
         # Act

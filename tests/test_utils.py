@@ -8,8 +8,7 @@ Created on Thu Jul 14 11:43:21 2022
 import pytest
 import dymoval as dmv
 from .fixture_data import *  # noqa
-
-# import time
+import matplotlib.pyplot as plt
 from typing import Union
 import os
 
@@ -84,6 +83,22 @@ class Test_str2list:
     ) -> None:
         actual = dmv.str2list(x)
         assert sorted(actual) == sorted(expected)
+
+
+class Test_save_plot_as:
+    def test_nominal(self, tmp_path: str) -> None:
+
+        t = np.arange(1, 10)
+        x = np.sin(2 * np.pi * 0.1 * t)
+        filename = "potato"
+
+        plt.plot(t, x)
+        fig = plt.gcf()
+
+        tmp_path_str = str(tmp_path)
+        filename = tmp_path_str + "/potato"
+        dmv.save_plot_as(fig, filename)
+        assert os.path.exists(filename + ".png")
 
 
 class Test_open_tutorial:

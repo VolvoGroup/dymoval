@@ -446,14 +446,14 @@ class Test_Plots:
         # =============================
         tmp_path_str = str(tmp_path)
         filename = tmp_path_str + "/potato"
-        # fig1, _, fig2, _ = vs.plot_residuals(save_as=filename)
-        fig1, _, fig2, _ = vs.plot_residuals()
+        fig1, _, fig2, _ = vs.plot_residuals(save_as=filename)
+        # fig1, _, fig2, _ = vs.plot_residuals()
         fig1.clf()
         fig2.clf()
         plt.close("all")
         # TODO: remove comments
-        # assert os.path.exists(filename + "_eps_eps.png")
-        # assert os.path.exists(filename + "_u_eps.png")
+        assert os.path.exists(filename + "_eps_eps.png")
+        assert os.path.exists(filename + "_u_eps.png")
 
         # =============================
         # plot residuals raises
@@ -534,6 +534,70 @@ class Test_xcorr_norm:
     def test_xcorr_norm_nominal(self, R: XCorrelation) -> None:
         # Just test that it won't run any error
         # Next, remove randoms with known values.
+
+        x1 = np.array(
+            [
+                0.4314,
+                0.9106,
+                0.1818,
+                0.2638,
+                0.1455,
+                0.1361,
+                0.8693,
+                0.5797,
+                0.5499,
+                0.1450,
+            ]
+        )
+
+        x2 = np.array(
+            [
+                0.1067,
+                0.9619,
+                0.0046,
+                0.7749,
+                0.8173,
+                0.8687,
+                0.0844,
+                0.3998,
+                0.2599,
+                0.8001,
+            ]
+        )
+
+        y1 = np.array(
+            [
+                0.4173,
+                0.0497,
+                0.9027,
+                0.9448,
+                0.4909,
+                0.4893,
+                0.3377,
+                0.9001,
+                0.3692,
+                0.1112,
+            ]
+        )
+
+        y2 = np.array(
+            [
+                0.7803,
+                0.3897,
+                0.2417,
+                0.4039,
+                0.0965,
+                0.1320,
+                0.9421,
+                0.9561,
+                0.5752,
+                0.0598,
+            ]
+        )
+
+        X = np.array([x1, x2]).T
+        Y = np.array([y1, y2]).T
+        # TODO
         Rxy = {"values": R, "lags": signal.correlation_lags(len(R), len(R))}
         dmv.xcorr_norm(Rxy)
 

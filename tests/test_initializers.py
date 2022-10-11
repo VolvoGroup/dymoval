@@ -35,6 +35,7 @@ class TestInitializerFromSignals:
             target_sampling_period=target_sampling_period,
             plot_raw=True,
             full_time_interval=True,
+            verbosity=1,
         )
         if fixture == "SISO":  # Convert string to list
             input_signal_names = [input_signal_names]
@@ -243,7 +244,12 @@ class TestOtherStuff:
         tin = 0.1
         tout = 0.5
         ds = dmv.dataset.Dataset(
-            "potato", df, u_labels, y_labels, tin=tin, tout=tout
+            "potato",
+            df,
+            u_labels,
+            y_labels,
+            tin=tin,
+            tout=tout,
         )
 
         expected_string = "Dymoval dataset called 'potato'."

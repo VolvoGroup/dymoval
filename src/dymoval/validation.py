@@ -39,7 +39,7 @@ class XCorrelation(TypedDict):
 def xcorr(X: np.ndarray, Y: np.ndarray) -> XCorrelation:
     """Return the cross-correlation of two MIMO signals.
 
-    If X = Y then the auto-correlation of X is computed.
+    If X = Y then it return the auto-correlation of X.
 
     Parameters
     ----------
@@ -63,10 +63,17 @@ def xcorr(X: np.ndarray, Y: np.ndarray) -> XCorrelation:
     for ii in range(p):
         for jj in range(q):
             # Classic correlation definition from Probability.
+            # For each pair (ii,jj) you have Rxy = r_{xi,yj}(\tau), therefore
+            # for each (ii,jj) we compute a correlation.
+            # Nevertheless, to secure that the cross-correlation is between -1 and 1,
+            # we "normalize" the observations X and Y
+            # Google for "Standard score"
             Rxy[:, ii, jj] = signal.correlate(  # noqa
                 (X[:, ii] - np.mean(X[:, ii])) / np.std(X[:, ii]),
                 (Y[:, jj] - np.mean(Y[:, jj])) / np.std(Y[:, jj]),
-            ) / min(len(X), len(Y))
+            ) / (np.sqrt(len(X)) * np.sqrt(len(Y)))
+
+        # Rxy[:, ii, jj] = signal.correlate(X[:, ii], Y[:, jj])
 
     xcorr_result: XCorrelation = {
         "values": Rxy,

@@ -123,6 +123,7 @@ class Dataset:
         tout: Optional[float] = None,
         full_time_interval: bool = False,
         overlap: bool = False,
+        verbosity: int = 0,
     ) -> None:
 
         if all(isinstance(x, dict) for x in signal_list):
@@ -136,6 +137,7 @@ class Dataset:
                 tout,
                 full_time_interval,
                 overlap,
+                verbosity,
             )
             (
                 df,
@@ -154,6 +156,7 @@ class Dataset:
                 tout,
                 full_time_interval,
                 overlap,
+                verbosity,
             )
             df, Ts, nan_intervals, excluded_signals, dataset_coverage = attr_df
         else:
@@ -263,6 +266,7 @@ class Dataset:
         tout: Optional[float],
         overlap: bool = False,
         full_time_interval: bool = False,
+        verbosity: int = 0,
     ) -> tuple[pd.DataFrame, dict[str, dict[str, list[np.ndarray]]]]:
         # We have to trim the signals to have a meaningful dataset
         # This can be done both graphically or by passing tin and tout
@@ -358,7 +362,9 @@ class Dataset:
             fig.canvas.mpl_disconnect(cid)
             tin_sel = close_event.tin  # type:ignore
             tout_sel = close_event.tout  # type:ignore
-        print("\ntin = ", tin_sel, "tout =", tout_sel)
+
+            if verbosity != 0:
+                print("\ntin = ", tin_sel, "tout =", tout_sel)
 
         # ===================================================================
         # Trim dataset and NaN intervals based on (tin,tout)
@@ -435,6 +441,7 @@ class Dataset:
         tout: Optional[float] = None,
         full_time_interval: bool = False,
         overlap: bool = False,
+        verbosity: int = 0,
     ) -> tuple[
         pd.DataFrame,
         float,
@@ -479,7 +486,7 @@ class Dataset:
         }
         # Trim dataset time interval
         df, NaN_intervals = self._init_dataset_time_interval(
-            df, NaN_intervals, tin, tout, overlap, full_time_interval
+            df, NaN_intervals, tin, tout, overlap, full_time_interval, verbosity
         )
         # Shift dataset tin to 0.0.
         df, NaN_intervals = self._shift_dataset_time_interval(df, NaN_intervals)
@@ -505,6 +512,7 @@ class Dataset:
         tout: Optional[float] = None,
         full_time_interval: bool = False,
         overlap: bool = False,
+        verbosity: int = 0,
     ) -> tuple[
         pd.DataFrame,
         float,
@@ -527,7 +535,7 @@ class Dataset:
         # Note! resampled_signals:list[Signals], whereas
         # excluded_signals: list[str]
         resampled_signals, excluded_signals = self._fix_sampling_periods(
-            signal_list, target_sampling_period
+            signal_list, target_sampling_period, verbosity=verbosity
         )
 
         Ts = list(resampled_signals)[0]["sampling_period"]
@@ -568,7 +576,14 @@ class Dataset:
             _,
             dataset_coverage,
         ) = self._new_dataset_from_dataframe(
-            df, u_labels, y_labels, tin, tout, full_time_interval, overlap
+            df,
+            u_labels,
+            y_labels,
+            tin,
+            tout,
+            full_time_interval,
+            overlap,
+            verbosity,
         )
 
         return df, Ts, nan_intervals, excluded_signals, dataset_coverage
@@ -658,7 +673,7 @@ class Dataset:
         list[tuple[str, float]],
         list[tuple[str, float]],
     ]:
-        ...
+        ...  # pragma: no cover
 
     @overload
     def _validate_name_value_tuples(
@@ -672,7 +687,7 @@ class Dataset:
         list[tuple[str, float]],
         list[tuple[str, float]],
     ]:
-        ...
+        ...  # pragma: no cover
 
     def _validate_name_value_tuples(
         self,
@@ -714,6 +729,7 @@ class Dataset:
         self,
         signal_list: list[Signal],
         target_sampling_period: Optional[float] = None,
+        verbosity: int = 0,
     ) -> tuple[list[Signal], list[str]]:
         # TODO: Implement some other re-sampling mechanism.
         # """
@@ -766,7 +782,8 @@ class Dataset:
         if target_sampling_period is None:
             sampling_periods = [s["sampling_period"] for s in signal_list]
             target_sampling_period = max(sampling_periods)
-            print(f"target_sampling_period = {target_sampling_period}")
+            if verbosity != 0:
+                print(f"target_sampling_period = {target_sampling_period}")
 
         for s in signal_list:
             N = target_sampling_period / s["sampling_period"]
@@ -780,14 +797,16 @@ class Dataset:
         resampled_signals = [
             s for s in list(signal_list) if not (s["name"] in excluded_signals)
         ]
-        print(
-            "\nre-sampled signals =",
-            f"{[s['name'] for s in resampled_signals]}",
-        )
-        print(
-            "excluded signals from dataset =" f"{[s for s in excluded_signals]}"
-        )
-        print(f"actual sampling period = {target_sampling_period}")
+        if verbosity != 0:
+            print(
+                "\nre-sampled signals =",
+                f"{[s['name'] for s in resampled_signals]}",
+            )
+            print(
+                "excluded signals from dataset ="
+                f"{[s for s in excluded_signals]}"
+            )
+            print(f"actual sampling period = {target_sampling_period}")
 
         return resampled_signals, excluded_signals
 
