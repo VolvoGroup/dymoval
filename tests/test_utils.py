@@ -9,7 +9,6 @@ import pytest
 import dymoval as dmv
 from .fixture_data import *  # noqa
 import matplotlib.pyplot as plt
-from typing import Union
 import os
 
 # import sys
@@ -52,8 +51,8 @@ class Test_difference_lists_of_str:
     )
     def test_difference_lists_of_str(
         self,
-        A: Union[str, list[str]],
-        B: Union[str, list[str]],
+        A: str | list[str],
+        B: str | list[str],
         expected: list[str],
     ) -> None:
         # Nominal
@@ -78,9 +77,7 @@ class Test_str2list:
             ),  # list input
         ],
     )
-    def test_str2list(
-        self, x: Union[str, list[str]], expected: list[str]
-    ) -> None:
+    def test_str2list(self, x: str | list[str], expected: list[str]) -> None:
         actual = dmv.str2list(x)
         assert sorted(actual) == sorted(expected)
 

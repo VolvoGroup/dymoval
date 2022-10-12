@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 from .config import *  # noqa
 from .utils import *  # noqa
 from .dataset import *  # noqa
-from typing import Optional, Union, Literal
+from typing import Literal
 
 
 class XCorrelation(TypedDict):
@@ -125,8 +125,8 @@ def rsquared(x: np.ndarray, y: np.ndarray) -> float:
 
 def xcorr_norm(
     Rxy: XCorrelation,
-    l_norm: Optional[Union[float, Literal["fro", "nuc"]]] = None,
-    matrix_norm: Optional[Union[float, Literal["fro", "nuc"]]] = 2,
+    l_norm: float | Literal["fro", "nuc"] | None = None,
+    matrix_norm: float | Literal["fro", "nuc"] | None = 2,
 ) -> float:
     r"""Return the norm of the cross-correlation tensor.
 
@@ -251,8 +251,8 @@ class ValidationSession:
     def _append_validation_results(
         self,
         sim_name: str,
-        l_norm: Optional[int] = None,
-        matrix_norm: Optional[int] = None,
+        l_norm: int | None = None,
+        matrix_norm: int | None = None,
     ) -> None:
 
         # Extact dataset output values
@@ -320,16 +320,16 @@ class ValidationSession:
     def plot_simulations(
         self,
         # Cam be a positional or a keyword arg
-        list_sims: Optional[Union[str, list[str]]] = None,
+        list_sims: str | list[str] | None = None,
         *,
-        dataset: Optional[Literal["all", "only_out"]] = None,
+        dataset: Literal["all", "only_out"] | None = None,
         line_color_input: str = "k",
         linestyle_input: str = "-",
         alpha_input: float = 1.0,
         line_color_output: str = "k",
         linestyle_output: str = "-",
         alpha_output: float = 1.0,
-        save_as: Optional[str] = None,
+        save_as: str | None = None,
     ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
         """Plot the stored simulation results.
 
@@ -458,9 +458,9 @@ class ValidationSession:
 
     def plot_residuals(
         self,
-        list_sims: Optional[Union[str, list[str]]] = None,
+        list_sims: str | list[str] | None = None,
         *,
-        save_as: Optional[str] = None,
+        save_as: str | None = None,
     ) -> tuple[
         matplotlib.figure.Figure,
         matplotlib.axes.Axes,
@@ -567,7 +567,7 @@ class ValidationSession:
         return fig1, ax1, fig2, ax2
 
     def get_simulation_signals_list(
-        self, sim_name: Union[str, list[str]]
+        self, sim_name: str | list[str]
     ) -> list[str]:
         """
         Return the signal name list of a given simulation result.
@@ -600,8 +600,8 @@ class ValidationSession:
         sim_name: str,
         y_labels: list[str],
         y_data: np.ndarray,
-        l_norm: Optional[int] = None,
-        matrix_norm: Optional[int] = None,
+        l_norm: int | None = None,
+        matrix_norm: int | None = None,
     ) -> None:
         """
         Append simulation results..

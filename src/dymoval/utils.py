@@ -5,7 +5,7 @@ import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
 import scipy.signal as signal  # noqa
-from typing import Union, Any
+from typing import Any
 import sys
 import subprocess
 
@@ -19,8 +19,8 @@ def factorize(n: int) -> tuple[int, int]:
 
 def difference_lists_of_str(
     # Does it work only for strings?
-    A: Union[str, list[str]],
-    B: Union[str, list[str]],
+    A: str | list[str],
+    B: str | list[str],
 ) -> list[str]:
     r"""Return the strings contained in the list *A* but not in the list *B*.
 
@@ -51,7 +51,7 @@ def difference_lists_of_str(
     return list(elements_not_found)
 
 
-def str2list(x: Union[str, list[str]]) -> list[str]:
+def str2list(x: str | list[str]) -> list[str]:
     """
     Cast a *str* type to a *list[str]* type.
 
