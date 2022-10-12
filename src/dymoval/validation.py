@@ -37,9 +37,9 @@ class XCorrelation(TypedDict):
 
 
 def xcorr(X: np.ndarray, Y: np.ndarray) -> XCorrelation:
-    """Return the cross-correlation of two MIMO signals.
+    """Return the normalized cross-correlation of two MIMO signals.
 
-    If X = Y then it return the auto-correlation of X.
+    If X = Y then it return the normalized auto-correlation of X.
 
     Parameters
     ----------
@@ -63,17 +63,26 @@ def xcorr(X: np.ndarray, Y: np.ndarray) -> XCorrelation:
     for ii in range(p):
         for jj in range(q):
             # Classic correlation definition from Probability.
-            # For each pair (ii,jj) you have Rxy = r_{xi,yj}(\tau), therefore
-            # for each (ii,jj) we compute a correlation.
-            # Nevertheless, to secure that the cross-correlation is between -1 and 1,
-            # we "normalize" the observations X and Y
+            # Rxy = E[(X-mu_x)^T(Y-mu_y))]/(sigma_x*sigma_y),
+            # check normalized cross-correlation for stochastic processes on Wikipedia.
+            # Nevertheless, the cross-correlation is in-fact the same as E[].
+            # More specifically, the cross-correlation generate a sequence
+            # [E[XY(\tau=0))] E[XY(\tau=1))], ...,E[XY(\tau=N))]] and this is
+            # the reason why in the computation below we use signal.correlation.
+            #
+            # Another way of seeing it, is that to secure that the cross-correlation
+            # is always between -1 and 1, we "normalize" the observations X and Y
             # Google for "Standard score"
-            Rxy[:, ii, jj] = signal.correlate(  # noqa
-                (X[:, ii] - np.mean(X[:, ii])) / np.std(X[:, ii]),
-                (Y[:, jj] - np.mean(Y[:, jj])) / np.std(Y[:, jj]),
-            ) / (np.sqrt(len(X)) * np.sqrt(len(Y)))
-
-        # Rxy[:, ii, jj] = signal.correlate(X[:, ii], Y[:, jj])
+            #
+            # At the end, for each pair (ii,jj) you have Rxy = r_{x_ii,y_jj}(\tau), therefore
+            # for each (ii,jj) we compute a correlation.
+            Rxy[:, ii, jj] = (
+                signal.correlate(
+                    (X[:, ii] - np.mean(X[:, ii])) / np.std(X[:, ii]),
+                    (Y[:, jj] - np.mean(Y[:, jj])) / np.std(Y[:, jj]),
+                )
+                / min(len(X), len(Y))
+            ).round(NUM_DECIMALS)
 
     xcorr_result: XCorrelation = {
         "values": Rxy,
@@ -84,7 +93,9 @@ def xcorr(X: np.ndarray, Y: np.ndarray) -> XCorrelation:
 
 def rsquared(x: np.ndarray, y: np.ndarray) -> float:
     """
-    Return the :math:`R^2` value of two MIMO signals..
+    Return the :math:`R^2` value of two signals.
+
+    Signals can be MIMO.
 
     Parameters
     ----------
@@ -105,7 +116,7 @@ def rsquared(x: np.ndarray, y: np.ndarray) -> float:
     # Compute r-square fit (%)
     x_mean = np.mean(x, axis=0)
     r2 = np.round(
-        (1.0 - np.linalg.norm(eps) ** 2 / np.linalg.norm(x - x_mean) ** 2)
+        (1.0 - np.linalg.norm(eps, 2) ** 2 / np.linalg.norm(x - x_mean, 2) ** 2)
         * 100,
         NUM_DECIMALS,  # noqa
     )
@@ -115,7 +126,7 @@ def rsquared(x: np.ndarray, y: np.ndarray) -> float:
 def xcorr_norm(
     Rxy: XCorrelation,
     l_norm: Optional[Union[float, Literal["fro", "nuc"]]] = None,
-    matrix_norm: Optional[Union[float, Literal["fro", "nuc"]]] = None,
+    matrix_norm: Optional[Union[float, Literal["fro", "nuc"]]] = 2,
 ) -> float:
     r"""Return the norm of the cross-correlation tensor.
 
@@ -160,7 +171,7 @@ def xcorr_norm(
             R_matrix[ii, jj] = np.linalg.norm(R[:, ii, jj], l_norm) / len(
                 R[:, ii, jj]
             )
-    R_norm = np.linalg.norm(R_matrix, matrix_norm)
+    R_norm = np.linalg.norm(R_matrix, matrix_norm).round(NUM_DECIMALS)
     return R_norm  # type: ignore
 
 

@@ -13,7 +13,7 @@ from matplotlib import pyplot as plt
 from scipy import io, fft
 from .config import *  # noqa
 from .utils import *  # noqa, Type
-from typing import TypedDict, Optional, Union, Any, Literal, overload
+from typing import TypedDict, Any, Literal, overload
 from copy import deepcopy
 
 
@@ -114,13 +114,13 @@ class Dataset:
     def __init__(
         self,
         name: str,
-        signal_list: Union[list[Signal], pd.DataFrame],
-        u_labels: Union[str, list[str]],
-        y_labels: Union[str, list[str]],
-        target_sampling_period: Optional[float] = None,
+        signal_list: list[Signal] | pd.DataFrame,
+        u_labels: str | list[str],
+        y_labels: str | list[str],
+        target_sampling_period: float | None = None,
         plot_raw: bool = False,
-        tin: Optional[float] = None,
-        tout: Optional[float] = None,
+        tin: float | None = None,
+        tout: float | None = None,
         full_time_interval: bool = False,
         overlap: bool = False,
         verbosity: int = 0,
@@ -219,7 +219,7 @@ class Dataset:
         NaN_intervals: dict[str, dict[str, list[np.ndarray]]],
         axes: matplotlib.axes.Axes,
         y_labels: list[str],
-        color: Optional[str] = "g",
+        color: str = "g",
     ) -> None:
 
         # y_labels are forwarded from other functions and are already
@@ -262,8 +262,8 @@ class Dataset:
         self,
         df: pd.DataFrame,
         NaN_intervals: dict[str, dict[str, list[np.ndarray]]],
-        tin: Optional[float],
-        tout: Optional[float],
+        tin: float | None = None,
+        tout: float | None = None,
         overlap: bool = False,
         full_time_interval: bool = False,
         verbosity: int = 0,
@@ -435,10 +435,10 @@ class Dataset:
     def _new_dataset_from_dataframe(
         self,
         df: pd.DataFrame,
-        u_labels: Union[str, list[str]],
-        y_labels: Union[str, list[str]],
-        tin: Optional[float] = None,
-        tout: Optional[float] = None,
+        u_labels: str | list[str],
+        y_labels: str | list[str],
+        tin: float | None = None,
+        tout: float | None = None,
         full_time_interval: bool = False,
         overlap: bool = False,
         verbosity: int = 0,
@@ -504,12 +504,12 @@ class Dataset:
     def _new_dataset_from_signals(
         self,
         signal_list: list[Signal],
-        u_labels: Union[str, list[str]],
-        y_labels: Union[str, list[str]],
-        target_sampling_period: Optional[float] = None,
+        u_labels: str | list[str],
+        y_labels: str | list[str],
+        target_sampling_period: float | None = None,
         plot_raw: bool = False,
-        tin: Optional[float] = None,
-        tout: Optional[float] = None,
+        tin: float | None = None,
+        tout: float | None = None,
         full_time_interval: bool = False,
         overlap: bool = False,
         verbosity: int = 0,
@@ -590,8 +590,8 @@ class Dataset:
 
     def _validate_signals(
         self,
-        u_labels: Union[str, list[str]],
-        y_labels: Union[str, list[str]],
+        u_labels: str | list[str],
+        y_labels: str | list[str],
     ) -> tuple[list[str], list[str]]:
         # This function check if the signals (labels) from the user
         # exist in the current dataset.
@@ -635,38 +635,12 @@ class Dataset:
 
         return u_labels, y_labels
 
-    #     @overload
-    #     def _validate_name_value_tuples(
-    #         self,
-    #         u_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
-    #         y_list: Union[list[tuple[str, float]], tuple[str, float]],
-    #     ) -> tuple[
-    #         Optional[list[str]],
-    #         Optional[list[str]],
-    #         Optional[list[tuple[str, float]]],
-    #         Optional[list[tuple[str, float]]],
-    #     ]:
-    #         ...
-    #
-    #     @overload
-    #     def _validate_name_value_tuples(
-    #         self,
-    #         u_list: Union[list[tuple[str, float]], tuple[str, float]],
-    #         y_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
-    #     ) -> tuple[
-    #         Optional[list[str]],
-    #         Optional[list[str]],
-    #         Optional[list[tuple[str, float]]],
-    #         Optional[list[tuple[str, float]]],
-    #     ]:
-    #         ...
-    #
     @overload
     def _validate_name_value_tuples(
         self,
         *,
-        u_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
-        y_list: Union[list[tuple[str, float]], tuple[str, float]],
+        u_list: list[tuple[str, float]] | tuple[str, float] = [],
+        y_list: list[tuple[str, float]] | tuple[str, float],
     ) -> tuple[
         list[str],
         list[str],
@@ -679,8 +653,8 @@ class Dataset:
     def _validate_name_value_tuples(
         self,
         *,
-        u_list: Union[list[tuple[str, float]], tuple[str, float]],
-        y_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
+        u_list: list[tuple[str, float]] | tuple[str, float],
+        y_list: list[tuple[str, float]] | tuple[str, float] = [],
     ) -> tuple[
         list[str],
         list[str],
@@ -692,8 +666,8 @@ class Dataset:
     def _validate_name_value_tuples(
         self,
         *,
-        u_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
-        y_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
+        u_list: list[tuple[str, float]] | tuple[str, float] = [],
+        y_list: list[tuple[str, float]] | tuple[str, float] = [],
     ) -> tuple[
         list[str],
         list[str],
@@ -728,7 +702,7 @@ class Dataset:
     def _fix_sampling_periods(
         self,
         signal_list: list[Signal],
-        target_sampling_period: Optional[float] = None,
+        target_sampling_period: float | None = None,
         verbosity: int = 0,
     ) -> tuple[list[Signal], list[str]]:
         # TODO: Implement some other re-sampling mechanism.
@@ -894,9 +868,9 @@ class Dataset:
         alpha_output: float = 1.0,
         *,
         # Only key-word arguments
-        u_labels: Union[str, list[str]] = [],
-        y_labels: Union[str, list[str]] = [],
-        save_as: Optional[str] = None,
+        u_labels: str | list[str] = [],
+        y_labels: str | list[str] = [],
+        save_as: str | None = None,
     ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
         """Plot the Dataset.
 
@@ -1007,14 +981,14 @@ class Dataset:
         line_color_output: str = "g",
         alpha_output: float = 1.0,
         *,
-        u_labels: Union[str, list[str]] = [],
-        y_labels: Union[str, list[str]] = [],
-        save_as: Optional[str] = None,
+        u_labels: str | list[str] = [],
+        y_labels: str | list[str] = [],
+        save_as: str | None = None,
     ) -> tuple[
         matplotlib.figure.Figure,
         matplotlib.axes.Axes,
-        Optional[matplotlib.figure.Figure],
-        Optional[matplotlib.axes.Axes],
+        matplotlib.figure.Figure | None,
+        matplotlib.axes.Axes | None,
     ]:
         """
         Plot the dataset coverage as histograms.
@@ -1107,8 +1081,8 @@ class Dataset:
     def fft(
         self,
         *,
-        u_labels: Union[str, list[str]] = [],
-        y_labels: Union[str, list[str]] = [],
+        u_labels: str | list[str] = [],
+        y_labels: str | list[str] = [],
     ) -> pd.DataFrame:
         """Return the FFT of the dataset as pandas DataFrame.
 
@@ -1168,9 +1142,9 @@ class Dataset:
         alpha_output: float = 1.0,
         *,
         kind: Literal["amplitude", "power", "psd"] = "power",
-        u_labels: Union[str, list[str]] = [],
-        y_labels: Union[str, list[str]] = [],
-        save_as: Optional[str] = None,
+        u_labels: str | list[str] = [],
+        y_labels: str | list[str] = [],
+        save_as: str | None = None,
     ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
         """
         Plot the spectrum of the specified signals in the dataset in different format.
@@ -1333,8 +1307,8 @@ class Dataset:
     def remove_means(
         self,
         *,
-        u_labels: Union[str, list[str]] = [],
-        y_labels: Union[str, list[str]] = [],
+        u_labels: str | list[str] = [],
+        y_labels: str | list[str] = [],
     ) -> Dataset:
         """
         Remove the mean value to the specified signals.
@@ -1379,8 +1353,8 @@ class Dataset:
     def remove_offset(
         self,
         *,
-        u_list: Union[list[tuple[str, float]], tuple[str, float]],
-        y_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
+        u_list: list[tuple[str, float]] | tuple[str, float],
+        y_list: list[tuple[str, float]] | tuple[str, float] = [],
     ) -> Dataset:
         ...  # pragma: no cover
 
@@ -1388,16 +1362,16 @@ class Dataset:
     def remove_offset(
         self,
         *,
-        u_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
-        y_list: Union[list[tuple[str, float]], tuple[str, float]],
+        u_list: list[tuple[str, float]] | tuple[str, float] = [],
+        y_list: list[tuple[str, float]] | tuple[str, float],
     ) -> Dataset:
         ...  # pragma: no cover
 
     def remove_offset(
         self,
         *,
-        u_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
-        y_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
+        u_list: list[tuple[str, float]] | tuple[str, float] = [],
+        y_list: list[tuple[str, float]] | tuple[str, float] = [],
     ) -> Dataset:
         # At least one argument shall be passed.
         # This is the reason why the @overload is added in that way
@@ -1465,8 +1439,8 @@ class Dataset:
     def low_pass_filter(
         self,
         *,
-        u_list: Union[list[tuple[str, float]], tuple[str, float]],
-        y_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
+        u_list: list[tuple[str, float]] | tuple[str, float],
+        y_list: list[tuple[str, float]] | tuple[str, float] = [],
     ) -> Dataset:
         ...  # pragma: no cover
 
@@ -1474,16 +1448,16 @@ class Dataset:
     def low_pass_filter(
         self,
         *,
-        u_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
-        y_list: Union[list[tuple[str, float]], tuple[str, float]],
+        u_list: list[tuple[str, float]] | tuple[str, float] = [],
+        y_list: list[tuple[str, float]] | tuple[str, float],
     ) -> Dataset:
         ...  # pragma: no cover
 
     def low_pass_filter(
         self,
         *,
-        u_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
-        y_list: Union[list[tuple[str, float]], tuple[str, float]] = [],
+        u_list: list[tuple[str, float]] | tuple[str, float] = [],
+        y_list: list[tuple[str, float]] | tuple[str, float] = [],
     ) -> Dataset:
         """
         Low-pass filter a list of specified signals.
@@ -1683,8 +1657,8 @@ def validate_signals(signal_list: list[Signal]) -> None:
 
 def dataframe_validation(
     df: pd.DataFrame,
-    u_labels: Union[str, list[str]],
-    y_labels: Union[str, list[str]],
+    u_labels: str | list[str],
+    y_labels: str | list[str],
 ) -> None:
     """
     Check if a pandas Dataframe is suitable for instantiating
@@ -1803,8 +1777,8 @@ def dataframe_validation(
 
 def plot_signals(
     signal_list: list[Signal],
-    u_labels: Union[str, list[str]] = [],
-    y_labels: Union[str, list[str]] = [],
+    u_labels: str | list[str] = [],
+    y_labels: str | list[str] = [],
 ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
     """
     Plot the :py:class:`Signals <dymoval.dataset.Signal>` of a signal list.
@@ -1815,7 +1789,7 @@ def plot_signals(
         List of :py:class:`Dataset <dymoval.dataset.Dataset>`.
     u_labels :
         Used for specifying which signals shall be considered as input.
-    y_labels : Optional[Union[str, list[str]]], optional
+    y_labels :
         Used for specifying which signals shall be considered as output.
 
     Raises

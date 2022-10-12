@@ -482,24 +482,196 @@ class Test_xcorr:
     def test_xcorr(self, X: XCorrelation, Y: XCorrelation) -> None:
         # Just test that it won't run any error
         # Next, remove randoms with known values.
-        dmv.xcorr(X, Y)
+
+        x1 = np.array([0.1419, 0.4218, 0.9157, 0.7922, 0.9595])
+        x2 = np.array([0.6557, 0.0357, 0.8491, 0.9340, 0.6787])
+        X = np.array([x1, x2]).T
+
+        y1 = np.array([0.7577, 0.7431, 0.3922, 0.6555, 0.1712])
+        y2 = np.array([0.7060, 0.0318, 0.2769, 0.0462, 0.0971])
+        Y = np.array([y1, y2]).T
+
+        # Expected values pre-computed with Matlab
+        Rx1y1_expected = np.array(
+            [
+                0.5233,
+                0.0763,
+                -0.1363,
+                -0.2526,
+                -0.8181,
+                0.0515,
+                0.1090,
+                0.2606,
+                0.1864,
+            ]
+        )
+
+        Rx1y2_expected = np.array(
+            [
+                0.1702,
+                0.3105,
+                -0.0438,
+                0.0526,
+                -0.6310,
+                -0.5316,
+                0.2833,
+                0.0167,
+                0.3730,
+            ]
+        )
+
+        Rx2y1_expected = np.array(
+            [
+                -0.0260,
+                0.6252,
+                -0.4220,
+                0.0183,
+                -0.3630,
+                -0.3462,
+                0.2779,
+                0.2072,
+                0.0286,
+            ]
+        )
+
+        Rx2y2_expected = np.array(
+            [
+                -0.0085,
+                0.1892,
+                0.2061,
+                -0.2843,
+                0.1957,
+                -0.8060,
+                0.1135,
+                0.3371,
+                0.0573,
+            ]
+        )
+        lags_expected = np.arange(-4, 5)
+
+        # Call dymoval function
+        # OBS! It works only if NUM_DECIMALS = 4, like in Matlab
+
+        # SISO
+        XCorr_actual = dmv.xcorr(x1, y1)
+        Rxy_actual = XCorr_actual["values"]
+        lags_actual = XCorr_actual["lags"]
+
+        assert np.allclose(Rxy_actual[:, 0, 0], Rx1y1_expected, atol=1e-4)
+        assert np.allclose(lags_actual, lags_expected)
+
+        # SIMO
+        XCorr_actual = dmv.xcorr(x1, Y)
+        Rxy_actual = XCorr_actual["values"]
+        lags_actual = XCorr_actual["lags"]
+
+        assert np.allclose(Rxy_actual[:, 0, 0], Rx1y1_expected, atol=1e-4)
+        assert np.allclose(Rxy_actual[:, 0, 1], Rx1y2_expected, atol=1e-4)
+        assert np.allclose(lags_actual, lags_expected)
+
+        # MISO
+        XCorr_actual = dmv.xcorr(X, y1)
+        Rxy_actual = XCorr_actual["values"]
+        lags_actual = XCorr_actual["lags"]
+
+        assert np.allclose(Rxy_actual[:, 0, 0], Rx1y1_expected, atol=1e-4)
+        assert np.allclose(Rxy_actual[:, 1, 0], Rx2y1_expected, atol=1e-4)
+        assert np.allclose(lags_actual, lags_expected)
+
+        # MIMO
+        XCorr_actual = dmv.xcorr(X, Y)
+        Rxy_actual = XCorr_actual["values"]
+        lags_actual = XCorr_actual["lags"]
+
+        assert np.allclose(Rxy_actual[:, 0, 0], Rx1y1_expected, atol=1e-4)
+        assert np.allclose(Rxy_actual[:, 0, 1], Rx1y2_expected, atol=1e-4)
+        assert np.allclose(Rxy_actual[:, 1, 0], Rx2y1_expected, atol=1e-4)
+        assert np.allclose(Rxy_actual[:, 1, 1], Rx2y2_expected, atol=1e-4)
+        assert np.allclose(lags_actual, lags_expected)
 
 
 class Test_rsquared:
-    @pytest.mark.parametrize(
-        "y_values,y_sim_values",
-        [
-            (np.random.rand(10), np.random.rand(10)),
-            (np.random.rand(5, 3), np.random.rand(5, 3)),
-            (np.random.rand(3, 5), np.random.rand(3, 5)),
-        ],
-    )
-    def test_rsquared_nominal(
-        self, y_values: np.ndarray, y_sim_values: np.ndarray
-    ) -> None:
+    def test_rsquared_nominal(self) -> None:
         # Just test that it won't run any error
         # Next, remove randoms with known values.
-        dmv.rsquared(y_values, y_sim_values)
+
+        y1 = np.array(
+            [
+                0,
+                0.5878,
+                0.9511,
+                0.9511,
+                0.5878,
+                0.0000,
+                -0.5878,
+                -0.9511,
+                -0.9511,
+                -0.5878,
+                -0.0000,
+            ]
+        )
+
+        y2 = np.array(
+            [
+                0,
+                0.7053,
+                1.1413,
+                1.1413,
+                0.7053,
+                0.0000,
+                -0.7053,
+                -1.1413,
+                -1.1413,
+                -0.7053,
+                -0.0000,
+            ]
+        )
+
+        y1Calc = np.array(
+            [
+                0.1403,
+                0.8620,
+                1.0687,
+                1.1633,
+                0.9208,
+                0.2390,
+                -0.4537,
+                -0.8314,
+                -0.7700,
+                -0.4187,
+                0.1438,
+            ]
+        )
+
+        y2Calc = np.array(
+            [
+                0.2233,
+                1.0024,
+                1.3110,
+                1.3130,
+                0.7553,
+                0.0098,
+                -0.5893,
+                -1.0143,
+                -0.8798,
+                -0.3226,
+                0.3743,
+            ]
+        )
+
+        rsquared_expected_SISO = 91.2775
+        rsquared_expected_MIMO = 92.6092
+
+        rsquared_actual_SISO = dmv.rsquared(y1, y1Calc)
+        rsquared_actual_MIMO = dmv.rsquared(
+            np.array([y1, y2]).T, np.array([y1Calc, y2Calc]).T
+        )
+
+        assert np.isclose(
+            rsquared_expected_SISO, rsquared_actual_SISO, atol=1e-4
+        )
+
+        assert np.isclose(rsquared_expected_MIMO, rsquared_actual_MIMO)
 
     @pytest.mark.parametrize(
         "y_values,y_sim_values",
@@ -522,84 +694,121 @@ class Test_rsquared:
 
 
 class Test_xcorr_norm:
-    @pytest.mark.parametrize(
-        "R",
-        [
-            np.random.rand(10, 3, 2),
-            np.random.rand(10, 2, 1),
-            np.random.rand(10, 2),
-            np.random.rand(10),
-        ],
-    )
-    def test_xcorr_norm_nominal(self, R: XCorrelation) -> None:
+    def test_xcorr_norm_nominal(self) -> None:
         # Just test that it won't run any error
         # Next, remove randoms with known values.
-
-        x1 = np.array(
+        # Expected values pre-computed with Matlab
+        Rx1y1 = np.array(
             [
-                0.4314,
-                0.9106,
-                0.1818,
-                0.2638,
-                0.1455,
-                0.1361,
-                0.8693,
-                0.5797,
-                0.5499,
-                0.1450,
+                0.5233,
+                0.0763,
+                -0.1363,
+                -0.2526,
+                -0.8181,
+                0.0515,
+                0.1090,
+                0.2606,
+                0.1864,
             ]
         )
 
-        x2 = np.array(
+        Rx1y2 = np.array(
             [
-                0.1067,
-                0.9619,
-                0.0046,
-                0.7749,
-                0.8173,
-                0.8687,
-                0.0844,
-                0.3998,
-                0.2599,
-                0.8001,
+                0.1702,
+                0.3105,
+                -0.0438,
+                0.0526,
+                -0.6310,
+                -0.5316,
+                0.2833,
+                0.0167,
+                0.3730,
             ]
         )
 
-        y1 = np.array(
+        Rx2y1 = np.array(
             [
-                0.4173,
-                0.0497,
-                0.9027,
-                0.9448,
-                0.4909,
-                0.4893,
-                0.3377,
-                0.9001,
-                0.3692,
-                0.1112,
+                -0.0260,
+                0.6252,
+                -0.4220,
+                0.0183,
+                -0.3630,
+                -0.3462,
+                0.2779,
+                0.2072,
+                0.0286,
             ]
         )
 
-        y2 = np.array(
+        Rx2y2 = np.array(
             [
-                0.7803,
-                0.3897,
-                0.2417,
-                0.4039,
-                0.0965,
-                0.1320,
-                0.9421,
-                0.9561,
-                0.5752,
-                0.0598,
+                -0.0085,
+                0.1892,
+                0.2061,
+                -0.2843,
+                0.1957,
+                -0.8060,
+                0.1135,
+                0.3371,
+                0.0573,
             ]
         )
 
-        X = np.array([x1, x2]).T
-        Y = np.array([y1, y2]).T
-        # TODO
-        Rxy = {"values": R, "lags": signal.correlation_lags(len(R), len(R))}
-        dmv.xcorr_norm(Rxy)
+        lags_test = np.arange(-4, 5)
+
+        norm_expected_SISO = 0.1191
+        norm_expected_SIMO = 0.1640
+        norm_expected_MISO = 0.1607
+        norm_expected_MIMO = 0.2249
+
+        # SISO Adjust test values
+        R_test = np.empty((len(lags_test), 1, 1))
+        R_test[:, 0, 0] = Rx1y1
+        Rxy_test = {"values": R_test, "lags": lags_test}
+
+        # Act
+        norm_actual = dmv.xcorr_norm(Rxy_test)
+
+        # Assert
+        assert np.isclose(norm_actual, norm_expected_SISO, atol=1e-4)
+
+        # SIMO Adjust test values
+        R_test = np.empty((len(lags_test), 1, 2))
+        R_test[:, 0, 0] = Rx1y1
+        R_test[:, 0, 1] = Rx1y2
+        Rxy_test = {"values": R_test, "lags": lags_test}
+
+        # Act
+        norm_actual = dmv.xcorr_norm(Rxy_test)
+
+        # Assert
+        assert np.isclose(norm_actual, norm_expected_SIMO, atol=1e-4)
+
+        # MISO Adjust test values
+        R_test = np.empty((len(lags_test), 2, 1))
+        R_test[:, 0, 0] = Rx1y1
+        R_test[:, 1, 0] = Rx2y1
+        Rxy_test = {"values": R_test, "lags": lags_test}
+
+        # Act
+        norm_actual = dmv.xcorr_norm(Rxy_test)
+
+        # Assert
+        assert np.isclose(norm_actual, norm_expected_MISO, atol=1e-4)
+
+        # MIMO Adjust test values
+        R_test = np.empty((len(lags_test), 2, 2))
+        R_test[:, 0, 0] = Rx1y1
+        R_test[:, 0, 1] = Rx1y2
+        R_test[:, 1, 0] = Rx2y1
+        R_test[:, 1, 1] = Rx2y2
+        Rxy_test = {"values": R_test, "lags": lags_test}
+
+        # Act
+        norm_actual = dmv.xcorr_norm(Rxy_test)
+
+        # Assert
+        assert np.isclose(norm_actual, norm_expected_MIMO, atol=1e-4)
 
     @pytest.mark.parametrize(
         "R",
