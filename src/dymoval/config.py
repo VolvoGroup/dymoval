@@ -2,7 +2,7 @@
 
 import pathlib
 
-config = {"NUM_DECIMALS": 3, "COLORMAP": "tab10"}  # Defaults
+config = {"NUM_DECIMALS": 4, "COLORMAP": "tab10"}  # Defaults
 mapping_dict = {"num_decimals": "NUM_DECIMALS", "color_map": "COLORMAP"}
 
 try:
