@@ -854,6 +854,27 @@ class Dataset:
         """Return the list of signal names of the dataset."""
         return list(self.dataset.columns)
 
+    #     def rename_signals(self, name_map: dic[str, str]) -> Dataset:
+    #
+    #         # name_map = {name[1]:name[1]+"_pi" for name in ds.get_signal_list()}
+    #         ds = deepcopy(self)
+    #         ds.dataset = ds.dataset.rename(
+    #             columns=name_map, level=1, errors="raise"
+    #         )
+    #
+    #         # Update other references for signals name
+    #         for key in ds._nan_intervals["INPUT"].keys():
+    #             ds._nan_intervals["INPUT"][name_map[key]] = ds._nan_intervals[
+    #                 "INPUT"
+    #             ].pop(key)
+    #
+    #         for key in ds._nan_intervals["OUTPUT"].keys():
+    #             ds._nan_intervals["OUTPUT"][name_map[key]] = ds._nan_intervals[
+    #                 "OUTPUT"
+    #             ].pop(key)
+    #
+    #         return ds
+
     def plot(
         self,
         # Only positional arguments
@@ -866,12 +887,14 @@ class Dataset:
         line_color_output: str = "g",
         linestyle_output: str = "-",
         alpha_output: float = 1.0,
+        ax: matplotlib.axes.Axes | None = None,
         *,
         # Only key-word arguments
         u_labels: str | list[str] = [],
         y_labels: str | list[str] = [],
         save_as: str | None = None,
-    ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
+    ) -> matplotlib.figure.Figure | None:
+        # -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
         """Plot the Dataset.
 
         Possible values for the parameters describing the line used in the plot
@@ -898,6 +921,8 @@ class Dataset:
             Line style for the output signals.
         alpha_output:
             Alpha channel value for the output signals.
+        ax:
+            Matplotlib Axes where to place the plot.
         save_as:
             Save the figure with a specified name.
             The figure is automatically resized with a 16:9 aspect ratio.
@@ -920,7 +945,14 @@ class Dataset:
             n = p + q
             range_out = np.arange(p, p + q)
         nrows, ncols = factorize(n)  # noqa
-        fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
+
+        # Overwrite axes if you want the plot to be on the figure instantiated by the caller.
+        if ax is None:  # Create new figure and axes
+            fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
+        else:  # Otherwise use what is passed
+            axes = np.asarray(ax)
+
+        # Flatten array for more readable code
         axes = axes.T.flat
 
         if u_labels:
@@ -964,14 +996,18 @@ class Dataset:
         plt.suptitle("Blue lines are input and green lines are output. ")
 
         # Eventually save and return figures.
-        if save_as is not None:
+        if save_as is not None and ax is None:
             # Keep 16:9 ratio
             height = 2.5
             width = 1.778 * height
             fig.set_size_inches(ncols * width, nrows * height)
             save_plot_as(fig, save_as)  # noqa
 
-        return fig, axes
+        # return stuff
+        if ax is None:
+            return fig
+        else:
+            return None
 
     def plot_coverage(
         self,
@@ -1857,213 +1893,46 @@ def plot_signals(
     return fig, ax
 
 
-# TODO Compare Datasets.
 def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
     # arguments validation
-    # for ds in datasets:
-    #     if not isinstance(ds, Dataset):
-    #         raise TypeError("Input must be a dymoval Dataset type.")
+    for ds in datasets:
+        if not isinstance(ds, Dataset):
+            raise TypeError("Input must be a dymoval Dataset type.")
 
     ALLOWED_TARGETS = ["time", "freq", "cov", "all"]
     if target not in ALLOWED_TARGETS:
         raise ValueError(
             f"Target {target} not valid. Allowed targets are {ALLOWED_TARGETS}"
         )
-    # Find the maximum number of axes.
-    p_max = 0
-    q_max = 0
-    for ii, ds in enumerate(datasets):
-        p_max = max(p_max, len(ds.dataset["INPUT"].columns))
-        q_max = max(q_max, len(ds.dataset["OUTPUT"].columns))
+
+    # Get size of wider dataset
+    n = max(
+        [len(ds.dataset.droplevel(level=0, axis=1).columns) for ds in datasets]
+    )
+    nrows, ncols = factorize(n)
+
+    # Create a unified figure
+    fig, ax = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
+
     cmap = plt.get_cmap(COLORMAP)  # noqa
+    # cols = []
+    # labels = []
+    for ii, ds in enumerate(datasets):
+        ds.plot(line_color_input=cmap(ii), line_color_output=cmap(ii), ax=ax)
+        # cols.append(ds.dataset.droplevel(level=0, axis=1).columns)
+        # labels.append(list(zip([ds.name] * len(cols[ii]), cols[ii])))
+        # print("ax[ii] = ", ax[ii])
+        # ax[ii].legend([labels[ii]])
 
-    # ================================================================
-    # Start the plot. Note how idx work as a filter to select signals
-    # in a certain position in all the simulations.
-    # ================================================================
+    # Adjust legends
+    # print("legend = ", legend)
+    # print("legend[0] = ", legend[0])
 
-    # =================================================================
-    #  Time
-    # =================================================================
-    if target in ["all", "time"]:
-        nrows, ncols = factorize(p_max)  # noqa
-        fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        axes = axes.T.flat
-        for ii, ds in enumerate(datasets):
-            p = len(ds.dataset["INPUT"].columns)
-            # Scan simulation names.
-            ds.dataset["INPUT"].plot(
-                subplots=True,
-                grid=True,
-                color=cmap(ii),
-                ax=axes[0:p],
-            )
+    #      for ii in range(p):
+    #         df_ax[ii].legend([legend[ii]])
 
-            ds._shade_input_nans(
-                ds.dataset,
-                ds._nan_intervals,
-                axes[0:p],
-                list(ds.dataset["INPUT"].columns),
-                color=cmap(ii),
-            )
-
-            for ii in range(ncols):
-                axes[nrows - 1 :: nrows][ii].set_xlabel("Frequency")
-        plt.suptitle("Input signals comparison with respect to time. ")
-
-        # Plot the output signals
-        nrows, ncols = factorize(q_max)  # noqa
-        fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        axes = axes.T.flat
-        for ii, ds in enumerate(datasets):
-            q = len(ds.dataset["OUTPUT"].columns)
-            # Scan simulation names.
-            ds.dataset["OUTPUT"].plot(
-                subplots=True,
-                grid=True,
-                color=cmap(ii),
-                ax=axes[0:q],
-            )
-
-            ds._shade_output_nans(
-                ds.dataset,
-                ds._nan_intervals,
-                axes[0:q],
-                list(ds.dataset["OUTPUT"].columns),
-                color=cmap(ii),
-            )
-
-            for ii in range(ncols):
-                axes[nrows - 1 :: nrows][ii].set_xlabel("Frequency")
-        plt.suptitle("Output signals comparison with respect to time. ")
-    # =================================================================
-    #  Coverage
-    # =================================================================
-    if target in ["all", "cov"]:
-        # Plot the input signals
-        nrows, ncols = factorize(p_max)  # noqa
-        fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        axes = axes.T.flat
-        for ii, ds in enumerate(datasets):
-            p = len(ds.dataset["INPUT"].columns)
-            # Scan simulation names.
-            ds.dataset["INPUT"].hist(
-                grid=True,
-                color=cmap(ii),
-                ax=axes[0:p],
-            )
-
-            for ii in range(ncols):
-                axes[nrows - 1 :: nrows][ii].set_xlabel("Frequency")
-        plt.suptitle("Input signals comparison with respect to coverage. ")
-
-        # Plot the output signals
-        nrows, ncols = factorize(q_max)  # noqa
-        fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        axes = axes.T.flat
-        for ii, ds in enumerate(datasets):
-            q = len(ds.dataset["OUTPUT"].columns)
-            # Scan simulation names.
-            ds.dataset["OUTPUT"].hist(
-                grid=True,
-                color=cmap(ii),
-                ax=axes[0:q],
-            )
-
-            for ii in range(ncols):
-                axes[nrows - 1 :: nrows][ii].set_xlabel("Frequency")
-        plt.suptitle("Output signals comparison with respect to coverage. ")
-    # =================================================================
-    #  Frequency
-    # =================================================================
-    if target in ["all", "freq"]:
-        # Inputs
-        nrows, ncols = factorize(p_max)  # noqa
-        fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        axes = axes.T.flat
-
-        for ii, ds in enumerate(datasets):
-            u_labels: list[str] = []
-            y_labels: list[str] = []
-            u_labels, y_labels = ds._validate_signals(u_labels, y_labels)
-            p = len(u_labels)
-            # Compute FFT
-            Ts = ds.dataset.index[1] - ds.dataset.index[0]
-            N = len(ds.dataset.index)  # number of samples
-            # Remove 'INPUT' 'OUTPUT' columns level from dataframe
-            df_temp = ds.dataset.droplevel(level=0, axis=1)
-            vals = np.abs(
-                fft.rfftn(df_temp.loc[:, [*u_labels, *y_labels]], axes=0)
-            )
-
-            if np.any(np.isnan(vals)):
-                warnings.warn(  # noqa
-                    f"Dataset '{ds.name}' contains NaN:s. I Cannot plot the amplitude spectrum.".format(
-                        ds.name, ds.name
-                    )
-                )
-            # Frequency axis
-            f_bins = fft.rfftfreq(N, Ts)
-
-            # Create a new Dataframe
-            u_extended_labels = list(zip(["INPUT"] * len(u_labels), u_labels))
-            y_extended_labels = list(zip(["OUTPUT"] * len(y_labels), y_labels))
-            cols = pd.MultiIndex.from_tuples(
-                [*u_extended_labels, *y_extended_labels]
-            )
-
-            df_freq = pd.DataFrame(data=vals, columns=cols, index=f_bins)
-            df_freq["INPUT"].loc[:, u_labels].plot(
-                subplots=True,
-                grid=True,
-                color=cmap(ii),
-                ax=axes[0:p],
-            )
-
-            for ii in range(ncols):
-                axes[nrows - 1 :: nrows][ii].set_xlabel("Frequency")
-            plt.suptitle("Input signals frequency content.")
-        # # Outputs
-        nrows, ncols = factorize(q_max)  # noqa
-        fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        axes = axes.T.flat
-        for ii, ds in enumerate(datasets):
-            u_labels, y_labels = ds._validate_signals(u_labels, y_labels)
-            q = len(y_labels)
-            # Compute FFT
-            Ts = ds.dataset.index[1] - ds.dataset.index[0]
-            N = len(ds.dataset.index)  # number of samples
-            # Remove 'INPUT' 'OUTPUT' columns level from dataframe
-            df_temp = ds.dataset.droplevel(level=0, axis=1)
-            vals = np.abs(
-                fft.rfftn(df_temp.loc[:, [*u_labels, *y_labels]], axes=0)
-            )
-
-            if np.any(np.isnan(vals)):
-                warnings.warn(  # noqa
-                    f"Dataset '{ds.name}' contains NaN:s. I Cannot plot the amplitude spectrum."
-                )
-            # Frequency axis
-            f_bins = fft.rfftfreq(N, Ts)
-
-            # Create a new Dataframe
-            u_extended_labels = list(zip(["INPUT"] * len(u_labels), u_labels))
-            y_extended_labels = list(zip(["OUTPUT"] * len(y_labels), y_labels))
-            cols = pd.MultiIndex.from_tuples(
-                [*u_extended_labels, *y_extended_labels]
-            )
-
-            df_freq = pd.DataFrame(data=vals, columns=cols, index=f_bins)
-            df_freq["OUTPUT"].loc[:, y_labels].plot(
-                subplots=True,
-                grid=True,
-                color=cmap(ii),
-                ax=axes[0:q],
-            )
-
-            for ii in range(ncols):
-                axes[nrows - 1 :: nrows][ii].set_xlabel(df_freq.index.name)
-            plt.suptitle("Outputs amplitude spectrum.")
+    # for ii,ds in enumerate(datasets):
+    # df["INPUT"].plot(subplots=True, grid=True, color="b", ax=axes[0:p])
 
 
 # def analyze_inout_dataset(df):
