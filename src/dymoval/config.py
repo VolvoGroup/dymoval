@@ -2,6 +2,7 @@
 
 import pathlib
 
+# Constants exposed to the user
 config = {"NUM_DECIMALS": 4, "COLORMAP": "tab10"}  # Defaults
 mapping_dict = {"num_decimals": "NUM_DECIMALS", "color_map": "COLORMAP"}
 
@@ -22,3 +23,7 @@ except FileNotFoundError:  # pragma: no cover
 
 
 locals().update(config)
+
+# Internal constants
+PLOT_SPECTRUM_TYPE = ["amplitude", "power", "psd"]
+SIGNAL_KEYS = ["name", "values", "signal_unit", "sampling_period", "time_unit"]

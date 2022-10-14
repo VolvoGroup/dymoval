@@ -1202,12 +1202,13 @@ class Dataset:
         line_color_output: str = "g",
         linestyle_output: str = "-",
         alpha_output: float = 1.0,
+        ax: matplotlib.axes.Axes | None = None,
         *,
         kind: Literal["amplitude", "power", "psd"] = "power",
         u_labels: str | list[str] = [],
         y_labels: str | list[str] = [],
         save_as: str | None = None,
-    ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
+    ) -> matplotlib.figure.Figure:
         """
         Plot the spectrum of the specified signals in the dataset in different format.
 
@@ -1261,9 +1262,8 @@ class Dataset:
         # validation
         u_labels, y_labels = self._validate_signals(u_labels, y_labels)
 
-        allowed_kind = ["amplitude", "power", "psd"]
-        if kind not in allowed_kind:
-            raise ValueError(f"kind must be one of {allowed_kind}")
+        if kind not in PLOT_SPECTRUM_TYPE:
+            raise ValueError(f"kind must be one of {PLOT_SPECTRUM_TYPE}")
 
         # Input-output lengths.
         # If we want to plot abs and phase, then we need to double
@@ -1313,9 +1313,23 @@ class Dataset:
         if overlap:
             n = max(p, q)
             range_out = np.arange(0, q)
+            m = min(p, q)
+            u_titles = ["IN/OUT #" + str(ii + 1) for ii in range(m)]
+            y_titles = ["IN/OUT #" + str(ii + 1) for ii in range(m)]
+            u_titles_trail = ["INPUT #" + str(ii + 1) for ii in range(m, p)]
+            y_titles_trail = ["OUTPUT #" + str(ii + 1) for ii in range(m, q)]
+
         else:
             n = p + q
             range_out = np.arange(p, p + q)
+
+            # Adjust titles
+            u_titles = ["INPUT #" + str(ii + 1) for ii in range(p)]
+            y_titles = ["OUTPUT #" + str(ii + 1) for ii in range(q)]
+            u_titles_trail = []
+            y_titles_trail = []
+
+        # Find nrwos and ncols for the plot
         nrows, ncols = factorize(n)  # noqa
 
         # To have the phase plot below the abs, the number of rows must be an
@@ -1325,28 +1339,36 @@ class Dataset:
                 nrows -= 1
                 ncols += int(np.ceil(nrows / ncols))
 
-        fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
+        # Overwrite axes if you want the plot to be on the figure instantiated by the caller.
+        if ax is None:  # Create new figure and axes
+            fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
+        else:  # Otherwise use what is passed
+            axes = np.asarray(ax)
+
+        # Flatten array for more readable code
         axes = axes.T.flat
 
         if u_labels:
-            df_freq.loc[:, ("INPUT", df_freq["INPUT"].columns)].plot(
+            df_freq["INPUT"].loc[:, u_labels].plot(
                 subplots=True,
                 grid=True,
                 color=line_color_input,
                 linestyle=linestyle_input,
                 alpha=alpha_input,
                 legend=u_labels,
+                title=u_titles + u_titles_trail,
                 ax=axes[0:p],
             )
 
         if y_labels:
-            df_freq.loc[:, ("OUTPUT", df_freq["OUTPUT"].columns)].plot(
+            df_freq["OUTPUT"].loc[:, y_labels].plot(
                 subplots=True,
                 grid=True,
                 color=line_color_output,
                 linestyle=linestyle_output,
                 alpha=alpha_output,
                 legend=y_labels,
+                title=y_titles + y_titles_trail,
                 ax=axes[range_out],
             )
 
@@ -1364,7 +1386,7 @@ class Dataset:
             fig.set_size_inches(ncols * width, nrows * height)
             save_plot_as(fig, save_as)
 
-        return fig, axes
+        return axes
 
     def remove_means(
         self,
@@ -1682,13 +1704,12 @@ def validate_signals(signal_list: list[Signal]) -> None:
     if len(signal_names) > len(set(signal_names)):
         raise ValueError("Signal names are not unique")
     #
-    ALLOWED_KEYS = Signal.__required_keys__
     for s in signal_list:
         keys = s.keys()
         #
         # Existence
         not_found_keys = difference_lists_of_str(
-            list(ALLOWED_KEYS), list(keys)
+            list(SIGNAL_KEYS), list(keys)
         )  # noqa
         if not_found_keys:
             raise KeyError(
@@ -1919,7 +1940,12 @@ def plot_signals(
     return fig, ax
 
 
-def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
+def compare_datasets(
+    *datasets: Dataset,
+    target: Literal[
+        "time", "coverage", "amplitude", "power", "psd", "all"
+    ] = "time",
+) -> None:
 
     # Utility function to avoid too much code repetition
     def _adjust_legend(ds_names: list[str], axes: matplotlib.axes.Axes) -> None:
@@ -1938,75 +1964,120 @@ def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
         if not isinstance(ds, Dataset):
             raise TypeError("Input must be a dymoval Dataset type.")
 
-    ALLOWED_TARGETS = ["time", "freq", "cov", "all"]
-    if target not in ALLOWED_TARGETS:
-        raise ValueError(
-            f"Target {target} not valid. Allowed targets are {ALLOWED_TARGETS}"
-        )
-
     # ========================================
     # time comparison
     # ========================================
     # Get size of wider dataset
-    n = max(
-        [len(ds.dataset.droplevel(level=0, axis=1).columns) for ds in datasets]
-    )
-    nrows, ncols = factorize(n)
+    if target == "time" or target == "all":
+        n = max(
+            [
+                len(ds.dataset.droplevel(level=0, axis=1).columns)
+                for ds in datasets
+            ]
+        )
+        nrows, ncols = factorize(n)
 
-    # Create a unified figure
-    fig_time, ax_time = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-
-    # Collect all the datasets axes
-    cmap = plt.get_cmap(COLORMAP)  # noqa
-    for ii, ds in enumerate(datasets):
-        axes_time = ds.plot(
-            line_color_input=cmap(ii), line_color_output=cmap(ii), ax=ax_time
+        # Create a unified figure
+        fig_time, ax_time = plt.subplots(
+            nrows, ncols, sharex=True, squeeze=False
         )
 
-    print("type(axes_time) = ", type(axes_time))
-    # Adjust legend
-    ds_names = [ds.name for ds in datasets]
-    _adjust_legend(ds_names, axes_time)
-    fig_time.suptitle("Dataset comparison")
+        # Collect all the datasets axes
+        cmap = plt.get_cmap(COLORMAP)  # noqa
+        for ii, ds in enumerate(datasets):
+            axes_time = ds.plot(
+                line_color_input=cmap(ii),
+                line_color_output=cmap(ii),
+                ax=ax_time,
+            )
+
+        print("type(axes_time) = ", type(axes_time))
+        # Adjust legend
+        ds_names = [ds.name for ds in datasets]
+        _adjust_legend(ds_names, axes_time)
+        fig_time.suptitle("Dataset comparison")
 
     # ========================================
     # coverage comparison
     # ========================================
-    # Arrange figure for INPUT
-    n_in = max([len(ds.dataset["INPUT"].columns) for ds in datasets])
-    nrows_in, ncols_in = factorize(n_in)
-    # Create a unified figure
-    fig_cov_in, ax_cov_in = plt.subplots(
-        nrows_in, ncols_in, sharex=True, squeeze=False
-    )
-
-    # Arrange figure for OUTPUT
-    n_out = max([len(ds.dataset["OUTPUT"].columns) for ds in datasets])
-    nrows_out, ncols_out = factorize(n_out)
-    # Create a unified figure
-    fig_cov_out, ax_cov_out = plt.subplots(
-        nrows_out, ncols_out, sharex=True, squeeze=False
-    )
-
-    # Actual plot
-    cmap = plt.get_cmap(COLORMAP)  # noqa
-    for ii, ds in enumerate(datasets):
-        axes_cov_in, axes_cov_out = ds.plot_coverage(
-            line_color_input=cmap(ii),
-            line_color_output=cmap(ii),
-            ax_in=ax_cov_in,
-            ax_out=ax_cov_out,
+    if target == "coverage" or target == "all":
+        # Arrange figure for INPUT
+        n_in = max([len(ds.dataset["INPUT"].columns) for ds in datasets])
+        nrows_in, ncols_in = factorize(n_in)
+        # Create a unified figure
+        fig_cov_in, ax_cov_in = plt.subplots(
+            nrows_in, ncols_in, sharex=True, squeeze=False
         )
 
-    # Adjust input legend
-    ds_names = [ds.name for ds in datasets]
-    _adjust_legend(ds_names, axes_cov_in)
-    _adjust_legend(ds_names, axes_cov_out)
+        # Arrange figure for OUTPUT
+        n_out = max([len(ds.dataset["OUTPUT"].columns) for ds in datasets])
+        nrows_out, ncols_out = factorize(n_out)
+        # Create a unified figure
+        fig_cov_out, ax_cov_out = plt.subplots(
+            nrows_out, ncols_out, sharex=True, squeeze=False
+        )
 
-    fig_cov_in.suptitle("Dataset comparison")
-    fig_cov_out.suptitle("Dataset comparison")
+        # Actual plot
+        cmap = plt.get_cmap(COLORMAP)  # noqa
+        for ii, ds in enumerate(datasets):
+            axes_cov_in, axes_cov_out = ds.plot_coverage(
+                line_color_input=cmap(ii),
+                line_color_output=cmap(ii),
+                ax_in=ax_cov_in,
+                ax_out=ax_cov_out,
+            )
 
-    return axes_cov_in, axes_cov_out
+        # Adjust input legend
+        ds_names = [ds.name for ds in datasets]
+        _adjust_legend(ds_names, axes_cov_in)
+        _adjust_legend(ds_names, axes_cov_out)
+
+        fig_cov_in.suptitle("Dataset comparison")
+        fig_cov_out.suptitle("Dataset comparison")
+
+    # ========================================
+    # frequency comparison
+    # ========================================
+    if target in PLOT_SPECTRUM_TYPE or target == "all":
+
+        # plot_spectrum won't accept target = "all"
+        if target == "all":
+            target = "power"
+
+        # Get size of wider dataset
+        n = max(
+            [
+                len(ds.dataset.droplevel(level=0, axis=1).columns)
+                for ds in datasets
+            ]
+        )
+        nrows, ncols = factorize(n)
+
+        if target == "amplitude":
+            if np.mod(nrows, 2) != 0:
+                nrows -= 1
+                ncols += int(np.ceil(nrows / ncols))
+
+        # Create a unified figure
+        fig_time, ax_time = plt.subplots(
+            nrows, ncols, sharex=True, squeeze=False
+        )
+
+        # Collect all the datasets axes
+        cmap = plt.get_cmap(COLORMAP)  # noqa
+        for ii, ds in enumerate(datasets):
+            axes_time = ds.plot_spectrum(
+                line_color_input=cmap(ii),
+                line_color_output=cmap(ii),
+                ax=ax_time,
+                kind=target,
+            )
+
+        print("type(axes_time) = ", type(axes_time))
+        # Adjust legend
+        ds_names = [ds.name for ds in datasets]
+        _adjust_legend(ds_names, axes_time)
+        fig_time.suptitle("Dataset comparison")
 
 
 # def analyze_inout_dataset(df):
