@@ -1020,11 +1020,6 @@ class Dataset:
             fig.set_size_inches(ncols * width, nrows * height)
             save_plot_as(fig, save_as)  # noqa
 
-        # return stuff
-        #  if ax is None:
-        #      return fig
-        #  else:
-        #      return None
         return axes
 
     def plot_coverage(
@@ -1034,17 +1029,13 @@ class Dataset:
         alpha_input: float = 1.0,
         line_color_output: str = "g",
         alpha_output: float = 1.0,
-        ax: matplotlib.axes.Axes | None = None,
+        ax_in: matplotlib.axes.Axes | None = None,
+        ax_out: matplotlib.axes.Axes | None = None,
         *,
         u_labels: str | list[str] = [],
         y_labels: str | list[str] = [],
         save_as: str | None = None,
-    ) -> tuple[
-        matplotlib.figure.Figure,
-        matplotlib.axes.Axes,
-        matplotlib.figure.Figure | None,
-        matplotlib.axes.Axes | None,
-    ]:
+    ) -> tuple[matplotlib.axes.Axes | None, matplotlib.axes.Axes | None]:
         """
         Plot the dataset coverage as histograms.
 
@@ -1079,7 +1070,14 @@ class Dataset:
         if u_labels:
             p = len(u_labels)
             nrows_in, ncols_in = factorize(p)  # noqa
-            fig_in, axes_in = plt.subplots(nrows_in, ncols_in, squeeze=False)
+
+            if ax_in is None:  # Create new figure and axes
+                fig_in, axes_in = plt.subplots(
+                    nrows_in, ncols_in, squeeze=False
+                )
+            else:  # Otherwise use what is passed
+                axes_in = np.asarray(ax_in)
+
             axes_in = axes_in.flat
             df["INPUT"].loc[:, u_labels].hist(
                 grid=True,
@@ -1096,9 +1094,14 @@ class Dataset:
         if y_labels:
             q = len(y_labels)
             nrows_out, ncols_out = factorize(q)  # noqa
-            fig_out, axes_out = plt.subplots(
-                nrows_out, ncols_out, squeeze=False
-            )
+
+            if ax_out is None:  # Create new figure and axes
+                fig_out, axes_out = plt.subplots(
+                    nrows_out, ncols_out, squeeze=False
+                )
+            else:  # Otherwise use what is passed
+                axes_out = np.asarray(ax_out)
+
             axes_out = axes_out.flat
             df["OUTPUT"].loc[:, y_labels].hist(
                 grid=True,
@@ -1126,12 +1129,12 @@ class Dataset:
 
         # Return
         if u_labels and y_labels:
-            return fig_in, axes_in, fig_out, axes_out
+            return axes_in, axes_out
 
         elif u_labels and not y_labels:
-            return fig_in, axes_in, None, None
+            return axes_in, None
         else:  # The only option left is not u_labels and y_labels
-            return None, None, fig_out, axes_out
+            return None, axes_out
 
     def fft(
         self,
@@ -1913,6 +1916,17 @@ def plot_signals(
 
 
 def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
+    def _adjust_legend(ds_names: list[str], axes: matplotlib.axes.Axes) -> None:
+        for ii, ax in enumerate(axes):
+            handles, labels = ax.get_legend_handles_labels()
+            print("labels = ", labels)
+            if labels:
+                new_labels = [
+                    ds_names[jj] + ", " + labels[jj]
+                    for jj, _ in enumerate(ds_names)
+                ]
+            ax.legend(handles, new_labels)
+
     # arguments validation
     for ds in datasets:
         if not isinstance(ds, Dataset):
@@ -1936,30 +1950,57 @@ def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
     # Create a unified figure
     fig_time, ax_time = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
 
+    # Collect all the datasets axes
     cmap = plt.get_cmap(COLORMAP)  # noqa
     for ii, ds in enumerate(datasets):
         axes_time = ds.plot(
             line_color_input=cmap(ii), line_color_output=cmap(ii), ax=ax_time
         )
 
+    print("type(axes_time) = ", type(axes_time))
     # Adjust legend
     ds_names = [ds.name for ds in datasets]
-    for ii, ax in enumerate(axes_time):
-        handles, labels = ax.get_legend_handles_labels()
-        if labels:
-            new_labels = [
-                ds_names[jj] + ", " + labels[jj]
-                for jj, _ in enumerate(datasets)
-            ]
-        ax.legend(handles, new_labels)
-
+    _adjust_legend(ds_names, axes_time)
     fig_time.suptitle("Dataset comparison")
 
     # ========================================
     # coverage comparison
     # ========================================
+    # Arrange figure for INPUT
+    n_in = max([len(ds.dataset["INPUT"].columns) for ds in datasets])
+    nrows_in, ncols_in = factorize(n_in)
+    # Create a unified figure
+    fig_cov_in, ax_cov_in = plt.subplots(
+        nrows_in, ncols_in, sharex=True, squeeze=False
+    )
 
-    return axes_time
+    # Arrange figure for OUTPUT
+    n_out = max([len(ds.dataset["OUTPUT"].columns) for ds in datasets])
+    nrows_out, ncols_out = factorize(n_out)
+    # Create a unified figure
+    fig_cov_out, ax_cov_out = plt.subplots(
+        nrows_out, ncols_out, sharex=True, squeeze=False
+    )
+
+    # Actual plot
+    cmap = plt.get_cmap(COLORMAP)  # noqa
+    for ii, ds in enumerate(datasets):
+        axes_cov_in, axes_cov_out = ds.plot_coverage(
+            line_color_input=cmap(ii),
+            line_color_output=cmap(ii),
+            ax_in=ax_cov_in,
+            ax_out=ax_cov_out,
+        )
+
+    # Adjust input legend
+    ds_names = [ds.name for ds in datasets]
+    _adjust_legend(ds_names, axes_cov_in)
+    _adjust_legend(ds_names, axes_cov_out)
+
+    fig_cov_in.suptitle("Dataset comparison")
+    fig_cov_out.suptitle("Dataset comparison")
+
+    return axes_cov_in, axes_cov_out
 
 
 # def analyze_inout_dataset(df):
