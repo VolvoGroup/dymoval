@@ -944,12 +944,19 @@ class Dataset:
 
             # Adjust titles
             m = min(p, q)
-            titles = ["IN/OUT #" + str(ii + 1) for ii in range(m)]
+            u_titles = ["IN/OUT #" + str(ii + 1) for ii in range(m)]
+            y_titles = ["IN/OUT #" + str(ii + 1) for ii in range(m)]
             u_titles_trail = ["INPUT #" + str(ii + 1) for ii in range(m, p)]
             y_titles_trail = ["OUTPUT #" + str(ii + 1) for ii in range(m, q)]
         else:
             n = p + q
             range_out = np.arange(p, p + q)
+
+            # Adjust titles
+            u_titles = ["INPUT #" + str(ii + 1) for ii in range(p)]
+            y_titles = ["OUTPUT #" + str(ii + 1) for ii in range(q)]
+            u_titles_trail = []
+            y_titles_trail = []
 
         # Find nrwos and ncols for the plot
         nrows, ncols = factorize(n)  # noqa
@@ -970,7 +977,7 @@ class Dataset:
                 color=line_color_input,
                 linestyle=linestyle_input,
                 alpha=alpha_input,
-                title=titles + u_titles_trail,
+                title=u_titles + u_titles_trail,
                 ax=axes[0:p],
             )
 
@@ -989,7 +996,7 @@ class Dataset:
                 color=line_color_output,
                 linestyle=linestyle_output,
                 alpha=alpha_output,
-                title=titles + y_titles_trail,
+                title=y_titles + y_titles_trail,
                 ax=axes[range_out],
             )
 
@@ -1070,9 +1077,9 @@ class Dataset:
 
         if u_labels:
             p = len(u_labels)
-            titles = ["INPUT #" + ii for ii in range(p)]
             nrows_in, ncols_in = factorize(p)  # noqa
             fig_in, axes_in = plt.subplots(nrows_in, ncols_in, squeeze=False)
+            titles = ["INPUT #" + str(ii + 1) for ii in range(p)]
             axes_in = axes_in.flat
             df.loc[:, ("INPUT", df["INPUT"].columns)].hist(
                 grid=True,
@@ -1093,6 +1100,7 @@ class Dataset:
             fig_out, axes_out = plt.subplots(
                 nrows_out, ncols_out, squeeze=False
             )
+            titles = ["OUTPUT #" + str(ii + 1) for ii in range(q)]
             axes_out = axes_out.flat
             df.loc[:, ("OUTPUT", df["OUTPUT"].columns)].hist(
                 grid=True,
@@ -1918,6 +1926,9 @@ def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
             f"Target {target} not valid. Allowed targets are {ALLOWED_TARGETS}"
         )
 
+    # ========================================
+    # time comparison
+    # ========================================
     # Get size of wider dataset
     n = max(
         [len(ds.dataset.droplevel(level=0, axis=1).columns) for ds in datasets]
@@ -1928,8 +1939,6 @@ def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
     fig, ax = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
 
     cmap = plt.get_cmap(COLORMAP)  # noqa
-    # cols = []
-    # axes = np.zeros(n).flat
     for ii, ds in enumerate(datasets):
         axes = ds.plot(
             line_color_input=cmap(ii), line_color_output=cmap(ii), ax=ax
@@ -1939,7 +1948,6 @@ def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
     ds_names = [ds.name for ds in datasets]
     for ii, ax in enumerate(axes):
         handles, labels = ax.get_legend_handles_labels()
-        # Adjust legend
         if labels:
             new_labels = [
                 ds_names[jj] + ", " + labels[jj]
@@ -1947,18 +1955,9 @@ def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
             ]
         ax.legend(handles, new_labels)
 
-    fig.suptitle(f"Dataset comparison")
+    fig.suptitle("Dataset comparison")
 
     return axes
-    # Adjust legends
-    # print("legend = ", legend)
-    # print("legend[0] = ", legend[0])
-
-    #      for ii in range(p):
-    #         df_ax[ii].legend([legend[ii]])
-
-    # for ii,ds in enumerate(datasets):
-    # df["INPUT"].plot(subplots=True, grid=True, color="b", ax=axes[0:p])
 
 
 # def analyze_inout_dataset(df):
