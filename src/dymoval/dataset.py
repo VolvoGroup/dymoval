@@ -1075,8 +1075,10 @@ class Dataset:
                 fig_in, axes_in = plt.subplots(
                     nrows_in, ncols_in, squeeze=False
                 )
+                show_legend = False
             else:  # Otherwise use what is passed
                 axes_in = np.asarray(ax_in)
+                show_legend = True
 
             axes_in = axes_in.flat
             df["INPUT"].loc[:, u_labels].hist(
@@ -1084,6 +1086,7 @@ class Dataset:
                 bins=nbins,
                 color=line_color_input,
                 alpha=alpha_input,
+                legend=show_legend,
                 ax=axes_in[0:p],
             )
 
@@ -1108,6 +1111,7 @@ class Dataset:
                 bins=nbins,
                 color=line_color_output,
                 alpha=alpha_output,
+                legend=show_legend,
                 ax=axes_out[0:q],
             )
 
@@ -1916,10 +1920,12 @@ def plot_signals(
 
 
 def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
+
+    # Utility function to avoid too much code repetition
     def _adjust_legend(ds_names: list[str], axes: matplotlib.axes.Axes) -> None:
         for ii, ax in enumerate(axes):
             handles, labels = ax.get_legend_handles_labels()
-            print("labels = ", labels)
+            # Be sure that your plot show legends!
             if labels:
                 new_labels = [
                     ds_names[jj] + ", " + labels[jj]
