@@ -1034,6 +1034,7 @@ class Dataset:
         alpha_input: float = 1.0,
         line_color_output: str = "g",
         alpha_output: float = 1.0,
+        ax: matplotlib.axes.Axes | None = None,
         *,
         u_labels: str | list[str] = [],
         y_labels: str | list[str] = [],
@@ -1079,14 +1080,12 @@ class Dataset:
             p = len(u_labels)
             nrows_in, ncols_in = factorize(p)  # noqa
             fig_in, axes_in = plt.subplots(nrows_in, ncols_in, squeeze=False)
-            titles = ["INPUT #" + str(ii + 1) for ii in range(p)]
             axes_in = axes_in.flat
-            df.loc[:, ("INPUT", df["INPUT"].columns)].hist(
+            df["INPUT"].loc[:, u_labels].hist(
                 grid=True,
                 bins=nbins,
                 color=line_color_input,
                 alpha=alpha_input,
-                title=titles,
                 ax=axes_in[0:p],
             )
 
@@ -1100,9 +1099,8 @@ class Dataset:
             fig_out, axes_out = plt.subplots(
                 nrows_out, ncols_out, squeeze=False
             )
-            titles = ["OUTPUT #" + str(ii + 1) for ii in range(q)]
             axes_out = axes_out.flat
-            df.loc[:, ("OUTPUT", df["OUTPUT"].columns)].hist(
+            df["OUTPUT"].loc[:, y_labels].hist(
                 grid=True,
                 bins=nbins,
                 color=line_color_output,
@@ -1936,17 +1934,17 @@ def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
     nrows, ncols = factorize(n)
 
     # Create a unified figure
-    fig, ax = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
+    fig_time, ax_time = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
 
     cmap = plt.get_cmap(COLORMAP)  # noqa
     for ii, ds in enumerate(datasets):
-        axes = ds.plot(
-            line_color_input=cmap(ii), line_color_output=cmap(ii), ax=ax
+        axes_time = ds.plot(
+            line_color_input=cmap(ii), line_color_output=cmap(ii), ax=ax_time
         )
 
     # Adjust legend
     ds_names = [ds.name for ds in datasets]
-    for ii, ax in enumerate(axes):
+    for ii, ax in enumerate(axes_time):
         handles, labels = ax.get_legend_handles_labels()
         if labels:
             new_labels = [
@@ -1955,9 +1953,13 @@ def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
             ]
         ax.legend(handles, new_labels)
 
-    fig.suptitle("Dataset comparison")
+    fig_time.suptitle("Dataset comparison")
 
-    return axes
+    # ========================================
+    # coverage comparison
+    # ========================================
+
+    return axes_time
 
 
 # def analyze_inout_dataset(df):
