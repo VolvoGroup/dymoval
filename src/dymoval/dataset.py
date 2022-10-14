@@ -941,9 +941,17 @@ class Dataset:
         if overlap:
             n = max(p, q)
             range_out = np.arange(0, q)
+
+            # Adjust titles
+            m = min(p, q)
+            titles = ["IN/OUT #" + str(ii + 1) for ii in range(m)]
+            u_titles_trail = ["INPUT #" + str(ii + 1) for ii in range(m, p)]
+            y_titles_trail = ["OUTPUT #" + str(ii + 1) for ii in range(m, q)]
         else:
             n = p + q
             range_out = np.arange(p, p + q)
+
+        # Find nrwos and ncols for the plot
         nrows, ncols = factorize(n)  # noqa
 
         # Overwrite axes if you want the plot to be on the figure instantiated by the caller.
@@ -956,12 +964,13 @@ class Dataset:
         axes = axes.T.flat
 
         if u_labels:
-            df.loc[:, ("INPUT", df["INPUT"].columns)].plot(
+            df["INPUT"].loc[:, u_labels].plot(
                 subplots=True,
                 grid=True,
                 color=line_color_input,
                 linestyle=linestyle_input,
                 alpha=alpha_input,
+                title=titles + u_titles_trail,
                 ax=axes[0:p],
             )
 
@@ -974,12 +983,13 @@ class Dataset:
             )
 
         if y_labels:
-            df.loc[:, ("OUTPUT", df["OUTPUT"].columns)].plot(
+            df["OUTPUT"].loc[:, y_labels].plot(
                 subplots=True,
                 grid=True,
                 color=line_color_output,
                 linestyle=linestyle_output,
                 alpha=alpha_output,
+                title=titles + y_titles_trail,
                 ax=axes[range_out],
             )
 
@@ -1060,6 +1070,7 @@ class Dataset:
 
         if u_labels:
             p = len(u_labels)
+            titles = ["INPUT #" + ii for ii in range(p)]
             nrows_in, ncols_in = factorize(p)  # noqa
             fig_in, axes_in = plt.subplots(nrows_in, ncols_in, squeeze=False)
             axes_in = axes_in.flat
@@ -1068,6 +1079,7 @@ class Dataset:
                 bins=nbins,
                 color=line_color_input,
                 alpha=alpha_input,
+                title=titles,
                 ax=axes_in[0:p],
             )
 
