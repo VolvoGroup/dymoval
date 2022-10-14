@@ -893,7 +893,7 @@ class Dataset:
         u_labels: str | list[str] = [],
         y_labels: str | list[str] = [],
         save_as: str | None = None,
-    ) -> matplotlib.figure.Figure | None:
+    ) -> matplotlib.axes.Axes:
         # -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
         """Plot the Dataset.
 
@@ -956,7 +956,7 @@ class Dataset:
         axes = axes.T.flat
 
         if u_labels:
-            df["INPUT"].loc[:, u_labels].plot(
+            df.loc[:, ("INPUT", df["INPUT"].columns)].plot(
                 subplots=True,
                 grid=True,
                 color=line_color_input,
@@ -974,7 +974,7 @@ class Dataset:
             )
 
         if y_labels:
-            df["OUTPUT"].loc[:, y_labels].plot(
+            df.loc[:, ("OUTPUT", df["OUTPUT"].columns)].plot(
                 subplots=True,
                 grid=True,
                 color=line_color_output,
@@ -993,7 +993,7 @@ class Dataset:
 
         for ii in range(ncols):
             axes[nrows - 1 :: nrows][ii].set_xlabel(df.index.name)
-        plt.suptitle("Blue lines are input and green lines are output. ")
+        plt.suptitle(f"Dataset {self.name}. ")
 
         # Eventually save and return figures.
         if save_as is not None and ax is None:
@@ -1004,10 +1004,11 @@ class Dataset:
             save_plot_as(fig, save_as)  # noqa
 
         # return stuff
-        if ax is None:
-            return fig
-        else:
-            return None
+        #  if ax is None:
+        #      return fig
+        #  else:
+        #      return None
+        return axes
 
     def plot_coverage(
         self,
@@ -1062,7 +1063,7 @@ class Dataset:
             nrows_in, ncols_in = factorize(p)  # noqa
             fig_in, axes_in = plt.subplots(nrows_in, ncols_in, squeeze=False)
             axes_in = axes_in.flat
-            df["INPUT"].loc[:, u_labels].hist(
+            df.loc[:, ("INPUT", df["INPUT"].columns)].hist(
                 grid=True,
                 bins=nbins,
                 color=line_color_input,
@@ -1072,7 +1073,7 @@ class Dataset:
 
             for ii in range(p):
                 axes_in[ii].set_xlabel(u_labels[ii][1])
-            plt.suptitle("Coverage region (input).")
+            plt.suptitle("Coverage region.")
 
         if y_labels:
             q = len(y_labels)
@@ -1081,7 +1082,7 @@ class Dataset:
                 nrows_out, ncols_out, squeeze=False
             )
             axes_out = axes_out.flat
-            df["OUTPUT"].loc[:, y_labels].hist(
+            df.loc[:, ("OUTPUT", df["OUTPUT"].columns)].hist(
                 grid=True,
                 bins=nbins,
                 color=line_color_output,
@@ -1091,7 +1092,7 @@ class Dataset:
 
             for ii in range(q):
                 axes_out[ii].set_xlabel(y_labels[ii][1])
-            plt.suptitle("Coverage region (output).")
+            plt.suptitle("Coverage region.")
 
         if save_as is not None:
             # Keep 16:9 ratio
@@ -1303,7 +1304,7 @@ class Dataset:
         axes = axes.T.flat
 
         if u_labels:
-            df_freq["INPUT"].loc[:, u_labels].plot(
+            df_freq.loc[:, ("INPUT", df_freq["INPUT"].columns)].plot(
                 subplots=True,
                 grid=True,
                 color=line_color_input,
@@ -1314,7 +1315,7 @@ class Dataset:
             )
 
         if y_labels:
-            df_freq["OUTPUT"].loc[:, y_labels].plot(
+            df_freq.loc[:, ("OUTPUT", df_freq["OUTPUT"].columns)].plot(
                 subplots=True,
                 grid=True,
                 color=line_color_output,
@@ -1916,14 +1917,27 @@ def compare_datasets(*datasets: Dataset, target: str = "all") -> None:
 
     cmap = plt.get_cmap(COLORMAP)  # noqa
     # cols = []
-    # labels = []
+    # axes = np.zeros(n).flat
     for ii, ds in enumerate(datasets):
-        ds.plot(line_color_input=cmap(ii), line_color_output=cmap(ii), ax=ax)
-        # cols.append(ds.dataset.droplevel(level=0, axis=1).columns)
-        # labels.append(list(zip([ds.name] * len(cols[ii]), cols[ii])))
-        # print("ax[ii] = ", ax[ii])
-        # ax[ii].legend([labels[ii]])
+        axes = ds.plot(
+            line_color_input=cmap(ii), line_color_output=cmap(ii), ax=ax
+        )
 
+    # Adjust legend
+    ds_names = [ds.name for ds in datasets]
+    for ii, ax in enumerate(axes):
+        handles, labels = ax.get_legend_handles_labels()
+        # Adjust legend
+        if labels:
+            new_labels = [
+                ds_names[jj] + ", " + labels[jj]
+                for jj, _ in enumerate(datasets)
+            ]
+        ax.legend(handles, new_labels)
+
+    fig.suptitle(f"Dataset comparison")
+
+    return axes
     # Adjust legends
     # print("legend = ", legend)
     # print("legend[0] = ", legend[0])
