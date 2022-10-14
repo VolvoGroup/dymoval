@@ -590,84 +590,68 @@ class Dataset:
 
     def _validate_signals(
         self,
-        u_labels: str | list[str],
-        y_labels: str | list[str],
+        *signals: str,
     ) -> tuple[list[str], list[str]]:
         # This function check if the signals (labels) from the user
         # exist in the current dataset.
         df = self.dataset
 
-        # Small check
-        # Input labels passed
-        if u_labels:
-            u_labels = str2list(u_labels)
-            input_not_found = difference_lists_of_str(
-                u_labels, list(df["INPUT"].columns)
-            )
+        if signals:
+            # identify u_labels and y_labels
+            u_labels = [s for s in signals if s in df["INPUT"].columns]
+            y_labels = [s for s in signals if s in df["OUTPUT"].columns]
+            signal_not_found = [
+                s for s in signals if s not in u_labels and s not in y_labels
+            ]
 
-            if input_not_found:
+            if signal_not_found:
                 raise KeyError(
-                    f"Signal(s) {input_not_found} not found in the input signals dataset. "
+                    f"Signal(s) {signal_not_found} not found in the dataset. "
                     "Use 'get_signal_list()' to get the list of all available signals. "
                 )
         else:
-            u_labels = []
-
-        # Output labels passed
-        if y_labels:
-            y_labels = str2list(y_labels)
-            output_not_found = difference_lists_of_str(
-                y_labels, list(df["OUTPUT"].columns)
-            )
-
-            if output_not_found:
-                raise KeyError(
-                    f"Signal(s) {output_not_found} not found in the output signal dataset. "
-                    "Use 'get_signal_list()' to get the list of all available signals "
-                )
-        else:
-            y_labels = []
-
-        # Nothing passed => take all.
-        if not y_labels and not u_labels:
             u_labels = list(df["INPUT"].columns)
             y_labels = list(df["OUTPUT"].columns)
 
+        # Small check
+        # Nothing passed => take all.
+        #         if not y_labels and not u_labels:
+        #             u_labels = list(df["INPUT"].columns)
+        #             y_labels = list(df["OUTPUT"].columns)
+        #
         return u_labels, y_labels
 
-    @overload
+    #     @overload
+    #     def _validate_name_value_tuples(
+    #         self,
+    #         *,
+    #         u_list: list[tuple[str, float]] | tuple[str, float] = [],
+    #         y_list: list[tuple[str, float]] | tuple[str, float],
+    #     ) -> tuple[
+    #         list[str],
+    #         list[str],
+    #         list[tuple[str, float]],
+    #         list[tuple[str, float]],
+    #     ]:
+    #         ...  # pragma: no cover
+    #
+    #     @overload
+    #     def _validate_name_value_tuples(
+    #         self,
+    #         *,
+    #         u_list: list[tuple[str, float]] | tuple[str, float],
+    #         y_list: list[tuple[str, float]] | tuple[str, float] = [],
+    #     ) -> tuple[
+    #         list[str],
+    #         list[str],
+    #         list[tuple[str, float]],
+    #         list[tuple[str, float]],
+    #     ]:
+    #         ...  # pragma: no cover
+    #
     def _validate_name_value_tuples(
         self,
-        *,
-        u_list: list[tuple[str, float]] | tuple[str, float] = [],
-        y_list: list[tuple[str, float]] | tuple[str, float],
-    ) -> tuple[
-        list[str],
-        list[str],
-        list[tuple[str, float]],
-        list[tuple[str, float]],
-    ]:
-        ...  # pragma: no cover
-
-    @overload
-    def _validate_name_value_tuples(
-        self,
-        *,
-        u_list: list[tuple[str, float]] | tuple[str, float],
-        y_list: list[tuple[str, float]] | tuple[str, float] = [],
-    ) -> tuple[
-        list[str],
-        list[str],
-        list[tuple[str, float]],
-        list[tuple[str, float]],
-    ]:
-        ...  # pragma: no cover
-
-    def _validate_name_value_tuples(
-        self,
-        *,
-        u_list: list[tuple[str, float]] | tuple[str, float] = [],
-        y_list: list[tuple[str, float]] | tuple[str, float] = [],
+        *signals_values: tuple[str, float],
     ) -> tuple[
         list[str],
         list[str],
@@ -678,25 +662,33 @@ class Dataset:
         # Think for example to the "remove_offset" function.
         # Return both the list of input and output names and the validated tuples.
 
-        if u_list:
-            if not isinstance(u_list, list):
-                u_list = [u_list]
-            u_labels = [u[0] for u in u_list]
-            u_labels, y_labels = self._validate_signals(u_labels, [])
-        if y_list:
-            if not isinstance(y_list, list):
-                y_list = [y_list]
-            y_labels = [y[0] for y in y_list]
-            u_labels, y_labels = self._validate_signals([], y_labels)
-        if u_list and y_list:
-            u_labels = [u[0] for u in u_list]
-            y_labels = [y[0] for y in y_list]
-            u_labels, y_labels = self._validate_signals(u_labels, y_labels)
-        if not u_list and not y_list:
-            raise TypeError(
-                "At least one input or output list must be provided."
-            )
+        signals = [s[0] for s in signals_values]
+        u_labels, y_labels = self._validate_signals(*signals)
 
+        u_list = [(s[0], s[1]) for s in signals_values if s[0] in u_labels]
+        y_list = [(s[0], s[1]) for s in signals_values if s[0] in y_labels]
+
+        print(u_list)
+
+        #           if u_list:
+        #               if not isinstance(u_list, list):
+        #                   u_list = [u_list]
+        #               u_labels = [u[0] for u in u_list]
+        #               u_labels, y_labels = self._validate_signals(u_labels, [])
+        #           if y_list:
+        #               if not isinstance(y_list, list):
+        #                   y_list = [y_list]
+        #               y_labels = [y[0] for y in y_list]
+        #               u_labels, y_labels = self._validate_signals([], y_labels)
+        #           if u_list and y_list:
+        #               u_labels = [u[0] for u in u_list]
+        #               y_labels = [y[0] for y in y_list]
+        #               u_labels, y_labels = self._validate_signals(u_labels, y_labels)
+        #           if not u_list and not y_list:
+        #               raise TypeError(
+        #                   "At least one input or output list must be provided."
+        #               )
+        #
         return u_labels, y_labels, u_list, y_list
 
     def _fix_sampling_periods(
@@ -879,6 +871,7 @@ class Dataset:
         self,
         # Only positional arguments
         /,
+        *signals: str,
         # Positional or key-word arguments
         overlap: bool = False,
         line_color_input: str = "b",
@@ -888,10 +881,7 @@ class Dataset:
         linestyle_output: str = "-",
         alpha_output: float = 1.0,
         ax: matplotlib.axes.Axes | None = None,
-        *,
         # Only key-word arguments
-        u_labels: str | list[str] = [],
-        y_labels: str | list[str] = [],
         save_as: str | None = None,
     ) -> matplotlib.axes.Axes:
         # -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
@@ -929,7 +919,7 @@ class Dataset:
             You must specify the complete *filename*, including the path.
         """
         # Validation
-        u_labels, y_labels = self._validate_signals(u_labels, y_labels)
+        u_labels, y_labels = self._validate_signals(*signals)
 
         # df points to self.dataset.
         df = self.dataset
@@ -1024,6 +1014,7 @@ class Dataset:
 
     def plot_coverage(
         self,
+        *signals: str,
         nbins: int = 100,
         line_color_input: str = "b",
         alpha_input: float = 1.0,
@@ -1031,7 +1022,6 @@ class Dataset:
         alpha_output: float = 1.0,
         ax_in: matplotlib.axes.Axes | None = None,
         ax_out: matplotlib.axes.Axes | None = None,
-        *,
         u_labels: str | list[str] = [],
         y_labels: str | list[str] = [],
         save_as: str | None = None,
@@ -1065,7 +1055,7 @@ class Dataset:
         # Extract dataset
         df = self.dataset
 
-        u_labels, y_labels = self._validate_signals(u_labels, y_labels)
+        u_labels, y_labels = self._validate_signals(*signals)
 
         if u_labels:
             p = len(u_labels)
@@ -1142,9 +1132,7 @@ class Dataset:
 
     def fft(
         self,
-        *,
-        u_labels: str | list[str] = [],
-        y_labels: str | list[str] = [],
+        *signals: str,
     ) -> pd.DataFrame:
         """Return the FFT of the dataset as pandas DataFrame.
 
@@ -1164,7 +1152,7 @@ class Dataset:
             If the dataset contains *NaN*:s
         """
         # Validation
-        u_labels, y_labels = self._validate_signals(u_labels, y_labels)
+        u_labels, y_labels = self._validate_signals(*signals)
         # Remove 'INPUT' 'OUTPUT' columns level from dataframe
         df_temp = self.dataset.droplevel(level=0, axis=1)
 
@@ -1195,6 +1183,7 @@ class Dataset:
 
     def plot_spectrum(
         self,
+        *signals: str,
         overlap: bool = False,
         line_color_input: str = "b",
         linestyle_input: str = "-",
@@ -1203,12 +1192,11 @@ class Dataset:
         linestyle_output: str = "-",
         alpha_output: float = 1.0,
         ax: matplotlib.axes.Axes | None = None,
-        *,
         kind: Literal["amplitude", "power", "psd"] = "power",
         u_labels: str | list[str] = [],
         y_labels: str | list[str] = [],
         save_as: str | None = None,
-    ) -> matplotlib.figure.Figure:
+    ) -> matplotlib.axes.Axes:
         """
         Plot the spectrum of the specified signals in the dataset in different format.
 
@@ -1260,7 +1248,7 @@ class Dataset:
             If *kind* doen not match any possible values.
         """
         # validation
-        u_labels, y_labels = self._validate_signals(u_labels, y_labels)
+        u_labels, y_labels = self._validate_signals(*signals)
 
         if kind not in PLOT_SPECTRUM_TYPE:
             raise ValueError(f"kind must be one of {PLOT_SPECTRUM_TYPE}")
@@ -1281,7 +1269,7 @@ class Dataset:
         # For real signals, the spectrum is Hermitian anti-simmetric, i.e.
         # the amplitude is symmetric wrt f=0 and the phase is antisymmetric wrt f=0.
         # See e.g. https://ccrma.stanford.edu/~jos/ReviewFourier/Symmetries_Real_Signals.html
-        df_freq = self.fft(u_labels=u_labels, y_labels=y_labels)
+        df_freq = self.fft(*signals)
         # Frequency and number of samples
         Ts = self.sampling_period
         N = len(self.dataset.index)  # number of samples
@@ -1390,9 +1378,7 @@ class Dataset:
 
     def remove_means(
         self,
-        *,
-        u_labels: str | list[str] = [],
-        y_labels: str | list[str] = [],
+        *signals: str,
     ) -> Dataset:
         """
         Remove the mean value to the specified signals.
@@ -1410,7 +1396,7 @@ class Dataset:
             the output signals in the dataset.
         """
         # Arguments validation
-        u_labels, y_labels = self._validate_signals(u_labels, y_labels)
+        u_labels, y_labels = self._validate_signals(*signals)
 
         # Safe copy
         ds_temp = deepcopy(self)
@@ -1433,29 +1419,27 @@ class Dataset:
 
         return ds_temp
 
-    @overload
+    #     @overload
+    #     def remove_offset(
+    #         self,
+    #         *,
+    #         u_list: list[tuple[str, float]] | tuple[str, float],
+    #         y_list: list[tuple[str, float]] | tuple[str, float] = [],
+    #     ) -> Dataset:
+    #         ...  # pragma: no cover
+    #
+    #     @overload
+    #     def remove_offset(
+    #         self,
+    #         *,
+    #         u_list: list[tuple[str, float]] | tuple[str, float] = [],
+    #         y_list: list[tuple[str, float]] | tuple[str, float],
+    #     ) -> Dataset:
+    #         ...  # pragma: no cover
+    #
     def remove_offset(
         self,
-        *,
-        u_list: list[tuple[str, float]] | tuple[str, float],
-        y_list: list[tuple[str, float]] | tuple[str, float] = [],
-    ) -> Dataset:
-        ...  # pragma: no cover
-
-    @overload
-    def remove_offset(
-        self,
-        *,
-        u_list: list[tuple[str, float]] | tuple[str, float] = [],
-        y_list: list[tuple[str, float]] | tuple[str, float],
-    ) -> Dataset:
-        ...  # pragma: no cover
-
-    def remove_offset(
-        self,
-        *,
-        u_list: list[tuple[str, float]] | tuple[str, float] = [],
-        y_list: list[tuple[str, float]] | tuple[str, float] = [],
+        *signals_values: tuple[str, float],
     ) -> Dataset:
         # At least one argument shall be passed.
         # This is the reason why the @overload is added in that way
@@ -1496,7 +1480,7 @@ class Dataset:
             y_labels,
             u_list,
             y_list,
-        ) = self._validate_name_value_tuples(u_list=u_list, y_list=y_list)
+        ) = self._validate_name_value_tuples(*signals_values)
 
         # First adjust the input columns
         if u_list:
@@ -1519,29 +1503,27 @@ class Dataset:
 
         return ds_temp
 
-    @overload
+    #     @overload
+    #     def low_pass_filter(
+    #         self,
+    #         *,
+    #         u_list: list[tuple[str, float]] | tuple[str, float],
+    #         y_list: list[tuple[str, float]] | tuple[str, float] = [],
+    #     ) -> Dataset:
+    #         ...  # pragma: no cover
+    #
+    #     @overload
+    #     def low_pass_filter(
+    #         self,
+    #         *,
+    #         u_list: list[tuple[str, float]] | tuple[str, float] = [],
+    #         y_list: list[tuple[str, float]] | tuple[str, float],
+    #     ) -> Dataset:
+    #         ...  # pragma: no cover
+    #
     def low_pass_filter(
         self,
-        *,
-        u_list: list[tuple[str, float]] | tuple[str, float],
-        y_list: list[tuple[str, float]] | tuple[str, float] = [],
-    ) -> Dataset:
-        ...  # pragma: no cover
-
-    @overload
-    def low_pass_filter(
-        self,
-        *,
-        u_list: list[tuple[str, float]] | tuple[str, float] = [],
-        y_list: list[tuple[str, float]] | tuple[str, float],
-    ) -> Dataset:
-        ...  # pragma: no cover
-
-    def low_pass_filter(
-        self,
-        *,
-        u_list: list[tuple[str, float]] | tuple[str, float] = [],
-        y_list: list[tuple[str, float]] | tuple[str, float] = [],
+        *signals_values: tuple[str, float],
     ) -> Dataset:
         """
         Low-pass filter a list of specified signals.
@@ -1584,7 +1566,7 @@ class Dataset:
             y_labels,
             u_list,
             y_list,
-        ) = self._validate_name_value_tuples(u_list=u_list, y_list=y_list)
+        ) = self._validate_name_value_tuples(*signals_values)
 
         # Sampling frequency
         fs = 1 / (self.dataset.index[1] - self.dataset.index[0])
@@ -1594,6 +1576,8 @@ class Dataset:
         # INPUT
         if u_list:
             u_fc = [u[1] for u in u_list]
+            if any(u_val < 0 for u_val in u_fc):
+                raise ValueError("Cut-off frequencies must be positive.")
             for ii, u in enumerate(u_labels):
                 # Low-pass filter implementatiom
                 fc = u_fc[ii]
@@ -1609,6 +1593,8 @@ class Dataset:
         # List of all the requested input cutoff frequencies
         if y_list:
             y_fc = [y[1] for y in y_list]
+            if any(y_val < 0 for y_val in y_fc):
+                raise ValueError("Cut-off frequencies must be positive.")
             for ii, y in enumerate(y_labels):
                 fc = y_fc[ii]  # cutoff frequency
                 # Low-pass filter implementatiom
