@@ -52,54 +52,91 @@ class Test_Dataset_nominal:
 
         assert np.allclose(ds.dataset, df_expected)
 
-    @pytest.mark.parametrize(
-        # The dataype for the annotation can be inferred by the
-        # following list.
-        "test_input, expected",
-        [
-            (("u1", ["y1", "y3"]), (["u1"], ["y1", "y3"])),
-            ((["u1", "u2"], ["y1", "y3"]), (["u1", "u2"], ["y1", "y3"])),
-            ((["u1", "u2"], None), (["u1", "u2"], None)),
-            ((None, ["y1", "y3"]), (None, ["y1", "y3"])),
-        ],
-    )
-    def test__validate_signals(
+    def test__validate_args_no_args(
         self,
         sine_dataframe: pd.DataFrame,
-        test_input: Any,
-        expected: Any,
     ) -> None:
-        # Check if the passed dataset DataFrame is correctly stored as class attribute.
-        # Nominal data
+        # You pass a list of signal and the function recognizes who is input
+        # and who is output
+
+        # Arrange
         df, u_labels, y_labels, fixture = sine_dataframe
+        ds = dmv.dataset.Dataset(
+            "my_dataset", df, u_labels, y_labels, full_time_interval=True
+        )
 
-        # Just test the MIMO case. This function is called so many times from
-        # other functions that also consider the other cases.
-        # If it won't work for SISO, MISO or SIMO, you would got a test fail anyway.
-        # This test is just for easy the debugging.
+        expected_u_labels = (
+            [u_labels] if isinstance(u_labels, str) else u_labels
+        )
+        expected_y_labels = (
+            [y_labels] if isinstance(y_labels, str) else y_labels
+        )
+        # Act
+        actual_u_labels, actual_y_labels = ds._validate_args()
+
+        # Assert: if no arguments is passed it returns the whole list of
+        # input and output signals
+        assert expected_u_labels == actual_u_labels
+        assert expected_y_labels == actual_y_labels
+
+    @pytest.mark.parametrize(
+        # Check if the function can recognize that there is no input or
+        # no output
+        "test_in, test_out",
+        [
+            (["u1", "u2"], ["y1", "y3"]),
+            ([], ["y1", "y3"]),
+            (["u1", "u2"], []),
+        ],
+    )
+    def test__validate_args(
+        self,
+        sine_dataframe: pd.DataFrame,
+        test_in: Any,
+        test_out: Any,
+    ) -> None:
+        # You pass a list of signal and the function recognizes who is input
+        # and who is output
+
+        # Arrange
+        df, u_labels, y_labels, fixture = sine_dataframe
+        ds = dmv.dataset.Dataset(
+            "my_dataset", df, u_labels, y_labels, full_time_interval=True
+        )
+
+        if fixture == "SISO":
+            input_signals_names = [test_in[0]] if test_in else []
+            output_signals_names = [test_out[0]] if test_out else []
+        if fixture == "SIMO":
+            input_signals_names = [test_in[0]] if test_in else []
+            output_signals_names = test_out if test_out else []
+        if fixture == "MISO":
+            input_signals_names = test_in if test_in else []
+            output_signals_names = [test_out[0]] if test_out else []
         if fixture == "MIMO":
-            ds = dmv.dataset.Dataset(
-                "my_dataset", df, u_labels, y_labels, full_time_interval=True
-            )
+            input_signals_names = test_in if test_in else []
+            output_signals_names = test_out if test_out else []
 
-            # Test values
-            u_labels_test = test_input[0]
-            y_labels_test = test_input[1]
+        test_signal_names = input_signals_names + output_signals_names
 
-            # Expected value
-            expected_u_labels = expected[0]
-            expected_y_labels = expected[1]
+        # Expected value
+        expected_u_labels = (
+            [input_signals_names]
+            if isinstance(input_signals_names, str)
+            else input_signals_names
+        )
+        expected_y_labels = (
+            [output_signals_names]
+            if isinstance(output_signals_names, str)
+            else output_signals_names
+        )
 
-            # Acual values
-            actual_u_labels, actual_y_labels = ds._validate_signals(
-                u_labels_test, y_labels_test
-            )
+        # Acual values
+        actual_u_labels, actual_y_labels = ds._validate_args(*test_signal_names)
 
-            # Assert
-            if u_labels_test:
-                assert expected_u_labels == actual_u_labels
-            if y_labels_test:
-                assert expected_y_labels == actual_y_labels
+        # Assert
+        assert expected_u_labels == actual_u_labels
+        assert expected_y_labels == actual_y_labels
 
     def test__validate_name_value_tuples(self) -> None:
         # Add a test only if you really need it.
@@ -138,18 +175,24 @@ class Test_Dataset_nominal:
         # the second value indicated the offset to be removed.
         # OBS! constant_ones_dataframe has 3 input and 3 output.
 
-        u_list = {
-            "SISO": ("u1", 2.0),
-            "SIMO": ("u1", 2.0),
-            "MISO": [("u1", 2.0), ("u2", 2.0), ("u3", 2.0)],
-            "MIMO": [("u1", 2.0), ("u2", 2.0), ("u3", 2.0)],
-        }
+        # Arrange
+        name_ds = "my_dataset"
+        ds = dmv.dataset.Dataset(
+            name_ds, df, u_labels, y_labels, full_time_interval=True
+        )
 
-        y_list = {
-            "SISO": ("y1", 2.0),
-            "SIMO": [("y1", 2.0), ("y2", 1.0), ("y3", -2.0)],
-            "MISO": ("y1", 2.0),
-            "MIMO": [("y1", 2.0), ("y2", 1.0), ("y3", 2.0)],
+        test_values = {
+            "SISO": [("u1", 2.0), ("y1", 2.0)],
+            "SIMO": [("u1", 2.0), ("y1", 2.0), ("y2", 1.0), ("y3", -2.0)],
+            "MISO": [("u1", 2.0), ("u2", 2.0), ("u3", 2.0), ("y1", 2.0)],
+            "MIMO": [
+                ("u1", 2.0),
+                ("u2", 2.0),
+                ("u3", 2.0),
+                ("y1", 2.0),
+                ("y2", 1.0),
+                ("y3", 2.0),
+            ],
         }
 
         # Expected dataframe.
@@ -193,15 +236,8 @@ class Test_Dataset_nominal:
             )
             df_expected.index.name = "Time (s)"
 
-        # Actual value
-        name_ds = "my_dataset"
-        ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
-        )
-        # Function call.
-        ds_actual = ds.remove_offset(
-            u_list=u_list[fixture], y_list=y_list[fixture]
-        )
+        # Act.
+        ds_actual = ds.remove_offset(*test_values[fixture])
 
         # Assert
         assert np.allclose(ds_actual.dataset, df_expected)
@@ -215,8 +251,8 @@ class Test_Dataset_nominal:
         df, u_labels, y_labels, fixture = constant_ones_dataframe
 
         u_list = {
-            "SISO": ("u1", 2.0),
-            "SIMO": ("u1", 2.0),
+            "SISO": [("u1", 2.0)],
+            "SIMO": [("u1", 2.0)],
             "MISO": [("u1", 2.0), ("u2", 2.0), ("u3", 2.0)],
             "MIMO": [("u1", 2.0), ("u2", 2.0), ("u3", 2.0)],
         }
@@ -269,7 +305,7 @@ class Test_Dataset_nominal:
             name_ds, df, u_labels, y_labels, full_time_interval=True
         )
         # Function call
-        ds_actual = ds.remove_offset(u_list=u_list[fixture])
+        ds_actual = ds.remove_offset(*u_list[fixture])
 
         # Assert
         assert np.allclose(ds_actual.dataset, df_expected)
@@ -284,9 +320,9 @@ class Test_Dataset_nominal:
         df, u_labels, y_labels, fixture = constant_ones_dataframe
 
         y_list = {
-            "SISO": ("y1", 2.0),
+            "SISO": [("y1", 2.0)],
             "SIMO": [("y1", 2.0), ("y2", 1.0), ("y3", -2.0)],
-            "MISO": ("y1", 2.0),
+            "MISO": [("y1", 2.0)],
             "MIMO": [("y1", 2.0), ("y2", 1.0), ("y3", 2.0)],
         }
 
@@ -342,7 +378,7 @@ class Test_Dataset_nominal:
             name_ds, df, u_labels, y_labels, full_time_interval=True
         )
         # Function call
-        ds_actual = ds.remove_offset(y_list=y_list[fixture])
+        ds_actual = ds.remove_offset(*y_list[fixture])
 
         # Assert that the offsets are removed
         assert np.allclose(ds_actual.dataset, df_expected)
@@ -493,8 +529,7 @@ class Test_Dataset_nominal:
         )
 
         # Test
-        print("u_in = ", ds.dataset["INPUT"]["u1"].to_numpy())
-        ds = ds.low_pass_filter(u_list=("u1", fc_u), y_list=("y1", fc_y))
+        ds = ds.low_pass_filter(("u1", fc_u), ("y1", fc_y))
         (t, u, y) = ds.get_dataset_values()
         if fixture == "SISO" or fixture == "SIMO":
             u_actual = u
@@ -512,7 +547,7 @@ class Test_Dataset_nominal:
 
 
 class Test_Dataset_raise:
-    def test__validate_signals_raise(
+    def test__validate_args_raise(
         self,
         sine_dataframe: pd.DataFrame,
     ) -> None:
@@ -524,11 +559,11 @@ class Test_Dataset_raise:
         )
 
         # Test values
-        u_labels_test = "potato"
-        y_labels_test = "y1"
+        u_name_test = "potato"
+        y_name_test = "y1"
 
         with pytest.raises(KeyError):
-            ds._validate_signals(u_labels_test, y_labels_test)
+            ds._validate_args(u_name_test, y_name_test)
 
     def test_replaceNaNs_raise(self, good_signals: list[Signal]) -> None:
         # Nominal data
@@ -566,35 +601,16 @@ class Test_Dataset_raise:
         )
 
         # Test values. OBS! constant_ones_dataframe has 3 input and 3 output.
-        u_list = {
-            "SISO": ("potato", 2.0),
-            "SIMO": ("u1", 2.0),
+        test_values = {
+            "SISO": [("potato", 2.0)],
+            "SIMO": [("u1", 2.0)],
             "MISO": [("potato", 2.0), ("u2", 2.0), ("u3", 2.0)],
             "MIMO": [("u1", 2.0), ("u2", 2.0), ("u3", 2.0)],
         }
 
-        y_list = {
-            "SISO": ("y1", 2.0),
-            "SIMO": [("y1", 2.0), ("potato", 1.0), ("y3", -2.0)],
-            "MISO": ("y1", 2.0),
-            "MIMO": [("potato", 2.0), ("y2", 1.0), ("y3", 2.0)],
-        }
-
         # Try to remove very weird signals.
         with pytest.raises(KeyError):
-            ds._validate_name_value_tuples(
-                u_list=u_list[fixture], y_list=y_list[fixture]
-            )
-
-    def test_remove_offset_raise(self, sine_dataframe: pd.DataFrame) -> None:
-        df, u_labels, y_labels, fixture = sine_dataframe
-
-        # Actual value
-        ds = dmv.dataset.Dataset(
-            "my_dataset", df, u_labels, y_labels, full_time_interval=True
-        )
-        with pytest.raises(TypeError):
-            ds.remove_offset()
+            ds._validate_name_value_tuples(test_values[fixture])
 
 
 class Test_Dataset_plots:
@@ -622,67 +638,45 @@ class Test_Dataset_plots:
         # plot
         # =============================
 
-        fig, _ = ds.plot()
-        fig.clf()
+        _ = ds.plot()
         plt.close("all")
 
-        fig, _ = ds.plot(u_labels="u1")
-        fig.clf()
+        _ = ds.plot("u1")
         plt.close("all")
 
         if fixture == "MIMO":
-            fig, _ = ds.plot(u_labels=["u1", "u2"], y_labels=["y3", "y4"])
-            fig.clf()
+            _ = ds.plot("u1", "u2", "y3", "y4")
             plt.close("all")
 
-        fig, _ = ds.plot(overlap=True)
-        fig.clf()
+        _ = ds.plot(overlap=True)
         plt.close("all")
 
         # save on disk
         tmp_path_str = str(tmp_path)
         filename = tmp_path_str + "/potato"
-        fig, _ = ds.plot(save_as=filename)
+        _ = ds.plot(save_as=filename)
         assert os.path.exists(filename + ".png")
-        fig.clf()
         plt.close("all")
         # =============================
         # plot_coverage
         # =============================
-        fig1, _, fig2, _ = ds.plot_coverage()
-        fig1.clf()
-        fig2.clf()
+        _, _ = ds.plot_coverage()
         plt.close("all")
 
-        fig, _, _, _ = ds.plot_coverage(u_labels="u1")
-        fig.clf()
+        _, _ = ds.plot_coverage("u1")
         plt.close("all")
 
         if fixture == "MIMO":
-            fig1, _, fig2, _ = ds.plot_coverage(
-                u_labels=["u1", "u2"], y_labels=["y1", "y2"]
-            )
-            fig1.clf()
-            fig2.clf()
+            _, _ = ds.plot_coverage("u1", "u2", "y1", "y2")
             plt.close("all")
 
-            fig1, _, fig2, _ = ds.plot_coverage(
-                u_labels=["u1", "u2"], y_labels="y1"
-            )
-            fig1.clf()
-            fig2.clf()
-            plt.close("all")
-
-        _, _, fig, _ = ds.plot_coverage(y_labels="y1")
-        fig.clf()
+        _ = ds.plot_coverage("y1")
         plt.close("all")
 
         # save on disk
         tmp_path_str = str(tmp_path)
         filename = tmp_path_str + "/potato"
-        fig1, _, fig2, _ = ds.plot_coverage(save_as=filename)
-        fig1.clf()
-        fig2.clf()
+        _, _ = ds.plot_coverage(save_as=filename)
         plt.close("all")
         assert os.path.exists(filename + "_in.png")
         assert os.path.exists(filename + "_out.png")
@@ -710,36 +704,29 @@ class Test_Dataset_plots:
 
         # This is only valid if ds does not contain NaN:s, i.e.
         # it is good_dataframe.
-        fig, _ = ds.plot_spectrum()
-        fig.clf()
+        _ = ds.plot_spectrum()
         plt.close("all")
 
-        fig, _ = ds.plot_spectrum(u_labels="u1")
-        fig.clf()
+        _ = ds.plot_spectrum("u1")
         plt.close("all")
 
-        fig, _ = ds.plot_spectrum(y_labels="y1")
-        fig.clf()
+        _ = ds.plot_spectrum("y1")
         plt.close("all")
 
-        fig, _ = ds.plot_spectrum(overlap=True)
-        fig.clf()
+        _ = ds.plot_spectrum(overlap=True)
         plt.close("all")
 
-        fig, _ = ds.plot_spectrum(kind="amplitude")
-        fig.clf()
+        _ = ds.plot_spectrum(kind="amplitude")
         plt.close("all")
 
-        fig, _ = ds.plot_spectrum(kind="psd")
-        fig.clf()
+        _ = ds.plot_spectrum(kind="psd")
         plt.close("all")
 
         # save on disk
         tmp_path_str = str(tmp_path)
         filename = tmp_path_str + "/potato"
-        fig, _ = ds.plot_spectrum(save_as=filename)
+        _ = ds.plot_spectrum(save_as=filename)
         assert os.path.exists(filename + ".png")
-        fig.clf()
         plt.close("all")
 
         # ======= If NaN:s raise =====================
@@ -758,10 +745,10 @@ class Test_Dataset_plots:
         )
 
         with pytest.raises(ValueError):
-            fig, _ = ds.plot_spectrum(overlap=True)
+            _ = ds.plot_spectrum(overlap=True)
 
         with pytest.raises(ValueError):
-            fig, _ = ds.plot_spectrum(kind="potato")
+            _ = ds.plot_spectrum(kind="potato")
 
 
 class Test_plot_Signal:
@@ -769,78 +756,8 @@ class Test_plot_Signal:
     def test_plot_nominal(self, good_signals: list[Signal]) -> None:
         # You should just get a plot.
         signal_list, u_labels, y_labels, fixture = good_signals
-        fig, _ = dmv.plot_signals(signal_list)
-        fig.clf()
+        _ = dmv.plot_signals(*signal_list)
         plt.close("all")
-
-        # Conditional plot
-        if fixture == "MIMO":
-            del u_labels[-1]
-            del y_labels[-1]
-        if fixture == "MISO":
-            u_labels[-1]
-        if fixture == "SIMO":
-            del y_labels[-1]
-        fig, _ = dmv.plot_signals(signal_list, u_labels, y_labels)
-        fig.clf()
-        plt.close("all")
-
-        # With only args
-        fig, _ = dmv.plot_signals(signal_list, u_labels)
-        fig.clf()
-        plt.close("all")
-
-    @pytest.mark.plot
-    def test_plot_raise(self, good_signals: list[Signal]) -> None:
-        # Nominal values
-        signal_list, u_labels, y_labels, fixture = good_signals
-        u_labels_test = u_labels
-        y_labels_test = y_labels
-
-        if fixture == "MIMO":
-            u_labels_test[0] = "potato"
-            y_labels_test[0] = "banana"
-        if fixture == "SISO":
-            u_labels_test = ["potato"]
-            y_labels_test = ["banana"]
-        if fixture == "MISO":
-            u_labels_test[0] = "potato"
-            y_labels_test = ["banana"]
-        if fixture == "SIMO":
-            u_labels_test = ["potato"]
-            y_labels_test[0] = "banana"
-        with pytest.raises(KeyError):
-            fig, _ = dmv.plot_signals(signal_list, u_labels_test, y_labels)
-        with pytest.raises(KeyError):
-            fig, _ = dmv.plot_signals(signal_list, u_labels_test, y_labels_test)
-        with pytest.raises(KeyError):
-            fig, _ = dmv.plot_signals(signal_list, u_labels_test, y_labels_test)
-
-    @pytest.mark.plot
-    def test_plot_raise_more(self, good_signals: list[Signal]) -> None:
-        # Nominal data
-        (
-            signal_list,
-            input_signal_names,
-            output_signal_names,
-            fixture,
-        ) = good_signals
-
-        # test input
-        bad_input_signal_name = "potato"
-        bad_output_signal_name = bad_input_signal_name
-
-        # Assert in error
-        with pytest.raises(KeyError):
-            fig, _ = dmv.plot_signals(
-                signal_list, bad_input_signal_name, output_signal_names
-            )
-
-        # Assert in error
-        with pytest.raises(KeyError):
-            fig, _ = dmv.plot_signals(
-                signal_list, input_signal_names, bad_output_signal_name
-            )
 
 
 class Test_Signal_validation:
@@ -850,7 +767,7 @@ class Test_Signal_validation:
 
         signal_list[1]["name"] = signal_list[0]["name"]
         with pytest.raises(ValueError):
-            dmv.validate_signals(signal_list)
+            dmv.validate_signals(*signal_list)
 
     def test_key_not_found(self, good_signals: list[Signal]) -> None:
         # Nominal values
@@ -860,7 +777,7 @@ class Test_Signal_validation:
         key = "name"
         signal_list[idx].pop(key)
         with pytest.raises(KeyError):
-            dmv.validate_signals(signal_list)
+            dmv.validate_signals(*signal_list)
 
     def test_wrong_key(self, good_signals: list[Signal]) -> None:
         # Nominal values
@@ -870,7 +787,7 @@ class Test_Signal_validation:
         k_new = "potato"
         signal_list[idx][k_new] = signal_list[idx].pop("values")
         with pytest.raises(KeyError):
-            dmv.validate_signals(signal_list)
+            dmv.validate_signals(*signal_list)
 
     @pytest.mark.parametrize(
         # The dataype for the annotation can be inferred by the
@@ -895,7 +812,7 @@ class Test_Signal_validation:
         idx = random.randrange(0, len(signal_list))
         signal_list[idx]["values"] = test_input
         with pytest.raises(expected):
-            dmv.validate_signals(signal_list)
+            dmv.validate_signals(*signal_list)
 
     @pytest.mark.parametrize(
         "test_input, expected",
@@ -914,10 +831,10 @@ class Test_Signal_validation:
         idx = random.randrange(0, len(signal_list))
         signal_list[idx]["sampling_period"] = test_input
         with pytest.raises(expected):
-            dmv.validate_signals(signal_list)
+            dmv.validate_signals(*signal_list)
 
 
-class Test_Dataframe_validation:
+class Test_validate_dataframe:
     def test_there_is_at_least_one_in_and_one_out(
         self, good_dataframe: pd.DataFrame
     ) -> None:
@@ -925,7 +842,7 @@ class Test_Dataframe_validation:
         df, u_labels, y_labels, _ = good_dataframe
         u_labels = []
         with pytest.raises(IndexError):
-            dmv.dataframe_validation(df, u_labels, y_labels)
+            dmv.validate_dataframe(df, u_labels, y_labels)
 
     def test_name_unicity(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal values
@@ -940,11 +857,11 @@ class Test_Dataframe_validation:
         if fixture == "SIMO" or fixture == "MIMO":
             y_labels_test[0] = y_labels_test[1]
         with pytest.raises(ValueError):
-            dmv.dataframe_validation(df, u_labels_test, y_labels)
+            dmv.validate_dataframe(df, u_labels_test, y_labels)
         with pytest.raises(ValueError):
-            dmv.dataframe_validation(df, u_labels, y_labels_test)
+            dmv.validate_dataframe(df, u_labels, y_labels_test)
         with pytest.raises(ValueError):
-            dmv.dataframe_validation(df, u_labels_test, y_labels_test)
+            dmv.validate_dataframe(df, u_labels_test, y_labels_test)
 
     def test_input_or_output_not_found(
         self, good_dataframe: pd.DataFrame
@@ -960,7 +877,7 @@ class Test_Dataframe_validation:
         if fixture == "SIMO" or fixture == "MIMO":
             y_labels_test[0] = "potato"
         with pytest.raises(ValueError):
-            dmv.dataframe_validation(df, u_labels_test, y_labels)
+            dmv.validate_dataframe(df, u_labels_test, y_labels)
 
     def test_dataframe_one_level_indices(
         self, good_dataframe: pd.DataFrame
@@ -970,11 +887,11 @@ class Test_Dataframe_validation:
         df_test = df
         df_test.columns = pd.MultiIndex.from_product([df.columns, ["potato"]])
         with pytest.raises(IndexError):
-            dmv.dataframe_validation(df_test, u_labels, y_labels)
+            dmv.validate_dataframe(df_test, u_labels, y_labels)
         df_test = df
         df_test.index = pd.MultiIndex.from_product([df.index, ["potato"]])
         with pytest.raises(IndexError):
-            dmv.dataframe_validation(df_test, u_labels, y_labels)
+            dmv.validate_dataframe(df_test, u_labels, y_labels)
 
     def test_at_least_two_samples_per_signal(
         self, good_dataframe: pd.DataFrame
@@ -983,7 +900,7 @@ class Test_Dataframe_validation:
         df, u_labels, y_labels, _ = good_dataframe
         df_test = df.head(1)
         with pytest.raises(IndexError):
-            dmv.dataframe_validation(df_test, u_labels, y_labels)
+            dmv.validate_dataframe(df_test, u_labels, y_labels)
 
     def test_labels_exist_in_dataframe(
         self, good_dataframe: pd.DataFrame
@@ -999,21 +916,21 @@ class Test_Dataframe_validation:
             u_labels = [u_labels]
         u_labels[-1] = "potato"
         with pytest.raises(ValueError):
-            dmv.dataframe_validation(df, u_labels, y_labels)
+            dmv.validate_dataframe(df, u_labels, y_labels)
 
     def test_index_monotonicity(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal values
         df, u_labels, y_labels, _ = good_dataframe
         df.index.values[0:2] = df.index[0]
         with pytest.raises(ValueError):
-            dmv.dataframe_validation(df, u_labels, y_labels)
+            dmv.validate_dataframe(df, u_labels, y_labels)
 
     def test_values_are_float(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal values
         df, u_labels, y_labels, _ = good_dataframe
         df.iloc[0:1, 0:1] = "potato"
         with pytest.raises(TypeError):
-            dmv.dataframe_validation(df, u_labels, y_labels)
+            dmv.validate_dataframe(df, u_labels, y_labels)
 
 
 class Test_fix_sampling_periods:

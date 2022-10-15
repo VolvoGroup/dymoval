@@ -1,6 +1,8 @@
 """Config file."""
 
 import pathlib
+from typing import Literal
+import typing
 
 # Constants exposed to the user
 config = {"NUM_DECIMALS": 4, "COLORMAP": "tab10"}  # Defaults
@@ -25,5 +27,11 @@ except FileNotFoundError:  # pragma: no cover
 locals().update(config)
 
 # Internal constants
-PLOT_SPECTRUM_TYPE = ["amplitude", "power", "psd"]
-SIGNAL_KEYS = ["name", "values", "signal_unit", "sampling_period", "time_unit"]
+
+Spectrum_type = Literal["amplitude", "power", "psd"]
+SPECTRUM_KIND: list[Spectrum_type] = list(typing.get_args(Spectrum_type))
+
+Allowed_keys_type = Literal[
+    "name", "values", "signal_unit", "sampling_period", "time_unit"
+]
+SIGNAL_KEYS: list[Allowed_keys_type] = list(typing.get_args(Allowed_keys_type))

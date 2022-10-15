@@ -113,18 +113,15 @@ for ii, val in enumerate(output_signal_names):
     }
 
     out_lst.append(deepcopy(temp_out))
-signal_list = [*in_lst, *out_lst]
+signal_list = in_lst + out_lst
 first_output_idx = len(input_signal_names)
 
 # %% You can check if your Signal are in correct format through the function
 # dmv.validate_signals
-dmv.validate_signals(signal_list)
+dmv.validate_signals(*signal_list)
 
 # ... and you can visually inspect them through the function dmv.plot_signals
-dmv.plot_signals(signal_list)
-
-# ... and you can optionally pass the list of input and outputs.
-dmv.plot_signals(signal_list, input_signal_names[0:1], output_signal_names)
+dmv.plot_signals(*signal_list)
 
 # The signals to be included in a dataset must have the same sampling period,
 # so you may need to re-sample your signals.
