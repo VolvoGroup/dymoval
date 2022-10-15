@@ -19,13 +19,13 @@ from copy import deepcopy
 
 class Signal(TypedDict):
     """Signals are used to represent real-world signals.
-    They are used to instantiate :py:class:`Dataset <dymoval.dataset.Dataset>` class objects.
 
-    It is possible to validate signals through :py:meth:`~dymoval.dataset.validate_signals`.
+    They can be used for instantiating :py:class:`Dataset <dymoval.dataset.Dataset>` class objects.
+
+    It is possible to validate Signals through :py:meth:`~dymoval.dataset.validate_signals`.
 
     Although Signals have compulsory attribues that must be set, there is freedom
     to append additional attributes.
-
 
 
     Example
@@ -54,6 +54,7 @@ class Signal(TypedDict):
 
     name: str  #: Signal name.
     values: np.ndarray  # values confuse with values() which is a dict method.
+    # This is the reason why they are reported in the docstring.
     signal_unit: str  #: Signal unit.
     sampling_period: float  #: Signal sampling period.
     time_unit: str  #: Signal sampling period.
@@ -109,6 +110,13 @@ class Dataset:
     overlap :
         If *True* it will overlap the input and output signals plots during the
         dataset time interval selection.
+    verbosity:
+        Display information depending on its level.
+
+    Raises
+    -----
+    TypeError
+        If the signals_list has the wrong datatype.
     """
 
     def __init__(
@@ -839,10 +847,8 @@ class Dataset:
 
         Parameters
         ----------
-        u_labels:
-            List of input signals.
-        y_labels:
-            List of output signals.
+        *signals:
+            Signals to be plotted.
         overlap:
             If true *True* overlaps the input and the output signals plots.
         line_color_input:
@@ -976,10 +982,8 @@ class Dataset:
 
         Parameters
         ----------
-        u_labels:
-            List of input signals.
-        y_labels:
-            List of output signals.
+        *signals:
+            The coverage of these signals will be plotted.
         nbins:
             The number of bins.
         line_color_input:
@@ -990,6 +994,10 @@ class Dataset:
             Line color for the output signals.
         alpha_output:
             Alpha channel value for the output signals.
+        as_in:
+            Axes where the input signal coverage plot shall be placed.
+        as_out:
+            Axes where the output signal coverage plot shall be placed.
         save as:
             Save the figures with a specified name.
             It appends the suffix *_in* and *_out* to the input and output figure,
@@ -1086,11 +1094,8 @@ class Dataset:
 
         Parameters
         ----------
-        u_labels:
-            List of input signal included in the FFT transform.
-        y_labels:
-            List of output signal included in the FFT transform.
-
+        signals:
+            The FFT is computed for these signals.
 
         Raises
         ------
@@ -1150,12 +1155,8 @@ class Dataset:
 
         Parameters
         ----------
-        u_labels:
-            List of input signals.
-            If not specified, the FFT is performed over all the input signals.
-        y_labels:
-            List of output signals.
-            If not specified, the FFT is performed over all the output signals.
+        *signals:
+            The spectrum of these signals will be plotted.
         overlap:
             If true it overlaps the input and the output signals plots.
         kind:
@@ -1180,6 +1181,8 @@ class Dataset:
             Line style for the output signals.
         alpha_output:
             Alpha channel value for the output signals.
+        ax:
+            Axes where the spectrum plot will be placed.
         save_as:
             Save the figure with a specified name.
             The figure is automatically resized with a 16:9 aspect ratio.
@@ -1189,7 +1192,7 @@ class Dataset:
         Raises
         ------
         ValueError
-            If *kind* doen not match any possible values.
+            If *kind* doen not match any allowed values.
         """
         # validation
         u_labels, y_labels = self._validate_args(*signals)
@@ -1329,15 +1332,10 @@ class Dataset:
 
         Parameters
         ----------
-        u_labels :
-            List of the input signal names.
+        *signals:
+            Remove means to the specified signals.
             If not specified, then the mean value is removed to all
             the input signals in the dataset.
-
-        y_labels :
-            List of the output signal names.
-            If not specified, then the mean value is removed to all
-            the output signals in the dataset.
         """
         # Arguments validation
         u_labels, y_labels = self._validate_args(*signals)
@@ -1370,25 +1368,20 @@ class Dataset:
         # At least one argument shall be passed.
         # This is the reason why the @overload is added in that way
         """
-        Remove a specified offset to the list of specified signals.
+        Remove specified offsets to the specified signals.
 
         For each target signal a tuple of the form *(name,value)*
         shall be passed.
         The value specified in the *offset* parameter is removed from
         the signal with name *name*.
 
-        For multiple signals, the tuples shall be arranged in a list.
-
         Parameters
         ----------
-        u_list:
-            List of tuples of the form *(name, offset)*.
-            The *name* parameter must match the name of any input signal stored
+        *signals:
+            Tuples of the form *(name, offset)*.
+            The *name* parameter must match the name of a signal stored
             in the dataset.
-        y_list:
-            List of tuples of the form *(name, offset)*.
-            The *name* parameter must match the name of any output signal stored
-            in the dataset.
+            The *offset* parameter is the value to remove to the *name* signal.
         """
 
         # Safe copy
@@ -1439,20 +1432,14 @@ class Dataset:
 
         Parameters
         ----------
-        u_list:
-            List of tuples of the form *(name, cutoff_frequency)*.
-            The *name* parameter must match the name of any input signal stored
+        *signals:
+            Tuples of the form *(name, cutoff_frequency)*.
+            The *name* parameter must match the name of any signal stored
             in the dataset.
             Such a signal is filtered with a low-pass
             filter whose cutoff frequency is specified by the *cutoff_frequency*
             parameter.
-        y_list:
-            List of tuples of the form *(name, cutoff_frequency)*.
-            The *name* parameter must match the name of any output signal stored
-            in the dataset.
-            Such a signal is filtered with a low-pass
-            filter whose cutoff frequency is specified by the *cutoff_frequency*
-            parameter.
+
 
         Raises
         ------
@@ -1572,8 +1559,8 @@ def validate_signals(*signals: Signal) -> None:
 
     Parameters
     ----------
-    signal_list :
-        List of signal to be checked.
+    *signal :
+        Signal to be validated.
 
     Raises
     ------
@@ -1631,7 +1618,7 @@ def validate_dataframe(
 
     When the signals are sampled with the same period, then they can be arranged
     in a pandas DataFrame, where the index represents the common time vector
-    and each column represent a signal.
+    and each column represent a signal values.
 
     Once the signals are arranged in a DataFrame,
     it must be specified which signal(s) are the input through the *u_labels* and
@@ -1639,12 +1626,13 @@ def validate_dataframe(
 
     Furthermore, the candidate DataFrame shall meet the following requirements
 
+    - The index shall represent the common timeline for all the signals,
     - only one index and columns levels are allowed (no *MultiIndex*),
     - each column shall correspond to one signal,
     - the column names must be unique,
     - each signal must have at least two samples (i.e. the DataFrame has at least two rows),
     - both the index values and the column values must be *float*,
-    - each signal in the *u_labels* and *y_labels* must be equal to exactly, one column name of the input DataFrame
+    - each signal in the *u_labels* and *y_labels* must be equal to exactly, one column name of the input DataFrame.
 
     Parameters
     ----------
@@ -1786,6 +1774,16 @@ def compare_datasets(
     *datasets: Dataset,
     target: Literal["time", "coverage"] | Spectrum_type = "time",
 ) -> None:
+    """
+    Compare different :py:class:`Datasets <dymoval.dataset.Dignal>` graphically.
+
+    Parameters
+    ----------
+    *datasets :
+        :py:class:`Datasets <dymoval.dataset.Dataset>` to be compared.
+    target:
+        Kind of graph to be plotted.
+    """
 
     # Utility function to avoid too much code repetition
     def _adjust_legend(ds_names: list[str], axes: matplotlib.axes.Axes) -> None:
