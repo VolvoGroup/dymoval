@@ -600,7 +600,7 @@ class Dataset:
     def _validate_args(
         self,
         *signals: str,
-    ) -> tuple[list[str], list[str]]:
+    ) -> tuple[list[str], list[str], list[int], list[int]]:
         # You pass a list of signal and the function recognizes who is input
         # and who is output
         df = self.dataset
@@ -618,11 +618,26 @@ class Dataset:
                     f"Signal(s) {signal_not_found} not found in the dataset. "
                     "Use 'get_signal_list()' to get the list of all available signals. "
                 )
+            # Find indices
+            if u_labels:
+                u_labels_idx = [
+                    df["INPUT"].columns.get_loc(u) for u in u_labels
+                ]
+            else:
+                u_labels_idx = list(range(0, len(df["INPUT"].columns)))
+
+            if y_labels:
+                y_labels_idx = [
+                    df["OUTPUT"].columns.get_loc(y) for y in y_labels
+                ]
+            else:
+                y_labels_idx = list(range(0, len(df["OUTPUT"].columns)))
+
         else:
             u_labels = list(df["INPUT"].columns)
             y_labels = list(df["OUTPUT"].columns)
 
-        return u_labels, y_labels
+        return u_labels, y_labels, u_labels_idx, y_labels_idx
 
     def _validate_name_value_tuples(
         self,
@@ -638,7 +653,7 @@ class Dataset:
         # Return both the list of input and output names and the validated tuples.
 
         signals = [s[0] for s in signals_values]
-        u_labels, y_labels = self._validate_args(*signals)
+        u_labels, y_labels, _, _ = self._validate_args(*signals)
 
         u_list = [(s[0], s[1]) for s in signals_values if s[0] in u_labels]
         y_list = [(s[0], s[1]) for s in signals_values if s[0] in y_labels]
@@ -850,7 +865,8 @@ class Dataset:
         *signals:
             Signals to be plotted.
         overlap:
-            If true *True* overlaps the input and the output signals plots.
+            If true *True* overlaps the input and the output signals plots
+            pairwise.
         line_color_input:
             Line color for the input signals.
         linestyle_input:
@@ -871,12 +887,14 @@ class Dataset:
             You must specify the complete *filename*, including the path.
         """
         # Validation
-        u_labels, y_labels = self._validate_args(*signals)
+        u_labels, y_labels, u_labels_idx, y_labels_idx = self._validate_args(
+            *signals
+        )
 
         # df points to self.dataset.
         df = self.dataset
 
-        # Input-output length
+        # Input-output length and indices
         p = len(u_labels)
         q = len(y_labels)
 
@@ -886,17 +904,23 @@ class Dataset:
 
             # Adjust subplot titles
             m = min(p, q)
-            u_titles = ["IN/OUT #" + str(ii + 1) for ii in range(m)]
-            y_titles = ["IN/OUT #" + str(ii + 1) for ii in range(m)]
+
+            u_titles = ["IN #" + str(ii + 1) for ii in u_labels_idx]
+            y_titles = [" - OUT #" + str(ii + 1) for ii in y_labels_idx]
+            # TODO when len(u)> len(y) the titles are screwed
+            # Consider to set the titles at the end with ax.set_title
+            y_titles = [s1 + s2 for s1, s2 in zip(u_titles, y_titles)]
+
             u_titles_trail = ["INPUT #" + str(ii + 1) for ii in range(m, p)]
             y_titles_trail = ["OUTPUT #" + str(ii + 1) for ii in range(m, q)]
+
         else:
             n = p + q
             range_out = np.arange(p, p + q)
 
             # Adjust titles
-            u_titles = ["INPUT #" + str(ii + 1) for ii in range(p)]
-            y_titles = ["OUTPUT #" + str(ii + 1) for ii in range(q)]
+            u_titles = ["INPUT #" + str(ii + 1) for ii in u_labels_idx]
+            y_titles = ["OUTPUT #" + str(ii + 1) for ii in y_labels_idx]
             u_titles_trail = []
             y_titles_trail = []
 
@@ -1007,7 +1031,7 @@ class Dataset:
         # Extract dataset
         df = self.dataset
 
-        u_labels, y_labels = self._validate_args(*signals)
+        u_labels, y_labels, _, _ = self._validate_args(*signals)
 
         if u_labels:
             p = len(u_labels)
@@ -1103,7 +1127,7 @@ class Dataset:
             If the dataset contains *NaN*:s
         """
         # Validation
-        u_labels, y_labels = self._validate_args(*signals)
+        u_labels, y_labels, _, _ = self._validate_args(*signals)
         # Remove 'INPUT' 'OUTPUT' columns level from dataframe
         df_temp = self.dataset.droplevel(level=0, axis=1)
 
@@ -1195,7 +1219,7 @@ class Dataset:
             If *kind* doen not match any allowed values.
         """
         # validation
-        u_labels, y_labels = self._validate_args(*signals)
+        u_labels, y_labels, _, _ = self._validate_args(*signals)
 
         if kind not in SPECTRUM_KIND:
             raise ValueError(f"kind must be one of {SPECTRUM_KIND}")
@@ -1338,7 +1362,7 @@ class Dataset:
             the input signals in the dataset.
         """
         # Arguments validation
-        u_labels, y_labels = self._validate_args(*signals)
+        u_labels, y_labels, _, _ = self._validate_args(*signals)
 
         # Safe copy
         ds_temp = deepcopy(self)
@@ -1762,9 +1786,13 @@ def plot_signals(
         ax[ii].grid()
 
         # Write time only in the last row
-        if ii >= (nrows - 1) * ncols:
-            ax[ii].set_xlabel("Time")
+
+        # if ii >= (ncols - 1) * nrows:
+        #    ax[ii].set_xlabel("Time")
         ax[ii].legend()
+
+    for ii in range(ncols):
+        ax[nrows - 1 :: nrows][ii].set_xlabel("Time")
     plt.suptitle("Raw signals.")
 
     return fig, ax

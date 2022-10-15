@@ -23,7 +23,7 @@ two parameters that you can set.
 
 .. confval:: num_decimals
     :type: int
-    :default: 3
+    :default: 4
 
     Number of decimal digits. 
     At the end of every function/method, `dymoval` round *float* numbers to a certain number of decimals.  
