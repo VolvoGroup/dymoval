@@ -37,18 +37,8 @@ def difference_lists_of_str(
     """
     A = str2list(A)
     B = str2list(B)
-    if len(A) == 0 or len(B) == 0:
-        raise IndexError("One of the argument is empty.")
-    A_set = set(A)
-    B_set = set(B)
 
-    elements_not_found = set()
-    if not A_set.issubset(B_set):
-        elements_found = B_set & A_set  # Set intersection
-        elements_not_found = (
-            A_set - elements_found
-        )  # Elements in A but not in B
-    return list(elements_not_found)
+    return list(set(A) - set(B))
 
 
 def str2list(x: str | list[str]) -> list[str]:

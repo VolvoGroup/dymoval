@@ -605,37 +605,29 @@ class Dataset:
         # and who is output
         df = self.dataset
 
+        # Separate in from out.
+        # By default take everything
+        u_labels = list(df["INPUT"].columns)
+        y_labels = list(df["OUTPUT"].columns)
+
+        # Small check. Not very pythonic but still...
+        signals_not_found = difference_lists_of_str(
+            list(signals), u_labels + y_labels
+        )
+        if signals_not_found:
+            raise KeyError(
+                f"Signal(s) {signals_not_found} not found in the dataset. "
+                "Use 'get_signal_list()' to get the list of all available signals. "
+            )
+
+        # ...then select if signals are passed.
         if signals:
-            # identify u_labels and y_labels
             u_labels = [s for s in signals if s in df["INPUT"].columns]
             y_labels = [s for s in signals if s in df["OUTPUT"].columns]
-            signal_not_found = [
-                s for s in signals if s not in u_labels and s not in y_labels
-            ]
 
-            if signal_not_found:
-                raise KeyError(
-                    f"Signal(s) {signal_not_found} not found in the dataset. "
-                    "Use 'get_signal_list()' to get the list of all available signals. "
-                )
-            # Find indices
-            if u_labels:
-                u_labels_idx = [
-                    df["INPUT"].columns.get_loc(u) for u in u_labels
-                ]
-            else:
-                u_labels_idx = list(range(0, len(df["INPUT"].columns)))
-
-            if y_labels:
-                y_labels_idx = [
-                    df["OUTPUT"].columns.get_loc(y) for y in y_labels
-                ]
-            else:
-                y_labels_idx = list(range(0, len(df["OUTPUT"].columns)))
-
-        else:
-            u_labels = list(df["INPUT"].columns)
-            y_labels = list(df["OUTPUT"].columns)
+        # Compute indices
+        u_labels_idx = [df["INPUT"].columns.get_loc(u) for u in u_labels]
+        y_labels_idx = [df["OUTPUT"].columns.get_loc(y) for y in y_labels]
 
         return u_labels, y_labels, u_labels_idx, y_labels_idx
 

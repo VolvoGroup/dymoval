@@ -72,28 +72,51 @@ class Test_Dataset_nominal:
             [y_labels] if isinstance(y_labels, str) else y_labels
         )
         # Act
-        actual_u_labels, actual_y_labels = ds._validate_args()
+        (
+            actual_u_labels,
+            actual_y_labels,
+            actual_u_idx,
+            actual_y_idx,
+        ) = ds._validate_args()
+
+        if fixture == "SISO":
+            expected_u_idx = [0]
+            expected_y_idx = [0]
+        if fixture == "SIMO":
+            expected_u_idx = [0]
+            expected_y_idx = [0, 1, 2, 3]
+        if fixture == "MISO":
+            expected_u_idx = [0, 1, 2]
+            expected_y_idx = [0]
+        if fixture == "MIMO":
+            expected_u_idx = [0, 1, 2]
+            expected_y_idx = [0, 1, 2, 3]
 
         # Assert: if no arguments is passed it returns the whole list of
         # input and output signals
         assert expected_u_labels == actual_u_labels
+        assert expected_u_idx == actual_u_idx
+
         assert expected_y_labels == actual_y_labels
+        assert expected_y_idx == actual_y_idx
 
     @pytest.mark.parametrize(
         # Check if the function can recognize that there is no input or
         # no output
-        "test_in, test_out",
+        "test_in, test_out, expected_in_idx, expected_out_idx",
         [
-            (["u1", "u2"], ["y1", "y3"]),
-            ([], ["y1", "y3"]),
-            (["u1", "u2"], []),
+            (["u1", "u2"], ["y1", "y3"], [0, 1], [0, 2]),
+            ([], ["y1", "y3"], [], [0, 2]),
+            (["u1", "u2"], [], [0, 1], []),
         ],
     )
     def test__validate_args(
         self,
         sine_dataframe: pd.DataFrame,
-        test_in: Any,
-        test_out: Any,
+        test_in: list[str],
+        test_out: list[str],
+        expected_in_idx: list[int],
+        expected_out_idx: list[int],
     ) -> None:
         # You pass a list of signal and the function recognizes who is input
         # and who is output
@@ -104,39 +127,67 @@ class Test_Dataset_nominal:
             "my_dataset", df, u_labels, y_labels, full_time_interval=True
         )
 
+        # Expected values
         if fixture == "SISO":
-            input_signals_names = [test_in[0]] if test_in else []
-            output_signals_names = [test_out[0]] if test_out else []
+            test_in = [test_in[0]] if test_in else []
+            expected_u_labels = [test_in[0]] if test_in else []
+            expected_u_idx = [expected_in_idx[0]] if expected_in_idx else []
+
+            test_out = [test_out[0]] if test_out else []
+            expected_y_labels = [test_out[0]] if test_out else []
+            expected_y_idx = [expected_out_idx[0]] if expected_out_idx else []
+
         if fixture == "SIMO":
-            input_signals_names = [test_in[0]] if test_in else []
-            output_signals_names = test_out if test_out else []
+            test_in = [test_in[0]] if test_in else []
+            expected_u_labels = [test_in[0]] if test_in else []
+            expected_u_idx = [expected_in_idx[0]] if expected_in_idx else []
+
+            expected_y_labels = test_out if test_out else []
+            expected_y_idx = expected_out_idx
+
         if fixture == "MISO":
-            input_signals_names = test_in if test_in else []
-            output_signals_names = [test_out[0]] if test_out else []
+            expected_u_labels = test_in if test_in else []
+            expected_u_idx = expected_in_idx
+
+            test_out = [test_out[0]] if test_out else []
+            expected_y_labels = [test_out[0]] if test_out else []
+            expected_y_idx = [expected_out_idx[0]] if expected_out_idx else []
+
         if fixture == "MIMO":
-            input_signals_names = test_in if test_in else []
-            output_signals_names = test_out if test_out else []
+            expected_u_labels = test_in if test_in else []
+            expected_u_idx = expected_in_idx
 
-        test_signal_names = input_signals_names + output_signals_names
+            expected_y_labels = test_out if test_out else []
+            expected_y_idx = expected_out_idx
 
-        # Expected value
-        expected_u_labels = (
-            [input_signals_names]
-            if isinstance(input_signals_names, str)
-            else input_signals_names
-        )
-        expected_y_labels = (
-            [output_signals_names]
-            if isinstance(output_signals_names, str)
-            else output_signals_names
-        )
+        test_signal_names = test_in + test_out
+
+        # Adjust str - list[str] thing
+        #     expected_u_labels = (
+        #         [expected_u_labels]
+        #         if isinstance(expected_u_labels, str)
+        #         else expected_u_labels
+        #     )
+        #     expected_y_labels = (
+        #         [expected_y_labels]
+        #         if isinstance(expected_y_labels, str)
+        #         else expected_y_labels
+        #     )
 
         # Acual values
-        actual_u_labels, actual_y_labels = ds._validate_args(*test_signal_names)
+        (
+            actual_u_labels,
+            actual_y_labels,
+            actual_u_idx,
+            actual_y_idx,
+        ) = ds._validate_args(*test_signal_names)
 
         # Assert
-        assert expected_u_labels == actual_u_labels
-        assert expected_y_labels == actual_y_labels
+        assert sorted(expected_u_labels) == sorted(actual_u_labels)
+        assert sorted(expected_u_idx) == sorted(actual_u_idx)
+
+        assert sorted(expected_y_labels) == sorted(actual_y_labels)
+        assert sorted(expected_y_idx) == sorted(actual_y_idx)
 
     def test__validate_name_value_tuples(self) -> None:
         # Add a test only if you really need it.
@@ -590,27 +641,28 @@ class Test_Dataset_raise:
         with pytest.raises(ValueError):
             ds.replace_NaNs(method="potato")
 
-    def test__validate_name_value_tuples_raise(
-        self, sine_dataframe: pd.DataFrame
-    ) -> None:
-        df, u_labels, y_labels, fixture = sine_dataframe
+    def test__validate_name_value_tuples_raise(self, good_signals: Any) -> None:
+        signal_list, u_labels, y_labels, fixture = good_signals
 
-        # Base Dataset
+        # Actual value
         ds = dmv.dataset.Dataset(
-            "my_dataset", df, u_labels, y_labels, full_time_interval=True
+            "my_dataset",
+            signal_list,
+            u_labels,
+            y_labels,
+            overlap=True,
+            full_time_interval=True,
+            verbosity=1,
         )
 
-        # Test values. OBS! constant_ones_dataframe has 3 input and 3 output.
-        test_values = {
-            "SISO": [("potato", 2.0)],
-            "SIMO": [("u1", 2.0)],
-            "MISO": [("potato", 2.0), ("u2", 2.0), ("u3", 2.0)],
-            "MIMO": [("u1", 2.0), ("u2", 2.0), ("u3", 2.0)],
-        }
+        if fixture == "SISO" or "MISO":
+            test_value = [("potato", 0.3)]
+        else:
+            test_value = [("u1", 0.3), ("y1", 2), ("y2", 0.0), ("potato", 1)]
 
         # Try to remove very weird signals.
         with pytest.raises(KeyError):
-            ds._validate_name_value_tuples(test_values[fixture])
+            ds._validate_name_value_tuples(*test_value)
 
 
 class Test_Dataset_plots:
