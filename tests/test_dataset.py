@@ -116,7 +116,7 @@ class Test_Dataset_nominal:
         expected_out_idx: list[int],
     ) -> None:
         # You pass a list of signal and the function recognizes who is input
-        # and who is output
+        # and who is output and it also return the in-out indices
 
         # Arrange
         df, u_labels, y_labels, fixture = sine_dataframe
@@ -178,6 +178,7 @@ class Test_Dataset_nominal:
         # Add a test only if you really need it.
         # This function is called so many times so it is implicitly tested
         # and writing tricky tests won't help
+        # Check also the coverage to be convinced of this.
         pass
 
     def test_remove_means(self, sine_dataframe: pd.DataFrame) -> None:

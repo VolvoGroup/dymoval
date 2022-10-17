@@ -125,7 +125,7 @@ def rsquared(x: np.ndarray, y: np.ndarray) -> float:
 
 def xcorr_norm(
     Rxy: XCorrelation,
-    l_norm: float | Literal["fro", "nuc"] | None = None,
+    l_norm: float | Literal["fro", "nuc"] | None = np.inf,
     matrix_norm: float | Literal["fro", "nuc"] | None = 2,
 ) -> float:
     r"""Return the norm of the cross-correlation tensor.
@@ -154,7 +154,7 @@ def xcorr_norm(
     # SISO case
     elif R.ndim == 1:
         R = R[:, np.newaxis, np.newaxis]
-    # R must have dimension 3
+    # R cannot have dimension greater than 3
     elif R.ndim > 3:
         raise IndexError(
             "The correlation tensor must be a 3D np.array where "
@@ -168,9 +168,11 @@ def xcorr_norm(
     R_matrix = np.zeros((nrows, ncols))
     for ii in range(nrows):
         for jj in range(ncols):
-            R_matrix[ii, jj] = np.linalg.norm(R[:, ii, jj], l_norm) / len(
-                R[:, ii, jj]
-            )
+            # R_matrix[ii, jj] = np.linalg.norm(R[:, ii, jj], l_norm) / len(
+            #    R[:, ii, jj]
+            # )
+            R_matrix[ii, jj] = np.linalg.norm(R[:, ii, jj], l_norm)
+
     R_norm = np.linalg.norm(R_matrix, matrix_norm).round(NUM_DECIMALS)
     return R_norm  # type: ignore
 
@@ -251,8 +253,8 @@ class ValidationSession:
     def _append_validation_results(
         self,
         sim_name: str,
-        l_norm: int | None = None,
-        matrix_norm: int | None = None,
+        l_norm: float | Literal["fro", "nuc"] | None = np.inf,
+        matrix_norm: float | Literal["fro", "nuc"] | None = 2,
     ) -> None:
 
         # Extact dataset output values
@@ -274,10 +276,10 @@ class ValidationSession:
         self.validation_results[sim_name] = [r2, Ree_norm, Rue_norm]
 
     def _sim_list_validate(self) -> None:
-        if not self.get_simulations_name():
+        if not self.simulations_names():
             raise KeyError(
                 "The simulations list looks empty. "
-                "Check the available simulation names with 'get_simulations_names()'"
+                "Check the available simulation names with 'simulations_namess()'"
             )
 
     def _simulation_validation(
@@ -288,12 +290,12 @@ class ValidationSession:
             raise ValueError("Signals name must be unique.")
         if (
             not self.simulations_results.empty
-            and sim_name in self.get_simulations_name()
+            and sim_name in self.simulations_names()
         ):
             raise ValueError(
                 f"Simulation name '{sim_name}' already exists. \n"
                 "HINT: check the loaded simulations names with"
-                "'get_simulations_names()' method."
+                "'simulations_namess()' method."
             )
         if len(set(y_labels)) != len(
             set(self.Dataset.dataset["OUTPUT"].columns)
@@ -375,16 +377,16 @@ class ValidationSession:
 
         # Check the passed list of simulations if non-empty.
         if not list_sims:
-            list_sims = self.get_simulations_name()
+            list_sims = self.simulations_names()
         else:
             list_sims = str2list(list_sims)  # noqa
             sim_not_found = difference_lists_of_str(  # noqa
-                list_sims, self.get_simulations_name()
+                list_sims, self.simulations_names()
             )
             if sim_not_found:
                 raise KeyError(
                     f"Simulation {sim_not_found} not found. "
-                    "Check the available simulations names with 'get_simulations_names()'"
+                    "Check the available simulations names with 'simulations_namess()'"
                 )
 
         # Now we start
@@ -489,16 +491,16 @@ class ValidationSession:
         # Check if you have any simulation available
         self._sim_list_validate()
         if not list_sims:
-            list_sims = self.get_simulations_name()
+            list_sims = self.simulations_names()
         else:
             list_sims = str2list(list_sims)  # noqa
             sim_not_found = difference_lists_of_str(  # noqa
-                list_sims, self.get_simulations_name()
+                list_sims, self.simulations_names()
             )
             if sim_not_found:
                 raise KeyError(
                     f"Simulation {sim_not_found} not found. "
-                    "Check the available simulations names with 'get_simulations_names()'"
+                    "Check the available simulations names with 'simulations_namess()'"
                 )
         Ree = self.auto_correlation
         Rue = self.cross_correlation
@@ -566,9 +568,7 @@ class ValidationSession:
 
         return fig1, ax1, fig2, ax2
 
-    def get_simulation_signals_list(
-        self, sim_name: str | list[str]
-    ) -> list[str]:
+    def simulation_signals_list(self, sim_name: str | list[str]) -> list[str]:
         """
         Return the signal name list of a given simulation result.
 
@@ -585,13 +585,13 @@ class ValidationSession:
         self._sim_list_validate()
         return list(self.simulations_results[sim_name].columns)
 
-    def get_simulations_name(self) -> list[str]:
+    def simulations_names(self) -> list[str]:
         """Return a list of names of the stored simulations."""
         return list(self.simulations_results.columns.levels[0])
 
     def clear(self) -> None:
         """Clear all the stored simulation results."""
-        sim_names = self.get_simulations_name()
+        sim_names = self.simulations_names()
         for x in sim_names:
             self.drop_simulation(x)
 
@@ -600,8 +600,8 @@ class ValidationSession:
         sim_name: str,
         y_labels: list[str],
         y_data: np.ndarray,
-        l_norm: int | None = None,
-        matrix_norm: int | None = None,
+        l_norm: float | Literal["fro", "nuc"] | None = np.inf,
+        matrix_norm: float | Literal["fro", "nuc"] | None = 2,
     ) -> None:
         """
         Append simulation results..
@@ -634,7 +634,7 @@ class ValidationSession:
 
         # Update residuals auto-correlation and cross-correlation attributes
         self._append_correlations_tensors(sim_name)
-        self._append_validation_results(sim_name, l_norm=None, matrix_norm=None)
+        self._append_validation_results(sim_name)
 
     def drop_simulation(self, *args: str) -> None:
         """Drop simulation results from the validation session.
@@ -655,7 +655,7 @@ class ValidationSession:
         self._sim_list_validate()
 
         for sim_name in args:
-            if sim_name not in self.get_simulations_name():
+            if sim_name not in self.simulations_names():
                 raise ValueError(f"Simulation {sim_name} not found.")
             self.simulations_results.drop(sim_name, axis=1, inplace=True)
             self.simulations_results.columns = (

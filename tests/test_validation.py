@@ -78,20 +78,20 @@ class Test_ClassValidationNominal:
         assert np.allclose(sim2_values, vs.simulations_results[sim2_name])
 
         # ===============================================
-        # Test get_simulation_signals_list and list_simulations
+        # Test simulation_signals_list and list_simulations
         # ============================================
         expected_sims = [sim1_name, sim2_name]
 
-        assert sorted(expected_sims) == sorted(vs.get_simulations_name())
+        assert sorted(expected_sims) == sorted(vs.simulations_names())
 
         expected_signals1 = sim1_labels
         expected_signals2 = sim2_labels
 
         assert sorted(expected_signals1) == sorted(
-            vs.get_simulation_signals_list(sim1_name)
+            vs.simulation_signals_list(sim1_name)
         )
         assert sorted(expected_signals2) == sorted(
-            vs.get_simulation_signals_list(sim2_name)
+            vs.simulation_signals_list(sim2_name)
         )
 
         # ==================================
@@ -129,7 +129,7 @@ class Test_ClassValidationNominal:
 
         # simulation not in the list
         with pytest.raises(KeyError):
-            vs.get_simulation_signals_list("potato")
+            vs.simulation_signals_list("potato")
 
         # Another test with one model
         sim1_name = "Model 1"
@@ -145,7 +145,7 @@ class Test_ClassValidationNominal:
 
         # Search for a non-existing simulation
         with pytest.raises(KeyError):
-            vs.get_simulation_signals_list("potato")
+            vs.simulation_signals_list("potato")
 
 
 class Test_ClassValidatioNominal_sim_validation:
@@ -756,10 +756,10 @@ class Test_xcorr_norm:
 
         lags_test = np.arange(-4, 5)
 
-        norm_expected_SISO = 0.1191
-        norm_expected_SIMO = 0.1640
-        norm_expected_MISO = 0.1607
-        norm_expected_MIMO = 0.2249
+        norm_expected_SISO = 0.8181
+        norm_expected_SIMO = 1.0331
+        norm_expected_MISO = 1.0296
+        norm_expected_MIMO = 1.4401
 
         # SISO Adjust test values
         R_test = np.empty((len(lags_test), 1, 1))
@@ -770,6 +770,7 @@ class Test_xcorr_norm:
         norm_actual = dmv.xcorr_norm(Rxy_test)
 
         # Assert
+        print("Rxy_test = ", Rxy_test)
         assert np.isclose(norm_actual, norm_expected_SISO, atol=1e-4)
 
         # SIMO Adjust test values
