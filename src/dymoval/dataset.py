@@ -620,7 +620,7 @@ class Dataset:
         if signals_not_found:
             raise KeyError(
                 f"Signal(s) {signals_not_found} not found in the dataset. "
-                "Use 'get_signal_list()' to get the list of all available signals. "
+                "Use 'signal_names()' to get the list of all available signals. "
             )
 
         # ...then select if signals are passed.
@@ -780,7 +780,7 @@ class Dataset:
 
         return resampled_signals, excluded_signals
 
-    def get_dataset_values(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def dataset_values(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Return the dataset values as a tuple of *numpy ndarrays* corresponding
         to the tuple *(t,u,y)*.
@@ -827,7 +827,7 @@ class Dataset:
             Target filename. The extension *.mat* is automatically appended.
         """
 
-        (t, u, y) = self.get_dataset_values()
+        (t, u, y) = self.dataset_values()
         u_labels = list(self.dataset["INPUT"].columns)
         y_labels = list(self.dataset["OUTPUT"].columns)
 
@@ -846,13 +846,13 @@ class Dataset:
 
         io.savemat(filename, dsdict, oned_as="column", appendmat=True)
 
-    def get_signal_list(self) -> list[tuple[str, str]]:
+    def signal_names(self) -> list[tuple[str, str]]:
         """Return the list of signal names of the dataset."""
         return list(self.dataset.columns)
 
     #     def rename_signals(self, name_map: dic[str, str]) -> Dataset:
     #
-    #         # name_map = {name[1]:name[1]+"_pi" for name in ds.get_signal_list()}
+    #         # name_map = {name[1]:name[1]+"_pi" for name in ds.signal_names()}
     #         ds = deepcopy(self)
     #         ds.dataset = ds.dataset.rename(
     #             columns=name_map, level=1, errors="raise"
@@ -1558,36 +1558,23 @@ class Dataset:
 
     def replace_NaNs(
         self,
-        method: Literal["interpolate", "fillna"] = "interpolate",
-        fill_value: float = 0.0,
+        **kwargs: Any,
     ) -> Dataset:
         """Replace NaN:s in the dataset.
+
+        It uses pandas *DataFrame.interpolate()* method, so the **kwargs are directly
+        routed to such a method.
 
 
         Parameters
         ----------
-        method :
-            Interpolation method.
-        fill_value :
-            When *method* = "fillna", then the *NaN*:s vales are filled with this value.
-
-        Raises
-        ------
-        ValueError
-            If the passed method is not 'interpolate' or 'fillna'.
+        **kwargs :
+           Keyword arguments to pass on to the interpolating function.
         """
 
         # Safe copy
         ds_temp = deepcopy(self)
-
-        if method == "interpolate":
-            ds_temp.dataset = ds_temp.dataset.interpolate()
-        elif method == "fillna":
-            ds_temp.dataset = ds_temp.dataset.fillna(fill_value)
-        else:
-            raise ValueError(
-                "Unknown method. Choose between 'interpolate' or 'fillna'"
-            )
+        ds_temp.dataset = ds_temp.dataset.interpolate(**kwargs)
 
         return ds_temp
 

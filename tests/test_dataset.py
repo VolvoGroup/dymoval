@@ -421,7 +421,7 @@ class Test_Dataset_nominal:
         # Assert that the internally stored dataset is not overwritten
         assert np.allclose(ds.dataset, df)
 
-    def test_get_dataset_values(self, sine_dataframe: pd.DataFrame) -> None:
+    def test_dataset_values(self, sine_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = sine_dataframe
 
         # Instantiate dataset
@@ -435,14 +435,14 @@ class Test_Dataset_nominal:
         y_expected = df[y_labels].to_numpy().round(NUM_DECIMALS)
 
         # Actuals
-        t_actual, u_actual, y_actual = ds.get_dataset_values()
+        t_actual, u_actual, y_actual = ds.dataset_values()
 
         # Assert
         assert np.allclose(t_expected, t_actual)
         assert np.allclose(u_expected, u_actual)
         assert np.allclose(y_expected, y_actual)
 
-    def test_get_signal_list(self, sine_dataframe: pd.DataFrame) -> None:
+    def test_signal_names(self, sine_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = sine_dataframe
 
         # Instantiate dataset
@@ -478,44 +478,8 @@ class Test_Dataset_nominal:
             ],
         }
 
-        actual = ds.get_signal_list()
+        actual = ds.signal_names()
         assert expected[fixture] == actual
-
-    def test_replaceNaNs(self, good_signals: list[Signal]) -> None:
-        # Nominal data
-        (
-            signal_list,
-            input_signal_names,
-            output_signal_names,
-            fixture,
-        ) = good_signals
-
-        # TODO: use a standard dataframe instead
-        test_sampling_period = 0.1
-        # print("signal list = ", signal_list)
-        ds = dmv.Dataset(
-            "my_dataset",
-            signal_list,
-            input_signal_names,
-            output_signal_names,
-            target_sampling_period=test_sampling_period,
-            plot_raw=True,
-            full_time_interval=True,
-        )
-
-        resampled_signals, _ = ds._fix_sampling_periods(
-            signal_list, test_sampling_period
-        )
-
-        # Interpolate
-        ds_actual = ds.replace_NaNs(method="interpolate")
-        # Assert that no NaN:s left
-        assert not ds_actual.dataset.isna().any().any()
-
-        # Fill
-        ds_actual = ds.replace_NaNs(method="fillna")
-        # Assert that no NaN:s left
-        assert not ds_actual.dataset.isna().any().any()
 
     def test_lowpass_filter(
         self,
@@ -566,7 +530,7 @@ class Test_Dataset_nominal:
 
         # Test
         ds = ds.low_pass_filter(("u1", fc_u), ("y1", fc_y))
-        (t, u, y) = ds.get_dataset_values()
+        (t, u, y) = ds.dataset_values()
         if fixture == "SISO" or fixture == "SIMO":
             u_actual = u
         else:
@@ -600,31 +564,6 @@ class Test_Dataset_raise:
 
         with pytest.raises(KeyError):
             ds._validate_args(u_name_test, y_name_test)
-
-    def test_replaceNaNs_raise(self, good_signals: list[Signal]) -> None:
-        # Nominal data
-        (
-            signal_list,
-            input_signal_names,
-            output_signal_names,
-            fixture,
-        ) = good_signals
-
-        test_sampling_period = 0.1
-        # print("signal list = ", signal_list)
-        ds = dmv.Dataset(
-            "my_dataset",
-            signal_list,
-            input_signal_names,
-            output_signal_names,
-            target_sampling_period=test_sampling_period,
-            plot_raw=True,
-            full_time_interval=True,
-        )
-
-        # Raise unexistng replacement method
-        with pytest.raises(ValueError):
-            ds.replace_NaNs(method="potato")
 
     def test__validate_name_value_tuples_raise(self, good_signals: Any) -> None:
         signal_list, u_labels, y_labels, fixture = good_signals
