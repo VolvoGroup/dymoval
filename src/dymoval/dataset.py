@@ -603,6 +603,9 @@ class Dataset:
     ) -> tuple[list[str], list[str], list[int], list[int]]:
         # You pass a list of signal and the function recognizes who is input
         # and who is output
+        # Is no argument is passed, then it takes the whole for u_labels and y_labels
+        # If only input or output signals are passed, then it return an empty list
+        # for the non-returned labels.
         df = self.dataset
 
         # Separate in from out.
@@ -651,6 +654,46 @@ class Dataset:
         y_list = [(s[0], s[1]) for s in signals_values if s[0] in y_labels]
 
         return u_labels, y_labels, u_list, y_list
+
+    def _get_plot_params(
+        self,
+        p: int,
+        q: int,
+        u_labels_idx: list[int],
+        y_labels_idx: list[int],
+        overlap: bool,
+    ) -> tuple[int, np.ndarray, np.ndarray, list[str], list[str]]:
+
+        # Input range is always [0:p]
+        range_in = np.arange(0, p)
+        if overlap:
+            n = max(p, q)
+            range_out = np.arange(0, q)
+
+            # Adjust subplot titles
+            m = min(p, q)
+            # Common titles
+            titles_a = ["IN #" + str(ii + 1) for ii in u_labels_idx]
+            titles_b = [" - OUT #" + str(ii + 1) for ii in y_labels_idx]
+            common_titles = [s1 + s2 for s1, s2 in zip(titles_a, titles_b)]
+
+            if p > q:
+                trail = ["INPUT #" + str(ii + 1) for ii in u_labels_idx[m:]]
+                u_titles = common_titles + trail
+                y_titles = []
+            else:
+                trail = ["OUTPUT #" + str(ii + 1) for ii in y_labels_idx[m:]]
+                u_titles = []
+                y_titles = common_titles + trail
+        else:
+            n = p + q
+            range_out = np.arange(p, p + q)
+
+            # Adjust titles
+            u_titles = ["INPUT #" + str(ii + 1) for ii in u_labels_idx]
+            y_titles = ["OUTPUT #" + str(ii + 1) for ii in y_labels_idx]
+
+        return n, range_in, range_out, u_titles, y_titles
 
     def _fix_sampling_periods(
         self,
@@ -878,50 +921,26 @@ class Dataset:
             The figure is automatically resized with a 16:9 aspect ratio.
             You must specify the complete *filename*, including the path.
         """
-        # Validation
+        # df points to self.dataset.
+        df = self.dataset
+
+        # Arguments validation
         u_labels, y_labels, u_labels_idx, y_labels_idx = self._validate_args(
             *signals
         )
-
-        # df points to self.dataset.
-        df = self.dataset
 
         # Input-output length and indices
         p = len(u_labels)
         q = len(y_labels)
 
-        if overlap:
-            n = max(p, q)
-            range_out = np.arange(0, q)
+        # get some plot parameters based on user preferences
+        n, range_in, range_out, u_titles, y_titles = self._get_plot_params(
+            p, q, u_labels_idx, y_labels_idx, overlap
+        )
 
-            # Adjust subplot titles
-            m = min(p, q)
-            # Common titles
-            titles_a = ["IN #" + str(ii + 1) for ii in u_labels_idx]
-            titles_b = [" - OUT #" + str(ii + 1) for ii in y_labels_idx]
-            common_titles = [s1 + s2 for s1, s2 in zip(titles_a, titles_b)]
-
-            if p > q:
-                trail = ["INPUT #" + str(ii + 1) for ii in range(m, p)]
-                u_titles = common_titles + trail
-                y_titles = []
-            else:
-                trail = ["OUTPUT #" + str(ii + 1) for ii in range(m, q)]
-                u_titles = []
-                y_titles = common_titles + trail
-
-            print("y_titles = ", y_titles)
-            print("q = ", q)
-
-        else:
-            n = p + q
-            range_out = np.arange(p, p + q)
-
-            # Adjust titles
-            u_titles = ["INPUT #" + str(ii + 1) for ii in u_labels_idx]
-            y_titles = ["OUTPUT #" + str(ii + 1) for ii in y_labels_idx]
-
-        # Find nrwos and ncols for the plot
+        # Find nrwos and ncols for having a nice plot
+        # having p-rows and q-columns won't make a nice plot,
+        # think to the SISO case for example
         nrows, ncols = factorize(n)  # noqa
 
         # Overwrite axes if you want the plot to be on the figure instantiated by the caller.
@@ -941,13 +960,13 @@ class Dataset:
                 linestyle=linestyle_input,
                 alpha=alpha_input,
                 title=u_titles,
-                ax=axes[0:p],
+                ax=axes[range_in],
             )
 
             self._shade_input_nans(
                 self.dataset,
                 self._nan_intervals,
-                axes[0:p],
+                axes[range_in],
                 u_labels,
                 color=line_color_input,
             )
@@ -1028,10 +1047,24 @@ class Dataset:
         # Extract dataset
         df = self.dataset
 
-        u_labels, y_labels, _, _ = self._validate_args(*signals)
+        u_labels, y_labels, u_labels_idx, y_labels_idx = self._validate_args(
+            *signals
+        )
+
+        # Remove duplicated labels as they are not needed for coverage
+        u_labels = list(set(u_labels))
+        y_labels = list(set(y_labels))
+
+        # Input-output length and indices
+        p = len(u_labels)
+        q = len(y_labels)
+
+        # get some plot parameters based on user preferences
+        _, _, _, u_titles, y_titles = self._get_plot_params(
+            p, q, u_labels_idx, y_labels_idx, overlap=False
+        )
 
         if u_labels:
-            p = len(u_labels)
             nrows_in, ncols_in = factorize(p)  # noqa
 
             if ax_in is None:  # Create new figure and axes
@@ -1058,7 +1091,6 @@ class Dataset:
             plt.suptitle("Coverage region.")
 
         if y_labels:
-            q = len(y_labels)
             nrows_out, ncols_out = factorize(q)  # noqa
 
             if ax_out is None:  # Create new figure and axes
@@ -1141,6 +1173,7 @@ class Dataset:
         N = len(df_temp.index)
 
         vals = fft.rfftn(df_temp.loc[:, u_labels + y_labels], axes=0) / N
+        vals = vals.round(NUM_DECIMALS)
 
         # Create a new Dataframe
         u_extended_labels = list(zip(["INPUT"] * len(u_labels), u_labels))
@@ -1148,7 +1181,8 @@ class Dataset:
         cols = pd.MultiIndex.from_tuples(
             [*u_extended_labels, *y_extended_labels]
         )
-        df_freq = pd.DataFrame(data=vals, columns=cols)
+        df_freq = pd.DataFrame(data=vals.round(NUM_DECIMALS), columns=cols)
+        df_freq = df_freq.T.drop_duplicates().T  # Drop duplicated columns
         df_freq.index.name = "Frequency"
 
         return df_freq
@@ -1216,24 +1250,16 @@ class Dataset:
             If *kind* doen not match any allowed values.
         """
         # validation
-        u_labels, y_labels, _, _ = self._validate_args(*signals)
+        u_labels, y_labels, u_labels_idx, y_labels_idx = self._validate_args(
+            *signals
+        )
 
         if kind not in SPECTRUM_KIND:
             raise ValueError(f"kind must be one of {SPECTRUM_KIND}")
 
-        # Input-output lengths.
-        # If we want to plot abs and phase, then we need to double
-        # the number of axes in the figure
-        if u_labels:
-            p = 2 * len(u_labels) if kind == "amplitude" else len(u_labels)
-        else:
-            p = 1
-
-        if y_labels:
-            q = 2 * len(y_labels) if kind == "amplitude" else len(y_labels)
-        else:
-            q = 1
-        # Compute FFT.
+        # ====================================
+        # Compute Spectrums
+        # ===================================
         # For real signals, the spectrum is Hermitian anti-simmetric, i.e.
         # the amplitude is symmetric wrt f=0 and the phase is antisymmetric wrt f=0.
         # See e.g. https://ccrma.stanford.edu/~jos/ReviewFourier/Symmetries_Real_Signals.html
@@ -1265,32 +1291,36 @@ class Dataset:
             df_freq = df_freq.abs() ** 2 / Delta_f
             df_freq[1:-1] = 2 * df_freq[1:-1]
 
-        # Start plot ritual
-        if overlap:
-            n = max(p, q)
-            range_out = np.arange(0, q)
-            m = min(p, q)
-            u_titles = ["IN/OUT #" + str(ii + 1) for ii in range(m)]
-            y_titles = ["IN/OUT #" + str(ii + 1) for ii in range(m)]
-            u_titles_trail = ["INPUT #" + str(ii + 1) for ii in range(m, p)]
-            y_titles_trail = ["OUTPUT #" + str(ii + 1) for ii in range(m, q)]
+        # ====================================
+        # Plot Spectrums
+        # ===================================
+        # Adjust input-output lengths and labels for plots.
 
-        else:
-            n = p + q
-            range_out = np.arange(p, p + q)
+        p = len(u_labels)
+        q = len(y_labels)
 
-            # Adjust titles
-            u_titles = ["INPUT #" + str(ii + 1) for ii in range(p)]
-            y_titles = ["OUTPUT #" + str(ii + 1) for ii in range(q)]
-            u_titles_trail = []
-            y_titles_trail = []
+        # If the spectrum type is amplitude, then we need to plot
+        # abs and phase, so we need to double a number of things
+        if kind == "amplitude":
+            # Adjust (p,q)
+            p = 2 * p
+            q = 2 * q
+            # Adjust labels idx
+            u_labels_idx = [u for u in u_labels_idx for ii in range(2)]
+            y_labels_idx = [y for y in y_labels_idx for ii in range(2)]
+
+        # get some plot parameters based on user preferences
+        n, range_in, range_out, u_titles, y_titles = self._get_plot_params(
+            p, q, u_labels_idx, y_labels_idx, overlap
+        )
 
         # Find nrwos and ncols for the plot
-        nrows, ncols = factorize(n)  # noqa
+        nrows, ncols = factorize(n)
 
-        # To have the phase plot below the abs, the number of rows must be an
-        # even number, otherwise the plot got screwed.
         if kind == "amplitude":
+            # Adjust nrows and ncols
+            # To have the phase plot below the abs, the number of rows must be an
+            # even number, otherwise the plot got screwed.
             if np.mod(nrows, 2) != 0:
                 nrows -= 1
                 ncols += int(np.ceil(nrows / ncols))
@@ -1312,8 +1342,8 @@ class Dataset:
                 linestyle=linestyle_input,
                 alpha=alpha_input,
                 legend=u_labels,
-                title=u_titles + u_titles_trail,
-                ax=axes[0:p],
+                title=u_titles,
+                ax=axes[range_in],
             )
 
         if y_labels:
@@ -1324,7 +1354,7 @@ class Dataset:
                 linestyle=linestyle_output,
                 alpha=alpha_output,
                 legend=y_labels,
-                title=y_titles + y_titles_trail,
+                title=y_titles,
                 ax=axes[range_out],
             )
 
@@ -1935,7 +1965,6 @@ def compare_datasets(
                 kind=target,  # type:ignore
             )
 
-        print("type(axes_time) = ", type(axes_time))
         # Adjust legend
         ds_names = [ds.name for ds in datasets]
         _adjust_legend(ds_names, axes_time)

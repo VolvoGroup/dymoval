@@ -686,14 +686,22 @@ class Test_Dataset_plots:
         plt.close("all")
 
         if fixture == "MIMO":
-            _ = ds.plot("u1", "u2", "y3", "y4")
+            _ = ds.plot("u1", "u2", "y1", "y2")
             plt.close("all")
 
-            _ = ds.plot("u1", "u2", "y3", "y4", overlap=True)
+            _ = ds.plot("u1", "u2", "y1", "y2", overlap=True)
+            plt.close("all")
+
+            # Test duplicated input
+            _ = ds.plot("u1", "u1", "y1", "y2", overlap=True)
+            plt.close("all")
+
+            # Test duplicated output
+            _ = ds.plot("u1", "u1", "y1", "y1", overlap=True)
             plt.close("all")
 
         if fixture == "SIMO":
-            _ = ds.plot("u1", "y3", "y4", overlap=True)
+            _ = ds.plot("u1", "y1", "y2", overlap=True)
             plt.close("all")
 
         if fixture == "MISO":
@@ -724,6 +732,14 @@ class Test_Dataset_plots:
 
         if fixture == "MIMO":
             _, _ = ds.plot_coverage("u1", "u2", "y1", "y2")
+            plt.close("all")
+
+            # Test duplicated input
+            _, _ = ds.plot_coverage("u1", "u1", "y1", "y2")
+            plt.close("all")
+
+            # Test duplicated output
+            _, _ = ds.plot_coverage("u1", "u2", "y1", "y1")
             plt.close("all")
 
         _ = ds.plot_coverage("y1")
@@ -768,6 +784,46 @@ class Test_Dataset_plots:
 
         _ = ds.plot_spectrum("y1")
         plt.close("all")
+
+        if fixture == "MIMO":
+            _ = ds.plot_spectrum("u1", "u2", "y1", "y2", overlap=True)
+            plt.close("all")
+
+            # Duplicated input
+            _ = ds.plot_spectrum("u1", "u1", "y1", "y1", overlap=True)
+            plt.close("all")
+
+            # Duplicated input and output
+            _ = ds.plot_spectrum("u1", "u1", "y2", "y2", overlap=True)
+            plt.close("all")
+
+            # Duplicated input
+            _ = ds.plot_spectrum(
+                "u1", "u1", "y1", "y2", kind="amplitude", overlap=True
+            )
+            plt.close("all")
+
+            # Duplicated input and output
+            _ = ds.plot_spectrum(
+                "u1", "u1", "y2", "y2", kind="amplitude", overlap=True
+            )
+            plt.close("all")
+
+            # Duplicated output
+            _ = ds.plot_spectrum("u1", "u1", "y2", "y2", overlap=True)
+            plt.close("all")
+
+        if fixture == "SIMO":
+            _ = ds.plot_spectrum("u1", "y1", "y2", overlap=True)
+            plt.close("all")
+
+        if fixture == "MISO":
+            _ = ds.plot_spectrum("u1", "u2", "y1", overlap=True)
+            plt.close("all")
+
+        if fixture == "SISO":
+            _ = ds.plot_spectrum("u1", "y1", overlap=True)
+            plt.close("all")
 
         _ = ds.plot_spectrum(overlap=True)
         plt.close("all")
