@@ -70,13 +70,6 @@ class Test_difference_lists_of_str:
         assert sorted(elements_not_found) == sorted(expected)
 
 
-#     def test_difference_lists_of_str_empty_set(self) -> None:
-#         # Error
-#         B = [0, 1, 2, 3, 4, 5]
-#         with pytest.raises(IndexError):
-#             dmv.difference_lists_of_str([], B)
-
-
 class Test_str2list:
     @pytest.mark.parametrize(
         "x, expected",

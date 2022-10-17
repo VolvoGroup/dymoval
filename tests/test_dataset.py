@@ -12,9 +12,6 @@ import matplotlib
 from matplotlib import pyplot as plt
 import os
 
-# Use a non-interactive backend
-matplotlib.use("Agg")
-
 
 # import warnings
 # show_kw = True
@@ -161,18 +158,6 @@ class Test_Dataset_nominal:
             expected_y_idx = expected_out_idx
 
         test_signal_names = test_in + test_out
-
-        # Adjust str - list[str] thing
-        #     expected_u_labels = (
-        #         [expected_u_labels]
-        #         if isinstance(expected_u_labels, str)
-        #         else expected_u_labels
-        #     )
-        #     expected_y_labels = (
-        #         [expected_y_labels]
-        #         if isinstance(expected_y_labels, str)
-        #         else expected_y_labels
-        #     )
 
         # Acual values
         (
@@ -666,6 +651,10 @@ class Test_Dataset_raise:
 
 
 class Test_Dataset_plots:
+
+    # Use a non-interactive backend
+    matplotlib.use("Agg")
+
     @pytest.mark.plot
     def test_plot_nominal(
         self, good_signals: list[Signal], tmp_path: str
@@ -698,6 +687,21 @@ class Test_Dataset_plots:
 
         if fixture == "MIMO":
             _ = ds.plot("u1", "u2", "y3", "y4")
+            plt.close("all")
+
+            _ = ds.plot("u1", "u2", "y3", "y4", overlap=True)
+            plt.close("all")
+
+        if fixture == "SIMO":
+            _ = ds.plot("u1", "y3", "y4", overlap=True)
+            plt.close("all")
+
+        if fixture == "MISO":
+            _ = ds.plot("u1", "u2", "y1", overlap=True)
+            plt.close("all")
+
+        if fixture == "SISO":
+            _ = ds.plot("u1", "y1", overlap=True)
             plt.close("all")
 
         _ = ds.plot(overlap=True)
@@ -802,10 +806,8 @@ class Test_Dataset_plots:
         with pytest.raises(ValueError):
             _ = ds.plot_spectrum(kind="potato")
 
-
-class Test_plot_Signal:
     @pytest.mark.plot
-    def test_plot_nominal(self, good_signals: list[Signal]) -> None:
+    def test_plot_Signals(self, good_signals: list[Signal]) -> None:
         # You should just get a plot.
         signal_list, u_labels, y_labels, fixture = good_signals
         _ = dmv.plot_signals(*signal_list)

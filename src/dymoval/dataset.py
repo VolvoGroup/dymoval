@@ -833,7 +833,7 @@ class Dataset:
         # Only positional arguments
         /,
         *signals: str,
-        # Positional or key-word arguments
+        # Key-word arguments
         overlap: bool = False,
         line_color_input: str = "b",
         linestyle_input: str = "-",
@@ -896,15 +896,22 @@ class Dataset:
 
             # Adjust subplot titles
             m = min(p, q)
+            # Common titles
+            titles_a = ["IN #" + str(ii + 1) for ii in u_labels_idx]
+            titles_b = [" - OUT #" + str(ii + 1) for ii in y_labels_idx]
+            common_titles = [s1 + s2 for s1, s2 in zip(titles_a, titles_b)]
 
-            u_titles = ["IN #" + str(ii + 1) for ii in u_labels_idx]
-            y_titles = [" - OUT #" + str(ii + 1) for ii in y_labels_idx]
-            # TODO when len(u)> len(y) the titles are screwed
-            # Consider to set the titles at the end with ax.set_title
-            y_titles = [s1 + s2 for s1, s2 in zip(u_titles, y_titles)]
+            if p > q:
+                trail = ["INPUT #" + str(ii + 1) for ii in range(m, p)]
+                u_titles = common_titles + trail
+                y_titles = []
+            else:
+                trail = ["OUTPUT #" + str(ii + 1) for ii in range(m, q)]
+                u_titles = []
+                y_titles = common_titles + trail
 
-            u_titles_trail = ["INPUT #" + str(ii + 1) for ii in range(m, p)]
-            y_titles_trail = ["OUTPUT #" + str(ii + 1) for ii in range(m, q)]
+            print("y_titles = ", y_titles)
+            print("q = ", q)
 
         else:
             n = p + q
@@ -913,8 +920,6 @@ class Dataset:
             # Adjust titles
             u_titles = ["INPUT #" + str(ii + 1) for ii in u_labels_idx]
             y_titles = ["OUTPUT #" + str(ii + 1) for ii in y_labels_idx]
-            u_titles_trail = []
-            y_titles_trail = []
 
         # Find nrwos and ncols for the plot
         nrows, ncols = factorize(n)  # noqa
@@ -935,7 +940,7 @@ class Dataset:
                 color=line_color_input,
                 linestyle=linestyle_input,
                 alpha=alpha_input,
-                title=u_titles + u_titles_trail,
+                title=u_titles,
                 ax=axes[0:p],
             )
 
@@ -954,7 +959,7 @@ class Dataset:
                 color=line_color_output,
                 linestyle=linestyle_output,
                 alpha=alpha_output,
-                title=y_titles + y_titles_trail,
+                title=y_titles,
                 ax=axes[range_out],
             )
 
@@ -1849,7 +1854,6 @@ def compare_datasets(
                 ax=ax_time,
             )
 
-        print("type(axes_time) = ", type(axes_time))
         # Adjust legend
         ds_names = [ds.name for ds in datasets]
         _adjust_legend(ds_names, axes_time)
