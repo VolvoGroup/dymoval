@@ -530,9 +530,11 @@ class ValidationSession:
                     )
                     ax1[ii, jj].grid(True)
                     ax1[ii, jj].set_xlabel("Lags")
-                    ax1[ii, jj].set_title(
-                        rf"$\hat r_{{\epsilon_{ii}\epsilon_{jj}}}$"
-                    )
+                    # For the following LaTeX is needed.
+                    #  ax1[ii, jj].set_title(
+                    #      rf"$\hat r_{{\epsilon_{ii}\epsilon_{jj}}}$"
+                    #  )
+                    ax1[ii, jj].set_title(rf"r_eps_{ii}eps_{jj}")
                     ax1[ii, jj].legend()
         plt.suptitle("Residuals auto-correlation")
 
@@ -551,7 +553,9 @@ class ValidationSession:
                     )
                     ax2[ii, jj].grid(True)
                     ax2[ii, jj].set_xlabel("Lags")
-                    ax2[ii, jj].set_title(rf"$\hat r_{{u_{ii}\epsilon_{jj}}}$")
+                    # For the following the user needs LaTeX.
+                    # ax2[ii, jj].set_title(rf"$\hat r_{{u_{ii}\epsilon_{jj}}}$")
+                    ax2[ii, jj].set_title(rf"r_u{ii}eps{jj}")
                     ax2[ii, jj].legend()
         plt.suptitle("Input-residuals cross-correlation")
 

@@ -155,7 +155,7 @@ ds = dmv.Dataset(
 
 # Once the dymoval Dataset is created, it is possible to handle with the NaN:s
 # in a number of ways
-ds = ds.replace_NaNs("interpolate")
+ds = ds.replace_NaNs()
 
 # At this point we can visually inspect the resulting Dataset.
 # Note how the areas where the NaN:s have been replaced are shaded.

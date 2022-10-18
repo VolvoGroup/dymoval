@@ -9,6 +9,7 @@ from __future__ import annotations
 import matplotlib
 import numpy as np
 import pandas as pd
+import matplotlib.gridspec as gridspec
 from matplotlib import pyplot as plt
 from scipy import io, fft
 from .config import *  # noqa
@@ -1320,9 +1321,29 @@ class Dataset:
         else:  # Otherwise use what is passed
             axes = np.asarray(ax)
 
+        # a = axes[1, 1].get_gridspec().get_subplot_params()
+        #  nrows = axes[0, 0].get_gridspec().nrows
+        #  ncols = axes[0, 0].get_gridspec().ncols
+        #  print("nrows = ", nrows)
+        #  print("nrows = ", ncols)
+        #  # nrows -= 1
+        #  # ncols += int(np.ceil(nrows / ncols))
+
+        #  gs = fig.add_gridspec(nrows + 1, ncols + 1)
+        #  # axes.set_subplotspec(gs)
+        #  for ii in range(nrows):
+        #      for jj in range(ncols):
+        #          axes[ii, jj] = axes[ii, jj].set_subplotspec(gs[ii, jj])
+        #          # axes[ii, jj] = fig.axes[ii, jj]
+
+        # gs = gridspec.GridSpec(nrows + 1, ncols + 1, figure=fig)
+
+        # axes[0, 0].get_geometry()
+        # print("gridspec = ", gs)
+
         # Flatten array for more readable code
         axes = axes.T.flat
-
+        print(axes[range_in])
         if u_labels:
             df_freq["INPUT"].loc[:, u_labels].plot(
                 subplots=True,
@@ -1851,8 +1872,8 @@ def compare_datasets(
             nrows, ncols, sharex=True, squeeze=False
         )
 
-        # Collect all the datasets axes
-        cmap = plt.get_cmap(COLORMAP)  # noqa
+        # All the plots made on the same axis
+        cmap = plt.get_cmap(COLORMAP)
         for ii, ds in enumerate(datasets):
             axes_time = ds.plot(
                 line_color_input=cmap(ii),
@@ -1907,7 +1928,6 @@ def compare_datasets(
     # frequency comparison
     # ========================================
     if target in SPECTRUM_KIND or target == "all":
-
         # plot_spectrum won't accept target = "all"
         if target == "all":
             target = "power"
@@ -1919,6 +1939,7 @@ def compare_datasets(
                 for ds in datasets
             ]
         )
+
         nrows, ncols = factorize(n)
 
         if target == "amplitude":
@@ -1927,14 +1948,14 @@ def compare_datasets(
                 ncols += int(np.ceil(nrows / ncols))
 
         # Create a unified figure
-        fig_time, ax_time = plt.subplots(
+        fig_freq, ax_freq = plt.subplots(
             nrows, ncols, sharex=True, squeeze=False
         )
 
-        # Collect all the datasets axes
+        # All datasets plots on the same axes
         cmap = plt.get_cmap(COLORMAP)  # noqa
         for ii, ds in enumerate(datasets):
-            axes_time = ds.plot_spectrum(
+            axes_freq = ds.plot_spectrum(
                 line_color_input=cmap(ii),
                 line_color_output=cmap(ii),
                 ax=ax_time,
@@ -1943,7 +1964,7 @@ def compare_datasets(
 
         # Adjust legend
         ds_names = [ds.name for ds in datasets]
-        _adjust_legend(ds_names, axes_time)
+        _adjust_legend(ds_names, axes_freq)
         fig_time.suptitle("Dataset comparison")
 
 
