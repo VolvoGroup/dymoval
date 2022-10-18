@@ -33,7 +33,6 @@ class TestInitializerFromSignals:
             input_signal_names,
             output_signal_names,
             target_sampling_period=target_sampling_period,
-            plot_raw=True,
             full_time_interval=True,
             verbosity=1,
         )
@@ -119,7 +118,6 @@ class TestInitializerFromSignals:
                 input_signal_names,
                 output_signal_names,
                 target_sampling_period=target_sampling_period,
-                plot_raw=True,
                 full_time_interval=True,
             )
 

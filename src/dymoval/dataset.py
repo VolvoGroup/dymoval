@@ -20,12 +20,12 @@ from copy import deepcopy
 class Signal(TypedDict):
     """Signals are used to represent real-world signals.
 
-    They can be used for instantiating :py:class:`Dataset <dymoval.dataset.Dataset>` class objects.
+    They are used to instantiate :py:class:`Dataset <dymoval.dataset.Dataset>` class objects.
 
     It is possible to validate Signals through :py:meth:`~dymoval.dataset.validate_signals`.
 
-    Although Signals have compulsory attribues that must be set, there is freedom
-    to append additional attributes.
+    Although Signals have compulsory attribtues, there is freedom
+    to append additionals.
 
 
     Example
@@ -61,7 +61,7 @@ class Signal(TypedDict):
 
 
 class Dataset:
-    """The *Dataset* class stores the signals that you want to use as dataset
+    """The *Dataset* class stores the signals to be used as a dataset
     and it provides methods for analyzing and manipulating them.
 
     A *Signal* list shall be passed to the initializer along with two lists of labels
@@ -93,11 +93,6 @@ class Dataset:
         contained in the signal_list.
     target_sampling_period :
         The passed signals will be re-sampled towards this target sampling period.
-    plot_raw :
-        If *True*, then the :py:class:`Signal <dymoval.dataset.Signal>`
-        contained in the *signal_list* will be plotted.
-        This parameter only have effect when the *signal_list* parameter is
-        a list of :py:class:`Signal <dymoval.dataset.Signal>` objects.
     tin :
         Initial time instant of the Dataset.
     tout :
@@ -126,7 +121,6 @@ class Dataset:
         u_labels: str | list[str],
         y_labels: str | list[str],
         target_sampling_period: float | None = None,
-        plot_raw: bool = False,
         tin: float | None = None,
         tout: float | None = None,
         full_time_interval: bool = False,
@@ -140,7 +134,6 @@ class Dataset:
                 u_labels,
                 y_labels,
                 target_sampling_period,
-                plot_raw,
                 tin,
                 tout,
                 full_time_interval,
@@ -516,7 +509,6 @@ class Dataset:
         u_labels: str | list[str],
         y_labels: str | list[str],
         target_sampling_period: float | None = None,
-        plot_raw: bool = False,
         tin: float | None = None,
         tout: float | None = None,
         full_time_interval: bool = False,
@@ -536,9 +528,6 @@ class Dataset:
 
         # Arguments validation
         validate_signals(*signal_list)
-
-        if plot_raw:
-            plot_signals(*signal_list)
 
         # Try to align the sampling periods, whenever possible
         # Note! resampled_signals:list[Signals], whereas

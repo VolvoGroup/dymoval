@@ -1010,7 +1010,6 @@ class Test_fix_sampling_periods:
             signal_list,
             input_signal_names,
             output_signal_names,
-            plot_raw=True,
             full_time_interval=True,
         )
 
@@ -1058,7 +1057,6 @@ class Test_fix_sampling_periods:
             input_signal_names,
             output_signal_names,
             target_sampling_period=test_value,
-            plot_raw=True,
             full_time_interval=True,
         )
 
@@ -1109,7 +1107,6 @@ class Test_fix_sampling_periods:
                 input_signal_names,
                 output_signal_names,
                 target_sampling_period="potato",
-                plot_raw=True,
                 full_time_interval=True,
             )
 
@@ -1121,6 +1118,5 @@ class Test_fix_sampling_periods:
                 input_signal_names,
                 output_signal_names,
                 target_sampling_period=-0.8,
-                plot_raw=True,
                 full_time_interval=True,
             )
