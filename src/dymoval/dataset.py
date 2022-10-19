@@ -1849,16 +1849,11 @@ def compare_datasets(
             ax.legend(handles, new_labels)
 
     def _arrange_fig_axes(
-        *datasets: Dataset,
+        *dfs: pd.DataFrame,
     ) -> tuple[matplotlib.axes.Figure, matplotlib.axes.Axes]:
 
         # Find the larger dataset
-        n = max(
-            [
-                len(ds.dataset.droplevel(level=0, axis=1).columns)
-                for ds in datasets
-            ]
-        )
+        n = max([len(df.columns) for df in dfs])
 
         # Set nrows and ncols
         nrows, ncols = factorize(n)
@@ -1880,7 +1875,9 @@ def compare_datasets(
     if target == "time" or target == "all":
 
         # Arrange figure
-        _, axes_time = _arrange_fig_axes(*datasets)
+        # Accumulate all the dataframes at signal_name level
+        dfs = [ds.dataset.droplevel(level=0, axis=1) for ds in datasets]
+        _, axes_time = _arrange_fig_axes(*dfs)
 
         # All the plots made on the same axis
         cmap = plt.get_cmap(COLORMAP)
@@ -1900,21 +1897,15 @@ def compare_datasets(
     # coverage comparison
     # ========================================
     if target == "coverage" or target == "all":
-        # Arrange figure for INPUT
-        n_in = max([len(ds.dataset["INPUT"].columns) for ds in datasets])
-        nrows_in, ncols_in = factorize(n_in)
-        # Create a unified figure
-        fig_cov_in, ax_cov_in = plt.subplots(
-            nrows_in, ncols_in, sharex=True, squeeze=False
-        )
 
-        # Arrange figure for OUTPUT
-        n_out = max([len(ds.dataset["OUTPUT"].columns) for ds in datasets])
-        nrows_out, ncols_out = factorize(n_out)
-        # Create a unified figure
-        fig_cov_out, ax_cov_out = plt.subplots(
-            nrows_out, ncols_out, sharex=True, squeeze=False
-        )
+        dfs_in = [
+            ds.dataset["INPUT"].droplevel(level=0, axis=1) for ds in datasets
+        ]
+        dfs_out = [
+            ds.dataset["OUTPUT"].droplevel(level=0, axis=1) for ds in datasets
+        ]
+        _, ax_cov_in = _arrange_fig_axes(*dfs_in)
+        _, ax_cov_out = _arrange_fig_axes(*dfs_out)
 
         # Actual plot
         cmap = plt.get_cmap(COLORMAP)  # noqa
