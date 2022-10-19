@@ -9,6 +9,7 @@ from __future__ import annotations
 import matplotlib
 import numpy as np
 import pandas as pd
+import matplotlib.gridspec as gridspec
 from matplotlib import pyplot as plt
 from scipy import io, fft
 from .config import *  # noqa
@@ -1320,29 +1321,9 @@ class Dataset:
         else:  # Otherwise use what is passed
             axes = np.asarray(ax)
 
-        # a = axes[1, 1].get_gridspec().get_subplot_params()
-        #  nrows = axes[0, 0].get_gridspec().nrows
-        #  ncols = axes[0, 0].get_gridspec().ncols
-        #  print("nrows = ", nrows)
-        #  print("nrows = ", ncols)
-        #  # nrows -= 1
-        #  # ncols += int(np.ceil(nrows / ncols))
-
-        #  gs = fig.add_gridspec(nrows + 1, ncols + 1)
-        #  # axes.set_subplotspec(gs)
-        #  for ii in range(nrows):
-        #      for jj in range(ncols):
-        #          axes[ii, jj] = axes[ii, jj].set_subplotspec(gs[ii, jj])
-        #          # axes[ii, jj] = fig.axes[ii, jj]
-
-        # gs = gridspec.GridSpec(nrows + 1, ncols + 1, figure=fig)
-
-        # axes[0, 0].get_geometry()
-        # print("gridspec = ", gs)
-
         # Flatten array for more readable code
+        print("axes_shape = ", axes.shape)
         axes = axes.T.flat
-        print(axes[range_in])
         if u_labels:
             df_freq["INPUT"].loc[:, u_labels].plot(
                 subplots=True,
@@ -1355,6 +1336,7 @@ class Dataset:
                 ax=axes[range_in],
             )
 
+        print("range_out = ", range_out)
         if y_labels:
             df_freq["OUTPUT"].loc[:, y_labels].plot(
                 subplots=True,
@@ -1591,6 +1573,28 @@ class Dataset:
 # ====================================================
 # Useful functions
 # ====================================================
+def change_fig_axes_layout(
+    fig: matplotlib.axes.Figure,
+    axes: matplotlib.axes.Axes,
+    nrows: int,
+    ncols: int,
+) -> tuple[matplotlib.axes.Figure, matplotlib.axes.Axes]:
+
+    old_nrows: int = axes.shape[0]
+    old_ncols: int = axes.shape[1]
+    # Remove all old axes
+    for ii in range(old_nrows):
+        for jj in range(old_ncols):
+            axes[ii, jj].remove()
+    # New number of rows and columns
+    # Set gridspec according to new new_nrows and new_ncols
+    gs = gridspec.GridSpec(nrows, ncols, figure=fig)
+    axes = np.ndarray((nrows, ncols), dtype=matplotlib.axes.SubplotBase)
+    # Add new axes
+    for ii in range(nrows):
+        for jj in range(ncols):
+            axes[ii, jj] = fig.add_subplot(gs[ii, jj], sharex=axes[0, 0])
+    return fig, axes
 
 
 def validate_signals(*signals: Signal) -> None:
@@ -1807,11 +1811,6 @@ def plot_signals(
             bbox=dict(facecolor="yellow", alpha=0.8),
         )
         ax[ii].grid()
-
-        # Write time only in the last row
-
-        # if ii >= (ncols - 1) * nrows:
-        #    ax[ii].set_xlabel("Time")
         ax[ii].legend()
 
     for ii in range(ncols):
@@ -1823,7 +1822,7 @@ def plot_signals(
 
 def compare_datasets(
     *datasets: Dataset,
-    target: Literal["time", "coverage"] | Spectrum_type = "time",
+    kind: Literal["time", "coverage"] | Spectrum_type = "time",
 ) -> None:
     """
     Compare different :py:class:`Datasets <dymoval.dataset.Dignal>` graphically.
@@ -1832,7 +1831,7 @@ def compare_datasets(
     ----------
     *datasets :
         :py:class:`Datasets <dymoval.dataset.Dataset>` to be compared.
-    target:
+    kind:
         Kind of graph to be plotted.
     """
 
@@ -1872,12 +1871,12 @@ def compare_datasets(
     # time comparison
     # ========================================
     # Get size of wider dataset
-    if target == "time" or target == "all":
+    if kind == "time" or kind == "all":
 
         # Arrange figure
         # Accumulate all the dataframes at signal_name level
         dfs = [ds.dataset.droplevel(level=0, axis=1) for ds in datasets]
-        _, axes_time = _arrange_fig_axes(*dfs)
+        fig_time, axes_time = _arrange_fig_axes(*dfs)
 
         # All the plots made on the same axis
         cmap = plt.get_cmap(COLORMAP)
@@ -1885,7 +1884,7 @@ def compare_datasets(
             axes_time = ds.plot(
                 line_color_input=cmap(ii),
                 line_color_output=cmap(ii),
-                ax=ax_time,
+                ax=axes_time,
             )
 
         # Adjust legend
@@ -1896,16 +1895,15 @@ def compare_datasets(
     # ========================================
     # coverage comparison
     # ========================================
-    if target == "coverage" or target == "all":
+    if kind == "coverage" or kind == "all":
 
-        dfs_in = [
-            ds.dataset["INPUT"].droplevel(level=0, axis=1) for ds in datasets
-        ]
-        dfs_out = [
-            ds.dataset["OUTPUT"].droplevel(level=0, axis=1) for ds in datasets
-        ]
-        _, ax_cov_in = _arrange_fig_axes(*dfs_in)
-        _, ax_cov_out = _arrange_fig_axes(*dfs_out)
+        # INPUT
+        dfs_in = [ds.dataset["INPUT"] for ds in datasets]
+        fig_cov_in, ax_cov_in = _arrange_fig_axes(*dfs_in)
+
+        # OUTPUT
+        dfs_out = [ds.dataset["OUTPUT"] for ds in datasets]
+        fig_cov_out, ax_cov_out = _arrange_fig_axes(*dfs_out)
 
         # Actual plot
         cmap = plt.get_cmap(COLORMAP)  # noqa
@@ -1928,30 +1926,24 @@ def compare_datasets(
     # ========================================
     # frequency comparison
     # ========================================
-    if target in SPECTRUM_KIND or target == "all":
-        # plot_spectrum won't accept target = "all"
-        if target == "all":
-            target = "power"
+    if kind in SPECTRUM_KIND or kind == "all":
+        # plot_spectrum won't accept kind = "all"
+        if kind == "all":
+            kind = "power"
 
-        # Get size of wider dataset
-        n = max(
-            [
-                len(ds.dataset.droplevel(level=0, axis=1).columns)
-                for ds in datasets
-            ]
-        )
+        # Arrange figure
+        # Accumulate all the dataframes at signal_name level
+        dfs = [ds.dataset.droplevel(level=0, axis=1) for ds in datasets]
+        fig_freq, axes_freq = _arrange_fig_axes(*dfs)
 
-        nrows, ncols = factorize(n)
-
-        if target == "amplitude":
-            if np.mod(nrows, 2) != 0:
-                nrows -= 1
-                ncols += int(np.ceil(nrows / ncols))
-
-        # Create a unified figure
-        fig_freq, ax_freq = plt.subplots(
-            nrows, ncols, sharex=True, squeeze=False
-        )
+        if kind == "amplitude":
+            nrows: int = axes_freq.shape[0]
+            ncols: int = axes_freq.shape[1]
+            # It is enough to double the number of rows of the layout
+            # to have abs and phase always in couple
+            fig_freq, axes_freq = change_fig_axes_layout(
+                fig_freq, axes_freq, 2 * nrows, ncols
+            )
 
         # All datasets plots on the same axes
         cmap = plt.get_cmap(COLORMAP)  # noqa
@@ -1959,14 +1951,14 @@ def compare_datasets(
             axes_freq = ds.plot_spectrum(
                 line_color_input=cmap(ii),
                 line_color_output=cmap(ii),
-                ax=ax_time,
-                kind=target,  # type:ignore
+                ax=axes_freq,
+                kind=kind,  # type:ignore
             )
 
         # Adjust legend
         ds_names = [ds.name for ds in datasets]
         _adjust_legend(ds_names, axes_freq)
-        fig_time.suptitle("Dataset comparison")
+        fig_freq.suptitle("Dataset comparison")
 
 
 # def analyze_inout_dataset(df):
