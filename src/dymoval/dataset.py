@@ -1292,10 +1292,11 @@ class Dataset:
         # If the spectrum type is amplitude, then we need to plot
         # abs and phase, so we need to double a number of things
         if kind == "amplitude":
-            # Adjust (p,q)
+            # Adjust (p,q): numbers of input and outputs are doubled
+            # because they contain (abs,angle)
             p = 2 * p
             q = 2 * q
-            # Adjust labels idx
+            # Adjust, labels idx, i.e. each entry appears two times
             u_labels_idx = [u for u in u_labels_idx for ii in range(2)]
             y_labels_idx = [y for y in y_labels_idx for ii in range(2)]
 
@@ -1309,8 +1310,8 @@ class Dataset:
 
         if kind == "amplitude":
             # Adjust nrows and ncols
-            # To have the phase plot below the abs, the number of rows must be an
-            # even number, otherwise the plot got screwed.
+            # To have the phase plot below the abs plot, then the number
+            # of rows must be an even number, otherwise the plot got screwed.
             if np.mod(nrows, 2) != 0:
                 nrows -= 1
                 ncols += int(np.ceil(nrows / ncols))
@@ -1322,7 +1323,6 @@ class Dataset:
             axes = np.asarray(ax)
 
         # Flatten array for more readable code
-        print("axes_shape = ", axes.shape)
         axes = axes.T.flat
         if u_labels:
             df_freq["INPUT"].loc[:, u_labels].plot(
@@ -1336,7 +1336,6 @@ class Dataset:
                 ax=axes[range_in],
             )
 
-        print("range_out = ", range_out)
         if y_labels:
             df_freq["OUTPUT"].loc[:, y_labels].plot(
                 subplots=True,
