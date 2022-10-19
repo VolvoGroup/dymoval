@@ -875,7 +875,6 @@ class Dataset:
         linestyle_output: str = "-",
         alpha_output: float = 1.0,
         ax: matplotlib.axes.Axes | None = None,
-        # Only key-word arguments
         save_as: str | None = None,
     ) -> matplotlib.axes.Axes:
         # -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
@@ -1309,12 +1308,12 @@ class Dataset:
         nrows, ncols = factorize(n)
 
         if kind == "amplitude":
-            # Adjust nrows and ncols
             # To have the phase plot below the abs plot, then the number
             # of rows must be an even number, otherwise the plot got screwed.
+            # OBS: the same code is in compare_datasets()
             if np.mod(nrows, 2) != 0:
                 nrows -= 1
-                ncols += int(np.ceil(nrows / ncols))
+                ncols += int(np.ceil(ncols / nrows))
 
         # Overwrite axes if you want the plot to be on the figure instantiated by the caller.
         if ax is None:  # Create new figure and axes
@@ -1324,6 +1323,7 @@ class Dataset:
 
         # Flatten array for more readable code
         axes = axes.T.flat
+
         if u_labels:
             df_freq["INPUT"].loc[:, u_labels].plot(
                 subplots=True,
@@ -1572,7 +1572,7 @@ class Dataset:
 # ====================================================
 # Useful functions
 # ====================================================
-def change_fig_axes_layout(
+def change_axes_layout(
     fig: matplotlib.axes.Figure,
     axes: matplotlib.axes.Axes,
     nrows: int,
@@ -1836,6 +1836,10 @@ def compare_datasets(
 
     # Utility function to avoid too much code repetition
     def _adjust_legend(ds_names: list[str], axes: matplotlib.axes.Axes) -> None:
+        # Based on the pair (handles, labels), where handles are e.g. Line2D,
+        # or other matplotlib Artist (an Artist is everything you can draw
+        # on a figure)
+
         for ii, ax in enumerate(axes):
             handles, labels = ax.get_legend_handles_labels()
             # Be sure that your plot show legends!
@@ -1849,6 +1853,8 @@ def compare_datasets(
     def _arrange_fig_axes(
         *dfs: pd.DataFrame,
     ) -> tuple[matplotlib.axes.Figure, matplotlib.axes.Axes]:
+        # When performing many plots on the same figure,
+        # it find the largest number of axes needed
 
         # Find the larger dataset
         n = max([len(df.columns) for df in dfs])
@@ -1861,6 +1867,9 @@ def compare_datasets(
 
         return fig, ax
 
+    # ========================================
+    #    MAIN IMPLEMENTATION
+    # ========================================
     # arguments validation
     for ds in datasets:
         if not isinstance(ds, Dataset):
@@ -1936,12 +1945,21 @@ def compare_datasets(
         fig_freq, axes_freq = _arrange_fig_axes(*dfs)
 
         if kind == "amplitude":
-            nrows: int = axes_freq.shape[0]
-            ncols: int = axes_freq.shape[1]
-            # It is enough to double the number of rows of the layout
-            # to have abs and phase always in couple
-            fig_freq, axes_freq = change_fig_axes_layout(
-                fig_freq, axes_freq, 2 * nrows, ncols
+            nrows_old: int = axes_freq.shape[0]
+            ncols_old: int = axes_freq.shape[1]
+
+            # Due to (abs,angle) we need to double the number of axes
+            nrows, ncols = factorize(2 * nrows_old * ncols_old)
+
+            # To have the phase plot below the abs plot, then the number
+            # of rows must be an even number, otherwise the plot got screwed.
+            # OBS: the same code is in plot_spectrum()
+            if np.mod(nrows, 2) != 0:
+                nrows -= 1
+                ncols += int(np.ceil(ncols / nrows))
+
+            fig_freq, axes_freq = change_axes_layout(
+                fig_freq, axes_freq, nrows, ncols
             )
 
         # All datasets plots on the same axes

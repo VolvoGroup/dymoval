@@ -809,6 +809,50 @@ class Test_Dataset_plots:
         _ = dmv.plot_signals(*signal_list)
         plt.close("all")
 
+    @pytest.mark.plot
+    def test_compare_datasets(
+        self,
+        good_dataframe: pd.DataFrame,
+        good_signals: list[Signal],
+        tmp_path: str,
+    ) -> None:
+        # You should just get a plot.
+        df, u_labels, y_labels, fixture = good_dataframe
+
+        # Actua value
+        name_ds = "my_dataset"
+        ds = dmv.dataset.Dataset(
+            name_ds,
+            df,
+            u_labels,
+            y_labels,
+            overlap=True,
+            tin=0.0,
+        )
+
+        ds1 = ds.remove_means()
+        ds2 = ds.remove_offset(("u1", 1), ("y1", -0.5))
+
+        # This is only valid if ds does not contain NaN:s, i.e.
+        # it is good_dataframe.
+        dmv.compare_datasets(ds, ds1, ds2)
+        plt.close("all")
+
+        dmv.compare_datasets(ds, ds1, ds2, kind="power")
+        plt.close("all")
+
+        dmv.compare_datasets(ds, ds1, ds2, kind="amplitude")
+        plt.close("all")
+
+        dmv.compare_datasets(ds, ds1, ds2, kind="all")
+        plt.close("all")
+
+        dmv.compare_datasets(ds, ds1, ds2, kind="coverage")
+        plt.close("all")
+
+        with pytest.raises(TypeError):
+            dmv.compare_datasets(ds, "potato")
+
 
 class Test_Signal_validation:
     def test_name_unicity(self, good_signals: list[Signal]) -> None:
