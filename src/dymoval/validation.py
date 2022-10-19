@@ -449,12 +449,7 @@ class ValidationSession:
         # Save and eventually return figures.
         # ===============================================================
         if save_as is not None:
-            # Keep 16:9 ratio
-            height = 2.5
-            width = 1.778 * height
-
-            fig.set_size_inches(ncols * width, nrows * height)
-            save_plot_as(fig, save_as)  # noqa
+            save_plot_as(fig, axes, save_as)  # noqa
 
         return fig, axes
 
@@ -560,15 +555,13 @@ class ValidationSession:
         plt.suptitle("Input-residuals cross-correlation")
 
         if save_as is not None:
-            # Keep 16:9 ratio
-            height = 2.5
-            width = 1.778 * height
+            ax1 = ax1.flat
+            # fig1.set_size_inches(q * width, q * height)
+            save_plot_as(fig1, ax1, save_as + "_eps_eps")  # noqa
 
-            fig1.set_size_inches(q * width, q * height)
-            save_plot_as(fig1, save_as + "_eps_eps")  # noqa
-
-            fig2.set_size_inches(q * width, p * height)
-            save_plot_as(fig2, save_as + "_u_eps")  # noqa
+            ax2 = ax2.flat
+            # fig2.set_size_inches(q * width, p * height)
+            save_plot_as(fig2, ax2, save_as + "_u_eps")  # noqa
 
         return fig1, ax1, fig2, ax2
 

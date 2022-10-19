@@ -5,8 +5,18 @@ from typing import Literal
 import typing
 
 # Constants exposed to the user
-config = {"NUM_DECIMALS": 4, "COLORMAP": "tab10"}  # Defaults
-mapping_dict = {"num_decimals": "NUM_DECIMALS", "color_map": "COLORMAP"}
+config = {
+    "NUM_DECIMALS": 4,
+    "COLORMAP": "tab10",
+    "AX_HEIGHT": 2.5,
+    "AX_WIDTH": 4.445,
+}  # Defaults
+mapping_dict = {
+    "num_decimals": "NUM_DECIMALS",
+    "color_map": "COLORMAP",
+    "ax_height": "AX_HEIGHT",
+    "ax_width": "AX_WIDTH",
+}
 
 try:
     import tomllib

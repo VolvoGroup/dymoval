@@ -3,6 +3,7 @@
 
 import matplotlib
 import numpy as np
+from .config import *  # noqa
 from matplotlib import pyplot as plt
 import scipy.signal as signal  # noqa
 from typing import Any
@@ -58,7 +59,10 @@ def str2list(x: str | list[str]) -> list[str]:
 
 
 def save_plot_as(
-    fig: matplotlib.figure.Figure, name: str, **kwargs: Any
+    fig: matplotlib.figure.Figure,
+    axes: matplotlib.axes.Axes,
+    name: str,
+    **kwargs: Any,
 ) -> None:
     """Save matplotlib figure on disk.
 
@@ -66,9 +70,15 @@ def save_plot_as(
     ----------
     fig:
         Figure to be saved.
+    axes:
+        Axes flat iterator.
     name:
         Figure filename.
     """
+    # Get Axes layout
+    nrows = axes.base.T.shape[0]
+    ncols = axes.base.T.shape[1]
+    fig.set_size_inches(ncols * AX_WIDTH, nrows * AX_HEIGHT)
 
     # fig.set_layout_engine("tight")
     fig.tight_layout()

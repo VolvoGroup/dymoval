@@ -985,11 +985,7 @@ class Dataset:
 
         # Eventually save and return figures.
         if save_as is not None and ax is None:
-            # Keep 16:9 ratio
-            height = 2.5
-            width = 1.778 * height
-            fig.set_size_inches(ncols * width, nrows * height)
-            save_plot_as(fig, save_as)  # noqa
+            save_plot_as(fig, axes, save_as)  # noqa
 
         return axes
 
@@ -1106,16 +1102,8 @@ class Dataset:
             plt.suptitle("Coverage region.")
 
         if save_as is not None:
-            # Keep 16:9 ratio
-            # TODO Move height to the config file
-            height = 2.5
-            width = 1.778 * height
-
-            fig_in.set_size_inches(ncols_in * width, nrows_in * height)
-            save_plot_as(fig_in, save_as + "_in")  # noqa
-
-            fig_out.set_size_inches(ncols_out * width, nrows_out * height)
-            save_plot_as(fig_out, save_as + "_out")  # noqa
+            save_plot_as(fig_in, axes_in, save_as + "_in")  # noqa
+            save_plot_as(fig_out, axes_out, save_as + "_out")  # noqa
 
         # Return
         if u_labels and y_labels:
@@ -1355,12 +1343,7 @@ class Dataset:
 
         # Save and return
         if save_as is not None:
-            # Keep 16:9 ratio
-            height = 2.5
-            width = 1.778 * height
-
-            fig.set_size_inches(ncols * width, nrows * height)
-            save_plot_as(fig, save_as)
+            save_plot_as(fig, axes, save_as)
 
         return axes
 

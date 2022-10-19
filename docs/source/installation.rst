@@ -34,6 +34,18 @@ two parameters that you can set.
 
     The used `matplotlib` color map. Check `Matplotlib` docs for possible values. 
 
+.. confval:: ax_height
+    :type: float
+    :default: 2.5
+
+    The subplot height when you save the figure. The default values are chosen to keep a 16:9 ratio. 
+.. confval:: ax_width
+    :type: float
+    :default: 4.445
+
+    The subplot width when you save the figure. The default values are chosen to keep a 16:9 ratio. 
+
+
 These parameters can be set through a :code:`~/.dymoval/config.toml`  file.
 You have to create such a file manually.
 A :code:`~/.dymoval/config.toml` could for example include the following content
