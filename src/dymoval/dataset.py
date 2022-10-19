@@ -9,7 +9,6 @@ from __future__ import annotations
 import matplotlib
 import numpy as np
 import pandas as pd
-import matplotlib.gridspec as gridspec
 from matplotlib import pyplot as plt
 from scipy import io, fft
 from .config import *  # noqa
@@ -1849,6 +1848,26 @@ def compare_datasets(
                 ]
             ax.legend(handles, new_labels)
 
+    def _arrange_fig_axes(
+        *datasets: Dataset,
+    ) -> tuple[matplotlib.axes.Figure, matplotlib.axes.Axes]:
+
+        # Find the larger dataset
+        n = max(
+            [
+                len(ds.dataset.droplevel(level=0, axis=1).columns)
+                for ds in datasets
+            ]
+        )
+
+        # Set nrows and ncols
+        nrows, ncols = factorize(n)
+
+        # Create a unified figure
+        fig, ax = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
+
+        return fig, ax
+
     # arguments validation
     for ds in datasets:
         if not isinstance(ds, Dataset):
@@ -1859,18 +1878,9 @@ def compare_datasets(
     # ========================================
     # Get size of wider dataset
     if target == "time" or target == "all":
-        n = max(
-            [
-                len(ds.dataset.droplevel(level=0, axis=1).columns)
-                for ds in datasets
-            ]
-        )
-        nrows, ncols = factorize(n)
 
-        # Create a unified figure
-        fig_time, ax_time = plt.subplots(
-            nrows, ncols, sharex=True, squeeze=False
-        )
+        # Arrange figure
+        _, axes_time = _arrange_fig_axes(*datasets)
 
         # All the plots made on the same axis
         cmap = plt.get_cmap(COLORMAP)
