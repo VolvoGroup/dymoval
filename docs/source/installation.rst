@@ -38,12 +38,12 @@ two parameters that you can set.
     :type: float
     :default: 2.5
 
-    The subplot height when you save the figure. The default values are chosen to keep a 16:9 ratio. 
+    The subplot height (inches) when you save the figure. The default values are chosen to keep a 16:9 ratio. 
 .. confval:: ax_width
     :type: float
     :default: 4.445
 
-    The subplot width when you save the figure. The default values are chosen to keep a 16:9 ratio. 
+    The subplot width (inches) when you save the figure. The default values are chosen to keep a 16:9 ratio. 
 
 
 These parameters can be set through a :code:`~/.dymoval/config.toml`  file.

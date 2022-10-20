@@ -129,6 +129,7 @@ class Dataset:
         verbosity: int = 0,
     ) -> None:
 
+        # Initialization by Signals
         if all(isinstance(x, dict) for x in signal_list):
             attr_sign = self._new_dataset_from_signals(
                 signal_list,
@@ -148,6 +149,7 @@ class Dataset:
                 excluded_signals,
                 dataset_coverage,
             ) = attr_sign
+
         # Initialization by pandas DataFrame
         elif isinstance(signal_list, pd.DataFrame):
             attr_df = self._new_dataset_from_dataframe(
@@ -165,6 +167,7 @@ class Dataset:
             raise TypeError(
                 "Input must be a Signal list or a pandas DataFrame type.",
             )
+
         # ================================================
         # Class attributes
         # ================================================
@@ -181,7 +184,7 @@ class Dataset:
         self._nan_intervals: Any = deepcopy(nan_intervals)
         self.excluded_signals: list[str] = excluded_signals
         """Signals that could not be re-sampled."""
-        self.sampling_period = Ts  #: Dataset sampling period
+        self.sampling_period = Ts  #: Dataset sampling period.
 
     def __str__(self) -> str:
         return f"Dymoval dataset called '{self.name}'."
