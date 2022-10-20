@@ -438,8 +438,7 @@ class ValidationSession:
         for ii in range((nrows - 1) * ncols, nrows * ncols):
             axes[ii].set_xlabel("Time")
         # Plot the last details: shade NaN:s areas.
-        self.Dataset._shade_output_nans(
-            self.Dataset.dataset,
+        self.Dataset._shade_nans(
             self.Dataset._nan_intervals,
             axes[0:q],
             list(df_val["OUTPUT"].columns),

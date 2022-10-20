@@ -49,7 +49,7 @@ class Test_Dataset_nominal:
 
         assert np.allclose(ds.dataset, df_expected)
 
-    def test__validate_args_no_args(
+    def test__classify_signals_no_args(
         self,
         sine_dataframe: pd.DataFrame,
     ) -> None:
@@ -74,7 +74,7 @@ class Test_Dataset_nominal:
             actual_y_labels,
             actual_u_idx,
             actual_y_idx,
-        ) = ds._validate_args()
+        ) = ds._classify_signals()
 
         if fixture == "SISO":
             expected_u_idx = [0]
@@ -107,7 +107,7 @@ class Test_Dataset_nominal:
             (["u1", "u2"], [], [0, 1], []),
         ],
     )
-    def test__validate_args(
+    def test__classify_signals(
         self,
         sine_dataframe: pd.DataFrame,
         test_in: list[str],
@@ -165,7 +165,7 @@ class Test_Dataset_nominal:
             actual_y_labels,
             actual_u_idx,
             actual_y_idx,
-        ) = ds._validate_args(*test_signal_names)
+        ) = ds._classify_signals(*test_signal_names)
 
         # Assert
         assert sorted(expected_u_labels) == sorted(actual_u_labels)
@@ -548,7 +548,7 @@ class Test_Dataset_nominal:
 
 
 class Test_Dataset_raise:
-    def test__validate_args_raise(
+    def test__classify_signals_raise(
         self,
         sine_dataframe: pd.DataFrame,
     ) -> None:
@@ -564,7 +564,7 @@ class Test_Dataset_raise:
         y_name_test = "y1"
 
         with pytest.raises(KeyError):
-            ds._validate_args(u_name_test, y_name_test)
+            ds._classify_signals(u_name_test, y_name_test)
 
     def test__validate_name_value_tuples_raise(self, good_signals: Any) -> None:
         signal_list, u_labels, y_labels, fixture = good_signals

@@ -65,7 +65,7 @@ class TestInitializerFromSignals:
         # also work with SISO.
         # Input
         expected_num_nans_u1 = 2  # From fixture
-        actual_num_nans_u1 = len(ds._nan_intervals["INPUT"]["u1"])
+        actual_num_nans_u1 = len(ds._nan_intervals["u1"])
         assert actual_num_nans_u1 == expected_num_nans_u1
 
         expected_nan1_time_interval = [0.5, 2.4]  # From fixture
@@ -78,24 +78,24 @@ class TestInitializerFromSignals:
         for ii in range(0, expected_num_nans_u1):
             assert np.isclose(
                 expected_nan_intervals[ii][0],
-                ds._nan_intervals["INPUT"]["u1"][ii][0],
+                ds._nan_intervals["u1"][ii][0],
             )
             assert np.isclose(
                 expected_nan_intervals[ii][1],
-                ds._nan_intervals["INPUT"]["u1"][ii][-1],
+                ds._nan_intervals["u1"][ii][-1],
             )
         # Output
         expected_num_nans_y1 = 1  # From fixture
-        actual_num_nans_y1 = len(ds._nan_intervals["OUTPUT"]["y1"])
+        actual_num_nans_y1 = len(ds._nan_intervals["y1"])
         assert actual_num_nans_y1 == expected_num_nans_y1
 
         expected_nan_interval = [5.0, 8.4]  # From fixture
 
         assert np.isclose(
-            expected_nan_interval[0], ds._nan_intervals["OUTPUT"]["y1"][0][0]
+            expected_nan_interval[0], ds._nan_intervals["y1"][0][0]
         )
         assert np.isclose(
-            expected_nan_interval[1], ds._nan_intervals["OUTPUT"]["y1"][0][-1]
+            expected_nan_interval[1], ds._nan_intervals["y1"][0][-1]
         )
 
         # assert sampling period

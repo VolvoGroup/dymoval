@@ -201,39 +201,37 @@ class Dataset:
     # ==============================================
     #   Class methods
     # ==============================================
-    def _shade_input_nans(
+    def _shade_nans(
         self,
-        df: pd.DataFrame,
-        NaN_intervals: dict[str, dict[str, list[np.ndarray]]],
+        NaN_intervals: dict[str, list[np.ndarray]],
         axes: matplotlib.axes.Axes,
-        u_labels: list[str],
-        color: str = "b",
+        signal_names: list[str],
+        color: str = "k",
     ) -> None:
 
-        # u_labels are forwarded from other functions and are already
-        # converted into a list[str].
         for ii, ax in enumerate(axes):
-            input_name = u_labels[ii]
-            for idx, val in enumerate(NaN_intervals["INPUT"][input_name]):
+            signal_name = signal_names[ii]
+            for idx, val in enumerate(NaN_intervals[signal_name]):
                 if not val.size == 0:
                     ax.axvspan(min(val), max(val), color=color, alpha=0.2)
 
-    def _shade_output_nans(
-        self,
-        df: pd.DataFrame,
-        NaN_intervals: dict[str, dict[str, list[np.ndarray]]],
-        axes: matplotlib.axes.Axes,
-        y_labels: list[str],
-        color: str = "g",
-    ) -> None:
-
+        #     def _shade_output_nans(
+        #         self,
+        #         df: pd.DataFrame,
+        #         NaN_intervals: dict[str, dict[str, list[np.ndarray]]],
+        #         axes: matplotlib.axes.Axes,
+        #         y_labels: list[str],
+        #         color: str = "g",
+        #     ) -> None:
+        #
         # y_labels are forwarded from other functions and are already
         # converted into a list[str].
-        for ii, ax in enumerate(axes):
-            output_name = y_labels[ii]
-            for idx, val in enumerate(NaN_intervals["OUTPUT"][output_name]):
-                if not val.size == 0:
-                    ax.axvspan(min(val), max(val), color=color, alpha=0.2)
+
+    #  for ii, ax in enumerate(axes):
+    #      output_name = y_labels[ii]
+    #      for idx, val in enumerate(NaN_intervals["OUTPUT"][output_name]):
+    #          if not val.size == 0:
+    #              ax.axvspan(min(val), max(val), color=color, alpha=0.2)
 
     def _init_dataset_coverage(
         self, df: pd.DataFrame
@@ -247,11 +245,14 @@ class Dataset:
         return u_mean, u_cov, y_mean, y_cov
 
     def _init_nan_intervals(
-        self, df: pd.DataFrame
+        self, df_ext: pd.DataFrame
     ) -> dict[str, list[np.ndarray]]:
         # Find index intervals (i.e. time intervals) where columns values
         # are NaN.
         # Run an example in the tutorial to see an example on how they are stored.
+        # 1-level column containing only the signals names (no kind)
+        df = df_ext.droplevel(level=0, axis=1)
+
         sampling_period = df.index[1] - df.index[0]
         NaN_index = {}
         NaN_intervals = {}
@@ -265,33 +266,29 @@ class Dataset:
 
     def _init_dataset_time_interval(
         self,
-        df: pd.DataFrame,
-        NaN_intervals: dict[str, dict[str, list[np.ndarray]]],
+        df_ext: pd.DataFrame,
+        NaN_intervals: dict[str, list[np.ndarray]],
         tin: float | None = None,
         tout: float | None = None,
         overlap: bool = False,
         full_time_interval: bool = False,
         verbosity: int = 0,
-    ) -> tuple[pd.DataFrame, dict[str, dict[str, list[np.ndarray]]]]:
+    ) -> tuple[pd.DataFrame, dict[str, list[np.ndarray]]]:
         # We have to trim the signals to have a meaningful dataset
         # This can be done both graphically or by passing tin and tout
         # if the user knows them before hand.
+        # Once done, the dataset shall be shifted to the point tin = 0.0
 
-        # Number of inputs and outputs
-        p = len(df["INPUT"].columns)
-        q = len(df["OUTPUT"].columns)
-        # Check if there is some argument.
-        if tin is not None and tout is not None:
-            tin_sel = np.round(tin, NUM_DECIMALS)
-            tout_sel = np.round(tout, NUM_DECIMALS)
-        elif full_time_interval:
-            tin_sel = np.round(df.index[0], NUM_DECIMALS)
-            tout_sel = np.round(df.index[-1], NUM_DECIMALS)
-        else:  # pragma: no cover
+        def _graph_selection(
+            df_ext: pd.DataFrame,
+            NaN_intervals: dict[str, list[np.ndarray]],
+            overlap: bool,
+        ) -> tuple[float, float]:
+            # Select the time interval graphically
             # OBS! This part cannot be automatically tested because the it require
             # manual action from the user (resize window).
             # Hence, you must test this manually
-            # The keyword for skippint the coverage is # pragma: no cover
+            # The keyword to skip the coverage is # pragma: no cover
             #  ===========================================================
             # The following code is needed because not all IDE:s
             # have interactive plot set to ON as default.
@@ -300,6 +297,11 @@ class Dataset:
             plt.ion()
             #  ===========================================================
 
+            # This is pretty much identical to the method plot() but we have
+            # to use it because the class attributes are not set yet.
+            # Number of inputs and outputs
+            p = len(df_ext["INPUT"].columns)
+            q = len(df_ext["OUTPUT"].columns)
             if overlap:
                 n = max(p, q)
                 range_out = np.arange(0, q)
@@ -309,8 +311,10 @@ class Dataset:
             nrows, ncols = factorize(n)  # noqa
             _, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
             axes = axes.T.flat
-            df["INPUT"].plot(subplots=True, grid=True, color="b", ax=axes[0:p])
-            df["OUTPUT"].plot(
+            df_ext["INPUT"].plot(
+                subplots=True, grid=True, color="b", ax=axes[0:p]
+            )
+            df_ext["OUTPUT"].plot(
                 subplots=True, grid=True, color="g", ax=axes[range_out]
             )
 
@@ -318,17 +322,25 @@ class Dataset:
                 axes[nrows - 1 :: nrows][ii].set_xlabel("Frequency")
             plt.suptitle(
                 "Sampling time "
-                f"= {np.round(df.index[1]-df.index[0],NUM_DECIMALS)}.\n"
+                f"= {np.round(df_ext.index[1]-df_ext.index[0],NUM_DECIMALS)}.\n"
                 "Select the dataset time interval by resizing "
                 "the picture."
             )
 
             # Shade NaN areas
-            self._shade_input_nans(
-                df, NaN_intervals, axes[0:p], list(df["INPUT"].columns)
+            # We have to pass NaN_intervals because they are not yet a self attribute
+            self._shade_nans(
+                NaN_intervals,
+                axes[0:p],
+                list(df_ext["INPUT"].columns),
+                color="b",
             )
-            self._shade_output_nans(
-                df, NaN_intervals, axes[range_out], list(df["OUTPUT"].columns)
+
+            self._shade_nans(
+                NaN_intervals,
+                axes[range_out],
+                list(df_ext["OUTPUT"].columns),
+                color="g",
             )
 
             # Figure closure handler
@@ -368,74 +380,97 @@ class Dataset:
             tin_sel = close_event.tin  # type:ignore
             tout_sel = close_event.tout  # type:ignore
 
-            if verbosity != 0:
-                print("\ntin = ", tin_sel, "tout =", tout_sel)
+            return tin_sel, tout_sel
 
-        # ===================================================================
-        # Trim dataset and NaN intervals based on (tin,tout)
-        # ===================================================================
-        df = df.loc[tin_sel:tout_sel, :]
-        # Trim NaN_intevals
-        # TODO: code repetition
-        for u_name in NaN_intervals["INPUT"].keys():
-            # In the following, nan_chunks are time-interval.
-            # Note! For a given signal, you may have many nan_chunks.
-            for idx, nan_chunk in enumerate(NaN_intervals["INPUT"][u_name]):
-                nan_chunk = np.round(nan_chunk, NUM_DECIMALS)  # noqa
-                NaN_intervals["INPUT"][u_name][idx] = nan_chunk[
-                    nan_chunk >= tin_sel
-                ]
-                NaN_intervals["INPUT"][u_name][idx] = nan_chunk[
-                    nan_chunk <= tout_sel
-                ]
-        for y_name in NaN_intervals["OUTPUT"].keys():
-            for idx, nan_chunk in enumerate(NaN_intervals["OUTPUT"][y_name]):
-                nan_chunk = np.round(nan_chunk, NUM_DECIMALS)  # noqa
-                NaN_intervals["OUTPUT"][y_name][idx] = nan_chunk[
-                    nan_chunk >= tin_sel
-                ]
-                NaN_intervals["OUTPUT"][y_name][idx] = nan_chunk[
-                    nan_chunk <= tout_sel
-                ]
-        return df, NaN_intervals
+        def _trim_dataset(
+            df_ext: pd.DataFrame,
+            NaN_intervals: dict[str, list[np.ndarray]],
+            tin: float | None = None,
+            tout: float | None = None,
+        ) -> tuple[pd.DataFrame, dict[str, list[np.ndarray]]]:
+            # ===================================================================
+            # Trim dataset and NaN intervals based on (tin,tout)
+            # ===================================================================
+            df_ext = df_ext.loc[tin:tout, :]
+            # Trim NaN_intevals
+            # TODO: code repetition
+            for signal_name in NaN_intervals.keys():
+                # In the following, nan_chunks are time-interval.
+                # Note! For a given signal, you may have many nan_chunks.
+                for idx, nan_chunk in enumerate(NaN_intervals[signal_name]):
+                    nan_chunk = np.round(nan_chunk, NUM_DECIMALS)  # noqa
+                    NaN_intervals[signal_name][idx] = nan_chunk[
+                        nan_chunk >= tin
+                    ]
+                    NaN_intervals[signal_name][idx] = nan_chunk[
+                        nan_chunk <= tout
+                    ]
 
-    def _shift_dataset_time_interval(
-        self,
-        df: pd.DataFrame,
-        NaN_intervals: dict[str, dict[str, list[np.ndarray]]],
-    ) -> tuple[pd.DataFrame, dict[str, dict[str, list[np.ndarray]]]]:
-        # ===================================================================
-        # Shift tin to zero.
-        # ===================================================================
-        tin_sel = df.index[0]
-        timeVectorFromZero = df.index - tin_sel
-        df.index = pd.Index(
-            np.round(timeVectorFromZero, NUM_DECIMALS), name=df.index.name
+            return df_ext, NaN_intervals
+
+        def _shift_dataset_tin_to_zero(
+            df_ext: pd.DataFrame,
+            NaN_intervals: dict[str, list[np.ndarray]],
+        ) -> tuple[pd.DataFrame, dict[str, list[np.ndarray]]]:
+            # ===================================================================
+            # Shift tin to zero.
+            # ===================================================================
+            tin = df_ext.index[0]
+            timeVectorFromZero = df_ext.index - tin
+            df_ext.index = pd.Index(
+                np.round(timeVectorFromZero, NUM_DECIMALS),
+                name=df_ext.index.name,
+            )
+
+            # Shift also the NaN_intervals to tin = 0.0.
+            for k in NaN_intervals.keys():
+                for idx, nan_chunk in enumerate(NaN_intervals[k]):
+                    nan_chunk_translated = nan_chunk - tin
+                    NaN_intervals[k][idx] = np.round(
+                        nan_chunk_translated, NUM_DECIMALS  # noqa
+                    )
+                    NaN_intervals[k][idx] = nan_chunk_translated[
+                        nan_chunk_translated >= 0.0
+                    ]
+
+            # Adjust the DataFrame accordingly
+            df_ext = df_ext.round(decimals=NUM_DECIMALS)  # noqa
+
+            return df_ext, NaN_intervals
+
+        # =============================================
+        # Time interval selection.
+        # The user can either pass the pair (tin,tout) or
+        # he/she can select it graphically
+        # =============================================
+
+        # Check if info on (tin,tout) is passed
+        if tin is not None and tout is not None:
+            tin_sel = np.round(tin, NUM_DECIMALS)
+            tout_sel = np.round(tout, NUM_DECIMALS)
+        elif full_time_interval:
+            tin_sel = np.round(df_ext.index[0], NUM_DECIMALS)
+            tout_sel = np.round(df_ext.index[-1], NUM_DECIMALS)
+        else:  # pragma: no cover
+            tin_sel, tout_sel = _graph_selection(df_ext, NaN_intervals, overlap)
+
+        if verbosity != 0:
+            print("\ntin = ", tin_sel, "tout =", tout_sel)
+
+        # Once (tin,tout) have been identified, trim the dataset
+        df_ext, NaN_intervals = _trim_dataset(
+            df_ext,
+            NaN_intervals,
+            tin_sel,
+            tout_sel,
         )
 
-        # Shift also the NaN_intervals to zero.
-        for k in NaN_intervals["INPUT"].keys():
-            for idx, nan_chunk in enumerate(NaN_intervals["INPUT"][k]):
-                nan_chunk_translated = nan_chunk - tin_sel
-                NaN_intervals["INPUT"][k][idx] = np.round(
-                    nan_chunk_translated, NUM_DECIMALS  # noqa
-                )
-                NaN_intervals["INPUT"][k][idx] = nan_chunk_translated[
-                    nan_chunk_translated >= 0.0
-                ]
-        for k in NaN_intervals["OUTPUT"].keys():
-            for idx, nan_chunk in enumerate(NaN_intervals["OUTPUT"][k]):
-                nan_chunk_translated = nan_chunk - tin_sel
-                NaN_intervals["OUTPUT"][k][idx] = np.round(
-                    nan_chunk_translated, NUM_DECIMALS  # noqa
-                )
-                NaN_intervals["OUTPUT"][k][idx] = nan_chunk_translated[
-                    nan_chunk_translated >= 0.0
-                ]
-        # Adjust the DataFrame accordingly
-        df = df.round(decimals=NUM_DECIMALS)  # noqa
+        # ... and shift it such that tin = 0.0
+        df_ext, NaN_intervals = _shift_dataset_tin_to_zero(
+            df_ext, NaN_intervals
+        )
 
-        return df, NaN_intervals
+        return df_ext, NaN_intervals
 
     def _new_dataset_from_dataframe(
         self,
@@ -450,7 +485,7 @@ class Dataset:
     ) -> tuple[
         pd.DataFrame,
         float,
-        dict[str, dict[str, list[np.ndarray]]],
+        dict[str, list[np.ndarray]],
         list[str],
         tuple[pd.Series, pd.DataFrame, pd.Series, pd.DataFrame],
     ]:
@@ -477,35 +512,43 @@ class Dataset:
         validate_dataframe(df, u_labels, y_labels)
 
         # Add column index level with labels 'INPUT' and 'OUTPUT'
-        df = df.loc[:, [*u_labels, *y_labels]]
+        # thus creating an extended dataframe
+        # Take only the numerical values without columns
+        df_ext = df.loc[:, [*u_labels, *y_labels]]
+
         u_extended_labels = list(zip(["INPUT"] * len(u_labels), u_labels))
         y_extended_labels = list(zip(["OUTPUT"] * len(y_labels), y_labels))
-        df.columns = pd.MultiIndex.from_tuples(
+        df_ext.columns = pd.MultiIndex.from_tuples(
             [*u_extended_labels, *y_extended_labels]
         )
 
         # Initialize NaN intervals
-        NaN_intervals = {
-            "INPUT": self._init_nan_intervals(df["INPUT"]),
-            "OUTPUT": self._init_nan_intervals(df["OUTPUT"]),
-        }
-        # Trim dataset time interval
-        df, NaN_intervals = self._init_dataset_time_interval(
-            df, NaN_intervals, tin, tout, overlap, full_time_interval, verbosity
+        NaN_intervals = self._init_nan_intervals(df_ext)
+
+        # Initialize dataset time interval
+        df_ext, NaN_intervals = self._init_dataset_time_interval(
+            df_ext,
+            NaN_intervals,
+            tin,
+            tout,
+            overlap,
+            full_time_interval,
+            verbosity,
         )
-        # Shift dataset tin to 0.0.
-        df, NaN_intervals = self._shift_dataset_time_interval(df, NaN_intervals)
 
         # Initialize coverage region
-        dataset_coverage = self._init_dataset_coverage(df)
+        dataset_coverage = self._init_dataset_coverage(df_ext)
 
         # The DataFrame has been built with signals sampled with the same period,
         # therefore there are no excluded signals due to re-sampling
         excluded_signals: list[str] = []
+
+        # Initialize sampling_period
         # In case user passes a DataFrame we need to compute the sampling period
         # as it is not explicitly passed.
-        Ts = df.index[1] - df.index[0]
-        return df, Ts, NaN_intervals, excluded_signals, dataset_coverage
+        Ts = df_ext.index[1] - df_ext.index[0]
+
+        return df_ext, Ts, NaN_intervals, excluded_signals, dataset_coverage
 
     def _new_dataset_from_signals(
         self,
@@ -521,7 +564,7 @@ class Dataset:
     ) -> tuple[
         pd.DataFrame,
         float,
-        dict[str, dict[str, list[np.ndarray]]],
+        dict[str, list[np.ndarray]],
         list[str],
         tuple[pd.Series, pd.DataFrame, pd.Series, pd.DataFrame],
     ]:
@@ -590,7 +633,7 @@ class Dataset:
 
         return df, Ts, nan_intervals, excluded_signals, dataset_coverage
 
-    def _validate_args(
+    def _classify_signals(
         self,
         *signals: str,
     ) -> tuple[list[str], list[str], list[int], list[int]]:
@@ -641,7 +684,7 @@ class Dataset:
         # Return both the list of input and output names and the validated tuples.
 
         signals = [s[0] for s in signals_values]
-        u_labels, y_labels, _, _ = self._validate_args(*signals)
+        u_labels, y_labels, _, _ = self._classify_signals(*signals)
 
         u_list = [(s[0], s[1]) for s in signals_values if s[0] in u_labels]
         y_list = [(s[0], s[1]) for s in signals_values if s[0] in y_labels]
@@ -917,7 +960,7 @@ class Dataset:
         df = self.dataset
 
         # Arguments validation
-        u_labels, y_labels, u_labels_idx, y_labels_idx = self._validate_args(
+        u_labels, y_labels, u_labels_idx, y_labels_idx = self._classify_signals(
             *signals
         )
 
@@ -955,8 +998,7 @@ class Dataset:
                 ax=axes[range_in],
             )
 
-            self._shade_input_nans(
-                self.dataset,
+            self._shade_nans(
                 self._nan_intervals,
                 axes[range_in],
                 u_labels,
@@ -974,8 +1016,7 @@ class Dataset:
                 ax=axes[range_out],
             )
 
-            self._shade_output_nans(
-                self.dataset,
+            self._shade_nans(
                 self._nan_intervals,
                 axes[range_out],
                 y_labels,
@@ -1035,7 +1076,7 @@ class Dataset:
         # Extract dataset
         df = self.dataset
 
-        u_labels, y_labels, u_labels_idx, y_labels_idx = self._validate_args(
+        u_labels, y_labels, u_labels_idx, y_labels_idx = self._classify_signals(
             *signals
         )
 
@@ -1136,7 +1177,7 @@ class Dataset:
             If the dataset contains *NaN*:s
         """
         # Validation
-        u_labels, y_labels, _, _ = self._validate_args(*signals)
+        u_labels, y_labels, _, _ = self._classify_signals(*signals)
         # Remove 'INPUT' 'OUTPUT' columns level from dataframe
         df_temp = self.dataset.droplevel(level=0, axis=1)
 
@@ -1230,7 +1271,7 @@ class Dataset:
             If *kind* doen not match any allowed values.
         """
         # validation
-        u_labels, y_labels, u_labels_idx, y_labels_idx = self._validate_args(
+        u_labels, y_labels, u_labels_idx, y_labels_idx = self._classify_signals(
             *signals
         )
 
@@ -1365,7 +1406,7 @@ class Dataset:
             the input signals in the dataset.
         """
         # Arguments validation
-        u_labels, y_labels, _, _ = self._validate_args(*signals)
+        u_labels, y_labels, _, _ = self._classify_signals(*signals)
 
         # Safe copy
         ds_temp = deepcopy(self)
