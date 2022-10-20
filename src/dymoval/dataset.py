@@ -391,7 +391,7 @@ class Dataset:
             # ===================================================================
             # Trim dataset and NaN intervals based on (tin,tout)
             # ===================================================================
-            df_ext = df_ext.loc[tin:tout, :]
+            df_ext = df_ext.loc[tin:tout, :]  # type:ignore
             # Trim NaN_intevals
             # TODO: code repetition
             for signal_name in NaN_intervals.keys():
@@ -1594,6 +1594,43 @@ class Dataset:
         ds_temp.dataset = ds_temp.dataset.interpolate(**kwargs)
 
         return ds_temp
+
+    def remove_signals(self, *signals: str) -> Dataset:
+        """Remove signals from dataset."""
+
+        ds = deepcopy(self)
+
+        available_signals = [s[1] for s in self.signal_names()]
+        signals_not_found = [s for s in signals if s not in available_signals]
+        if signals_not_found:
+            raise KeyError(
+                f"Signal(s)) {signals_not_found} not found "
+                f"in Dataset '{self.name}'."
+            )
+
+        for s in signals:
+            # Input detected
+            cond1 = (
+                s in list(ds.dataset["INPUT"].columns)
+                and len(list(ds.dataset["INPUT"].columns)) > 1
+            )
+
+            # Output detected
+            cond2 = (
+                s in list(ds.dataset["OUTPUT"].columns)
+                and len(list(ds.dataset["OUTPUT"].columns)) > 1
+            )
+
+            if cond1 or cond2:
+                ds.dataset = ds.dataset.drop(s, axis=1, level=1)
+                del ds._nan_intervals[s]
+            else:
+                raise KeyError(
+                    f"Cannot remove {s}. The dataset must have at least "
+                    "one input and one output."
+                )
+
+        return ds
 
 
 # ====================================================

@@ -181,6 +181,34 @@ class Test_Dataset_nominal:
         # Check also the coverage to be convinced of this.
         pass
 
+    def test_remove_signals(self, sine_dataframe: pd.DataFrame) -> None:
+        df, u_labels, y_labels, fixture = sine_dataframe
+
+        # Expected value.
+        # If you remove a mean from a signal, then the mean of the reminder
+        # signal must be zero.
+
+        # Actual value
+        name_ds = "my_dataset"
+        ds = dmv.dataset.Dataset(
+            name_ds, df, u_labels, y_labels, full_time_interval=True
+        )
+        # You should get a dataframe with zero mean.
+        # Stored dataframe shall be left unchanged.
+
+        if fixture == "MIMO":
+            ds_test = ds.remove_signals("u1", "y1")
+            assert "u1" not in list(
+                ds_test.dataset.droplevel(level=0, axis=1).columns
+            )
+            assert "y1" not in list(
+                ds_test.dataset.droplevel(level=0, axis=1).columns
+            )
+        else:
+            # Try to remove an input or an output to SISO, SIMO or MISO dataset
+            with pytest.raises(KeyError):
+                ds.remove_signals("u1", "y1")
+
     def test_remove_means(self, sine_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = sine_dataframe
 
