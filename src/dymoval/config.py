@@ -37,6 +37,8 @@ except FileNotFoundError:  # pragma: no cover
 locals().update(config)
 
 # Internal constants
+Signal_type = Literal["INPUT", "OUTPUT"]
+SIGNAL_KIND: list[Signal_type] = list(typing.get_args(Signal_type))
 
 Spectrum_type = Literal["amplitude", "power", "psd"]
 SPECTRUM_KIND: list[Spectrum_type] = list(typing.get_args(Spectrum_type))
