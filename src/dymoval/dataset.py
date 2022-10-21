@@ -245,24 +245,29 @@ class Dataset:
 
         return u_mean, u_cov, y_mean, y_cov
 
-    def _init_nan_intervals(
-        self, df_ext: pd.DataFrame
+    def _find_nan_intervals(
+        self,
+        df_ext: pd.DataFrame,
+        *signals: str,
     ) -> dict[str, list[np.ndarray]]:
         # Find index intervals (i.e. time intervals) where columns values
         # are NaN.
         # Run an example in the tutorial to see an example on how they are stored.
         # 1-level column containing only the signals names (no kind)
         df = df_ext.droplevel(level=0, axis=1)
-
         sampling_period = df.index[1] - df.index[0]
+
+        # If no signal is passed it consider all the signals in the dataset
+        sigs = signals if signals else list(df.columns)
+
         NaN_index = {}
         NaN_intervals = {}
-        for x in list(df.columns):
-            NaN_index[x] = df.loc[df[x].isnull().to_numpy()].index
-            idx = np.where(~np.isclose(np.diff(NaN_index[x]), sampling_period))[
+        for s in sigs:
+            NaN_index[s] = df.loc[df[s].isnull().to_numpy()].index
+            idx = np.where(~np.isclose(np.diff(NaN_index[s]), sampling_period))[
                 0
             ]
-            NaN_intervals[x] = np.split(NaN_index[x], idx + 1)
+            NaN_intervals[s] = np.split(NaN_index[s], idx + 1)
         return NaN_intervals
 
     def _init_dataset_time_interval(
@@ -524,7 +529,7 @@ class Dataset:
         )
 
         # Initialize NaN intervals
-        NaN_intervals = self._init_nan_intervals(df_ext)
+        NaN_intervals = self._find_nan_intervals(df_ext)
 
         # Initialize dataset time interval
         df_ext, NaN_intervals = self._init_dataset_time_interval(
@@ -816,6 +821,67 @@ class Dataset:
             print(f"actual sampling period = {target_sampling_period}")
 
         return resampled_signals, excluded_signals
+
+    def _add_signals(self, kind: Signal_type, *signals: Signal) -> Any:
+
+        # Extract the dymoval Signals
+        validate_signals(*signals)
+
+        # Target dataset
+        ds = deepcopy(self)
+
+        # Check if the sampling period is OK
+        signals_ok = [
+            s
+            for s in signals
+            if np.isclose(s["sampling_period"], ds.sampling_period)
+        ]
+
+        # Update excluded_signal attribute
+        excluded_signals = [s["name"] for s in signals if s not in signals_ok]
+        ds.excluded_signals + excluded_signals
+        if excluded_signals:
+            raise Warning(f"Signals {excluded_signals} cannot be added.")
+
+        # Check if the signal name(s) already exist in the current Dataset
+        _, signal_names = zip(*self.signal_names())
+        name_found = [
+            s["name"] for s in signals_ok if s["name"] in signal_names
+        ]
+        if name_found:
+            raise KeyError(f"Signal(s) {name_found} already exist.")
+
+        # Adjust the signals length of the new signals
+        ds_length = len(self.dataset.index)
+        for s in signals_ok:
+            if s["values"].size >= ds_length:
+                s["values"] = s["values"][:ds_length]
+            else:
+                nan_vec = np.empty(ds_length - s["values"].size)
+                nan_vec[:] = np.NaN
+                s["values"] = np.concatenate((s["values"], nan_vec))
+
+        data = np.stack([s["values"] for s in signals_ok]).round(NUM_DECIMALS).T
+        signals_ok_names = [s["name"] for s in signals_ok]
+        # new_labels = list(ds.dataset[kind].columns) + signals_ok_names
+        df_temp = pd.DataFrame(data=data, index=ds.dataset.index)
+        df_temp.columns = pd.MultiIndex.from_product(
+            [str2list(kind), signals_ok_names]
+        )
+
+        ds.dataset = ds.dataset.join(df_temp).sort_index(axis=1)
+        #   ds.dataset.reindex(
+        #       new_labels,
+        #       axis=1,
+        #       level=1,
+        #   )
+
+        NaNIntervals = self._find_nan_intervals(ds.dataset, *signals_ok_names)
+
+        for key in signals_ok_names:
+            ds._nan_intervals[key] = NaNIntervals[key]
+
+        return ds
 
     def dataset_values(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
@@ -1610,64 +1676,11 @@ class Dataset:
         *signals:
             Signals to be added in form *("INPUT"|"OUTPUT", Signal)*.
         """
+        kind: Signal_type = "INPUT"
+        return self._add_signals(kind, *signals)
 
-        # Extract the dymoval Signals
-        validate_signals(*signals)
-
-        # Target dataset
-        ds = deepcopy(self)
-
-        # Check if the sampling period is OK
-        signals_ok = [
-            s
-            for s in signals
-            if np.isclose(s["sampling_period"], ds.sampling_period)
-        ]
-
-        # Update excluded_signal attribute
-        excluded_signals = [s["name"] for s in signals if s not in signals_ok]
-        ds.excluded_signals + excluded_signals
-        if excluded_signals:
-            raise Warning(f"Signals {excluded_signals} cannot be added.")
-
-        # Check if the signal name(s) already exist in the current Dataset
-        name_found = [
-            s["name"]
-            for s in signals_ok
-            if ("INPUT", s["name"]) in self.signal_names()
-        ]
-        if name_found:
-            raise KeyError(f"Signal(s) {name_found} already exist.")
-
-        # Adjust the signals length of the new signals
-        ds_length = len(self.dataset.index)
-        for s in signals_ok:
-            if s["values"].size >= ds_length:
-                s["values"] = s["values"][:ds_length]
-            else:
-                nan_vec = np.empty(ds_length - s["values"].size)
-                nan_vec[:] = np.NaN
-                s["values"] = np.concatenate((s["values"], nan_vec))
-
-        data = np.stack([s["values"] for s in signals_ok]).round(NUM_DECIMALS).T
-        signals_ok_names = [s["name"] for s in signals_ok]
-        # new_labels = list(ds.dataset["INPUT"].columns) + signals_ok_names
-        df_temp = pd.DataFrame(data=data, index=ds.dataset.index)
-        df_temp.columns = pd.MultiIndex.from_product(
-            [str2list("INPUT"), signals_ok_names]
-        )
-
-        ds.dataset = ds.dataset.join(df_temp).sort_index(axis=1)
-        #   ds.dataset.reindex(
-        #       new_labels,
-        #       axis=1,
-        #       level=1,
-        #   )
-
-        return ds
-
-    def add_signals(self, *signals: tuple[Signal_type, Signal]) -> Any:
-        """Add signals to the dataset.
+    def add_output(self, *signals: Signal) -> Any:
+        """Add output signals to the dataset.
 
         Signals will be trimmed to the length of the Dataset.
         Signals who are shorter, will be padded with 'NaN:s'
@@ -1680,92 +1693,8 @@ class Dataset:
         *signals:
             Signals to be added in form *("INPUT"|"OUTPUT", Signal)*.
         """
-
-        # Extract the dymoval Signals
-        sigs = [s[1] for s in signals]
-        validate_signals(*sigs)
-
-        # ds = deepcopy(self)
-
-        # Check if the sampling period is OK
-        signals_ok = [
-            s
-            for s in signals
-            if s[1]["sampling_period"] == self.sampling_period
-        ]
-
-        # Check if the signal name(s) already exist in the current Dataset
-        name_found = [
-            s[1]["name"] for s in signals if s[1]["name"] in self.signal_names()
-        ]
-
-        if name_found:
-            raise KeyError(f"Signal(s) {name_found} already exist.")
-
-        # Adjust the signals length of the new signals
-        ds_length = len(self.dataset.index)
-        for s in signals_ok:
-            if s[1]["values"].size >= ds_length:
-                s[1]["values"] = s[1]["values"][:ds_length]
-            else:
-                nan_vec = np.empty(ds_length - s[1]["values"].size)
-                nan_vec[:] = np.NaN
-                s[1]["values"] = np.concatenate((s[1]["values"], nan_vec))
-
-        # Check if there is any new input
-        if [s for s in signals_ok if s[0] == "INPUT"]:
-            data_in = np.stack(
-                [s[1]["values"] for s in signals_ok if s[0] == "INPUT"]
-            )
-        else:
-            data_in = np.asarray([])
-
-        # Check if there is any new output
-        if [s for s in signals_ok if s[0] == "OUTPUT"]:
-            data_out = np.stack(
-                [s[1]["values"] for s in signals_ok if s[0] == "OUTPUT"]
-            )
-        else:
-            data_out = np.asarray([])
-
-        multicolumns = [(s[0], s[1]["name"]) for s in signals_ok]
-        new_u_labels = [
-            (s[0], s[1]["name"]) for s in signals_ok if s[0] == "INPUT"
-        ]
-        new_y_labels = [
-            (s[0], s[1]["name"]) for s in signals_ok if s[0] == "OUTPUT"
-        ]
-        df_temp = pd.DataFrame(columns=multicolumns)
-        df_temp.loc[:, new_u_labels] = data_in
-        df_temp.loc[:, new_y_labels] = data_out
-
-        #  new_u_labels = [
-        #      s["name"] for s in signals_ok if s["name"] in signals[0]
-        #  ]
-
-        #  u_extended_labels = list(zip(["INPUT"] * len(u_labels), u_labels))
-        #  y_extended_labels = list(zip(["OUTPUT"] * len(y_labels), y_labels))
-        #  df_ext.columns = pd.MultiIndex.from_tuples(
-        #      [*u_extended_labels, *y_extended_labels]
-        #  )
-
-        #  columns = np.stack([s["names"] for s in signals_ok])
-        # df_temp = pd.DataFrame(data=[data_in, data_out], columns=multicolumns)
-
-        return df_temp
-
-    #
-    #         NaN_index = {}
-    #         NaN_intervals = {}
-    #         for x in signals_ok:
-    #             NaN_index[x] = s["values"].isnull().to_numpy()].index
-    #             idx = np.where(~np.isclose(np.diff(NaN_index[x]), sampling_period))[
-    #                 0
-    #             ]
-    #             NaN_intervals[x] = np.split(NaN_index[x], idx + 1)
-    #             ds._nan_intervals[x] =
-    #
-    #         return ds
+        kind: Signal_type = "OUTPUT"
+        return self._add_signals(kind, *signals)
 
     def remove_signals(self, *signals: str) -> Dataset:
         """Remove signals from dataset."""
