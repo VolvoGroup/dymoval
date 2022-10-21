@@ -122,7 +122,7 @@ module = [
 [tool.pytest.ini_options]
 norecursedirs = ["scripts"] # Exclude folders
 markers = [
-    "plot: marks SLOW plot tests (deselect with '-m \"not plot\"')",
+    "plots: marks SLOW plot tests (deselect with '-m \"not plot\"')",
     "open_tutorial: marks the open_tutorial (which opens VSCode all the times)"
 
 ]

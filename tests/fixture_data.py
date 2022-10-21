@@ -4,6 +4,7 @@ import pytest
 import dymoval as dmv
 import numpy as np
 from copy import deepcopy
+from dymoval.config import *
 import pandas as pd
 
 # For more info on parametrized fixtures, look here:
@@ -160,7 +161,8 @@ def sine_dataframe(request):  # type: ignore
 
     Ts = 0.1
     N = 100
-    t = np.linspace(0, Ts * N, N)
+    t = np.round(np.linspace(0, Ts * N, N + 1), NUM_DECIMALS)
+
     c1 = 2
     c2 = 3
     c3 = 1

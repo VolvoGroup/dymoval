@@ -36,6 +36,8 @@ except FileNotFoundError:  # pragma: no cover
 
 locals().update(config)
 
+ATOL = 10**-NUM_DECIMALS  # noqa
+
 # Internal constants
 Signal_type = Literal["INPUT", "OUTPUT"]
 SIGNAL_KIND: list[Signal_type] = list(typing.get_args(Signal_type))

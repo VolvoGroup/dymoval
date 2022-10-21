@@ -16,7 +16,8 @@ from .config import *  # noqa
 from .utils import *  # noqa, Type
 from typing import TypedDict, Any, Literal
 from copy import deepcopy
-from itertools import product
+
+# from itertools import product
 
 
 class Signal(TypedDict):
@@ -185,7 +186,9 @@ class Dataset:
         self._nan_intervals: Any = deepcopy(nan_intervals)
         self.excluded_signals: list[str] = excluded_signals
         """Signals that could not be re-sampled."""
-        self.sampling_period = Ts  #: Dataset sampling period.
+        self.sampling_period = np.round(
+            Ts, NUM_DECIMALS
+        )  #: Dataset sampling period.
 
     def __str__(self) -> str:
         return f"Dymoval dataset called '{self.name}'."
@@ -248,21 +251,19 @@ class Dataset:
     def _find_nan_intervals(
         self,
         df_ext: pd.DataFrame,
-        *signals: str,
     ) -> dict[str, list[np.ndarray]]:
         # Find index intervals (i.e. time intervals) where columns values
         # are NaN.
-        # Run an example in the tutorial to see an example on how they are stored.
-        # 1-level column containing only the signals names (no kind)
+        # It requires a dataset with extended columns (MultiIndex))
         df = df_ext.droplevel(level=0, axis=1)
-        sampling_period = df.index[1] - df.index[0]
 
-        # If no signal is passed it consider all the signals in the dataset
-        sigs = signals if signals else list(df.columns)
+        # We cannot use self.sampling_period because this function is also used
+        # for instantiating objects of class Dataset.
+        sampling_period = df.index[1] - df.index[0]
 
         NaN_index = {}
         NaN_intervals = {}
-        for s in sigs:
+        for s in list(df.columns):
             NaN_index[s] = df.loc[df[s].isnull().to_numpy()].index
             idx = np.where(~np.isclose(np.diff(NaN_index[s]), sampling_period))[
                 0
@@ -831,11 +832,13 @@ class Dataset:
         ds = deepcopy(self)
 
         # Check if the sampling period is OK
+        ATOL = 10**-NUM_DECIMALS
         signals_ok = [
             s
             for s in signals
-            if np.isclose(s["sampling_period"], ds.sampling_period)
+            if np.isclose(s["sampling_period"], ds.sampling_period, atol=ATOL)
         ]
+        signals_name = [s["name"] for s in signals]
 
         # Update excluded_signal attribute
         excluded_signals = [s["name"] for s in signals if s not in signals_ok]
@@ -861,25 +864,22 @@ class Dataset:
                 nan_vec[:] = np.NaN
                 s["values"] = np.concatenate((s["values"], nan_vec))
 
+        # Create DataFrame from signals to be appended (concatenated) to
+        # the current dataset
         data = np.stack([s["values"] for s in signals_ok]).round(NUM_DECIMALS).T
-        signals_ok_names = [s["name"] for s in signals_ok]
-        # new_labels = list(ds.dataset[kind].columns) + signals_ok_names
         df_temp = pd.DataFrame(data=data, index=ds.dataset.index)
         df_temp.columns = pd.MultiIndex.from_product(
-            [str2list(kind), signals_ok_names]
+            [str2list(kind), signals_name]
         )
 
-        ds.dataset = ds.dataset.join(df_temp).sort_index(axis=1)
-        #   ds.dataset.reindex(
-        #       new_labels,
-        #       axis=1,
-        #       level=1,
-        #   )
+        # concatenate new DataFrame containing the added signals
+        ds.dataset = pd.concat([ds.dataset, df_temp], axis=1).sort_index(axis=1)
 
-        NaNIntervals = self._find_nan_intervals(ds.dataset, *signals_ok_names)
-
-        for key in signals_ok_names:
-            ds._nan_intervals[key] = NaNIntervals[key]
+        # Update NaN intervals
+        NaN_intervals = self._find_nan_intervals(df_temp)
+        ds._nan_intervals.update(
+            NaN_intervals
+        )  # Join two dictionaries through update()
 
         return ds
 
@@ -1675,6 +1675,12 @@ class Dataset:
         ----------
         *signals:
             Signals to be added in form *("INPUT"|"OUTPUT", Signal)*.
+
+
+        Raises
+        ------
+        KeyError:
+            If signal(s) already exist.
         """
         kind: Signal_type = "INPUT"
         return self._add_signals(kind, *signals)

@@ -181,6 +181,95 @@ class Test_Dataset_nominal:
         # Check also the coverage to be convinced of this.
         pass
 
+    def test_add_input(self, sine_dataframe: pd.DataFrame) -> None:
+        df, u_labels, y_labels, fixture = sine_dataframe
+
+        # Expected value.
+        # If you remove a mean from a signal, then the mean of the reminder
+        # signal must be zero.
+        N = 101  # as per fixture
+
+        # Arrange
+        name_ds = "my_dataset"
+        ds = dmv.dataset.Dataset(
+            name_ds, df, u_labels, y_labels, full_time_interval=True
+        )
+        # You should get a dataframe with zero mean.
+        # Stored dataframe shall be left unchanged.
+
+        test_signal1: dmv.Signal = {
+            "name": "test1",
+            "values": np.random.rand(120),
+            "signal_unit": "m",
+            "sampling_period": 0.1,
+            "time_unit": "s",
+        }
+
+        nans = np.empty(50)
+        nans[:] = np.nan
+
+        test_signal2: dmv.Signal = {
+            "name": "test2",
+            "values": np.concatenate((np.random.rand(110), nans)),
+            "signal_unit": "s",
+            "sampling_period": 0.1,
+            "time_unit": "s",
+        }
+        expected_values = np.hstack(
+            (
+                test_signal1["values"][:N].reshape(N, 1).round(NUM_DECIMALS),
+                test_signal2["values"][:N].reshape(N, 1).round(NUM_DECIMALS),
+                ds.dataset.loc[:, "INPUT"].head(N).to_numpy(),
+            ),
+        )
+
+        # NaNs intervals.
+        # We test only the keys but the values because they are hard to test
+        # TODO: test the values
+        test_signal1_nan_interval = {
+            test_signal1["name"]: pd.Index(data=[], dtype=float)
+        }
+        test_signal2_nan_interval = {
+            test_signal2["name"]: pd.Index(data=[], dtype=float)
+        }
+        # Concatenate dict:s. OBS! dict update() is update(inplace = True)!!!
+        # Big mismatch with pandas!
+        expected_nans = ds._nan_intervals
+        expected_nans.update(test_signal1_nan_interval)
+        expected_nans.update(test_signal2_nan_interval)
+        # expected_nans["test_signals2"] = np.linspace(0.5, 1.0, 6)
+
+        # Overall list of signal names
+        expected_labels = list(ds.dataset.loc[:, "INPUT"].columns) + [
+            test_signal1["name"],
+            test_signal2["name"],
+        ]
+
+        # Act
+        ds = ds.add_input(test_signal1, test_signal2)
+
+        # Assert labels
+        assert sorted(list(ds.dataset.loc[:, "INPUT"].columns)) == sorted(
+            expected_labels
+        )
+
+        print(ds._nan_intervals)
+        # Assert NaNs intevals.
+        assert ds._nan_intervals.keys() == expected_nans.keys()
+
+        # Testing the NaN:s values is a mess... we skip it.
+        # Do it manually.
+        #  for k, subset in ds._nan_intervals.items():
+        #      for ii, _ in enumerate(subset):
+        #          assert np.allclose(subset[ii], expected_nans[k][ii])
+
+        # Assert values
+        assert np.allclose(
+            ds.dataset.loc[:, "INPUT"].to_numpy(),
+            expected_values,
+            atol=ATOL,
+        )
+
     def test_remove_signals(self, sine_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = sine_dataframe
 
@@ -571,8 +660,9 @@ class Test_Dataset_nominal:
             y_actual = y[:, 0]
 
         # Assert if ||y_act-y_exp||**2 < 0.1**2
-        assert np.linalg.norm(u_actual - u_expected) ** 2 < 0.1**2
-        assert np.linalg.norm(y_actual - y_expected) ** 2 < 0.1**2
+        # Values computed only for the first 10 samples
+        assert np.linalg.norm(u_actual[:10] - u_expected[:10]) ** 2 < 0.1**2
+        assert np.linalg.norm(y_actual[:10] - y_expected[:10]) ** 2 < 0.1**2
 
 
 class Test_Dataset_raise:
