@@ -181,7 +181,16 @@ class Test_Dataset_nominal:
         # Check also the coverage to be convinced of this.
         pass
 
-    def test_add_input(self, sine_dataframe: pd.DataFrame) -> None:
+    @pytest.mark.parametrize(
+        "kind",
+        [
+            "INPUT",
+            "OUTPUT",
+        ],
+    )
+    def test_add_input(
+        self, kind: Signal_type, sine_dataframe: pd.DataFrame
+    ) -> None:
         df, u_labels, y_labels, fixture = sine_dataframe
 
         # Expected value.
@@ -219,7 +228,7 @@ class Test_Dataset_nominal:
             (
                 test_signal1["values"][:N].reshape(N, 1).round(NUM_DECIMALS),
                 test_signal2["values"][:N].reshape(N, 1).round(NUM_DECIMALS),
-                ds.dataset.loc[:, "INPUT"].head(N).to_numpy(),
+                ds.dataset.loc[:, kind].head(N).to_numpy(),
             ),
         )
 
@@ -240,20 +249,22 @@ class Test_Dataset_nominal:
         # expected_nans["test_signals2"] = np.linspace(0.5, 1.0, 6)
 
         # Overall list of signal names
-        expected_labels = list(ds.dataset.loc[:, "INPUT"].columns) + [
+        expected_labels = list(ds.dataset.loc[:, kind].columns) + [
             test_signal1["name"],
             test_signal2["name"],
         ]
 
         # Act
-        ds = ds.add_input(test_signal1, test_signal2)
+        if kind == "INPUT":
+            ds = ds.add_input(test_signal1, test_signal2)
+        elif kind == "OUTPUT":
+            ds = ds.add_output(test_signal1, test_signal2)
 
         # Assert labels
-        assert sorted(list(ds.dataset.loc[:, "INPUT"].columns)) == sorted(
+        assert sorted(list(ds.dataset.loc[:, kind].columns)) == sorted(
             expected_labels
         )
 
-        print(ds._nan_intervals)
         # Assert NaNs intevals.
         assert ds._nan_intervals.keys() == expected_nans.keys()
 
@@ -265,16 +276,20 @@ class Test_Dataset_nominal:
 
         # Assert values
         assert np.allclose(
-            ds.dataset.loc[:, "INPUT"].to_numpy(),
+            ds.dataset.loc[:, kind].to_numpy(),
             expected_values,
             atol=ATOL,
         )
 
         # Signal already exist
         with pytest.raises(KeyError):
-            ds.add_input(test_signal1)
+            if kind == "INPUT":
+                ds.add_input(test_signal1)
+            elif kind == "OUTPUT":
+                ds.add_output(test_signal1)
 
         # Signal that cannot be added
+        # due to bad sampling period
         test_bad_signal: dmv.Signal = {
             "name": "bad_signal",
             "values": np.random.rand(120),
@@ -284,7 +299,10 @@ class Test_Dataset_nominal:
         }
 
         with pytest.raises(Warning):
-            ds = ds.add_input(test_bad_signal)
+            if kind == "INPUT":
+                ds.add_input(test_bad_signal)
+            elif kind == "OUTPUT":
+                ds.add_output(test_bad_signal)
 
         # TODO : You can either test Warning OR that the signal is not added.
         # ds = ds.add_input(test_bad_signal)
