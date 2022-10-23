@@ -123,6 +123,78 @@ def rsquared(x: np.ndarray, y: np.ndarray) -> float:
     return r2  # type: ignore
 
 
+def _xcorr_norm_validation(
+    Rxy: XCorrelation,
+) -> XCorrelation:
+
+    R = Rxy["values"]
+
+    # MISO or SIMO case
+    if R.ndim == 2:
+        R = R[:, :, np.newaxis]
+    # SISO case
+    elif R.ndim == 1:
+        R = R[:, np.newaxis, np.newaxis]
+    # R cannot have dimension greater than 3
+    elif R.ndim > 3:
+        raise IndexError(
+            "The correlation tensor must be a 3D np.array where "
+            "the first dimension size is equal to the number of observartions 'N', "
+            "the second dimension size is equal to the number of inputs 'p' "
+            "and the third dimension size is equal to the number of outputs 'q.'"
+        )
+
+    Rxy["values"] = R
+
+    return Rxy
+
+
+def acorr_norm(
+    Rxx: XCorrelation,
+    l_norm: float | Literal["fro", "nuc"] | None = np.inf,
+    matrix_norm: float | Literal["fro", "nuc"] | None = 2,
+) -> float:
+    r"""Return the norm of the auto-correlation tensor.
+
+    It first compute the *l*-norm of each component
+    :math:`(r_{i,j}(\\tau)) \in R(\\tau), i=1,\\dots p, j=1,\\dots,q`,
+    where :math:`R(\\tau)` is the input tensor.
+    Then, it computes the matrix-norm of the resulting matrix :math:`\\hat R`.
+
+
+    Note
+    ----
+    Given that the auto-correlation of the same components for lags = 0
+    is always 1 or -1, then the validation metrics could be jeopardized,
+    especially if the l-inf norm is used.
+    Therefore, the diagonal entries of the sampled auto-correlation matrix
+    for lags = 0 is set to 0.0
+
+
+    Parameters
+    ----------
+    R :
+        Auto-correlation input tensor.
+    l_norm :
+        Type of *l*-norm.
+        This parameter is passed to *numpy.linalg.norm()* method.
+    matrix_norm :
+        Type of matrx norm with respect to *l*-normed covariance matrix.
+        This parameter is passed to *numpy.linalg.norm()* method.
+    """
+    Rxx = deepcopy(_xcorr_norm_validation(Rxx))
+
+    # Auto-correlation for lags = 0 of the same component is 1 or -1
+    # therefore may jeopardize the results, especially if the l-inf norm
+    # is used.
+    lags0_idx = np.nonzero(Rxx["lags"] == 0)[0][0]
+    np.fill_diagonal(Rxx["values"][lags0_idx, :, :], 0.0)
+
+    R_norm = xcorr_norm(Rxx, l_norm, matrix_norm)
+
+    return R_norm
+
+
 def xcorr_norm(
     Rxy: XCorrelation,
     l_norm: float | Literal["fro", "nuc"] | None = np.inf,
@@ -146,22 +218,10 @@ def xcorr_norm(
         Type of matrx norm with respect to *l*-normed covariance matrix.
         This parameter is passed to *numpy.linalg.norm()* method.
     """
-    R = Rxy["values"]
 
-    # MISO or SIMO case
-    if R.ndim == 2:
-        R = R[:, :, np.newaxis]
-    # SISO case
-    elif R.ndim == 1:
-        R = R[:, np.newaxis, np.newaxis]
-    # R cannot have dimension greater than 3
-    elif R.ndim > 3:
-        raise IndexError(
-            "The correlation tensor must be a 3D np.array where "
-            "the first dimension size is equal to the number of observartions 'N', "
-            "the second dimension size is equal to the number of inputs 'p' "
-            "and the third dimension size is equal to the number of outputs 'q.'"
-        )
+    Rxy = _xcorr_norm_validation(Rxy)
+
+    R = Rxy["values"]
     nrows = R.shape[1]
     ncols = R.shape[2]
 
@@ -268,7 +328,7 @@ class ValidationSession:
         r2 = rsquared(y_values, y_sim_values)
         # ||Ree[sim_name]||
         Ree = self.auto_correlation[sim_name]
-        Ree_norm = xcorr_norm(Ree, l_norm, matrix_norm)
+        Ree_norm = acorr_norm(Ree, l_norm, matrix_norm)
         # ||Rue[sim_name]||
         Rue = self.cross_correlation[sim_name]
         Rue_norm = xcorr_norm(Rue, l_norm, matrix_norm)

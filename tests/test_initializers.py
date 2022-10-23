@@ -51,15 +51,17 @@ class TestInitializerFromSignals:
         assert sorted(expected_input_names) == sorted(actual_input_names)
         assert sorted(expected_output_names) == sorted(actual_output_names)
         # Time index starts from 0.0
-        assert np.isclose(ds.dataset.index[0], 0.0)
+        assert np.isclose(ds.dataset.index[0], 0.0, atol=ATOL)
         assert ds.dataset.index.name == "Time"
         # Check that time vector is periodic
         assert all(
-            np.isclose(x, target_sampling_period)
+            np.isclose(x, target_sampling_period, atol=ATOL)
             for x in np.diff(ds.dataset.index)
         )
         assert np.isclose(
-            ds.dataset.index[1] - ds.dataset.index[0], target_sampling_period
+            ds.dataset.index[1] - ds.dataset.index[0],
+            target_sampling_period,
+            atol=ATOL,
         )
         # Assert nan_intervals. Take only the first in/out names so you can
         # also work with SISO.
@@ -79,10 +81,12 @@ class TestInitializerFromSignals:
             assert np.isclose(
                 expected_nan_intervals[ii][0],
                 ds._nan_intervals["u1"][ii][0],
+                atol=ATOL,
             )
             assert np.isclose(
                 expected_nan_intervals[ii][1],
                 ds._nan_intervals["u1"][ii][-1],
+                atol=ATOL,
             )
         # Output
         expected_num_nans_y1 = 1  # From fixture
@@ -92,14 +96,14 @@ class TestInitializerFromSignals:
         expected_nan_interval = [5.0, 8.4]  # From fixture
 
         assert np.isclose(
-            expected_nan_interval[0], ds._nan_intervals["y1"][0][0]
+            expected_nan_interval[0], ds._nan_intervals["y1"][0][0], atol=ATOL
         )
         assert np.isclose(
-            expected_nan_interval[1], ds._nan_intervals["y1"][0][-1]
+            expected_nan_interval[1], ds._nan_intervals["y1"][0][-1], atol=ATOL
         )
 
         # assert sampling period
-        assert np.isclose(ds.sampling_period, target_sampling_period)
+        assert np.isclose(ds.sampling_period, target_sampling_period, atol=ATOL)
 
     def test_no_leftovers(self, good_signals: list[Signal]) -> None:
         # Nominal data
@@ -157,7 +161,7 @@ class TestInitializerFromDataframe:
         assert sorted(expected_output_names) == sorted(actual_output_names)
 
         # assert sampling period
-        assert np.isclose(ds.sampling_period, sampling_period)
+        assert np.isclose(ds.sampling_period, sampling_period, atol=ATOL)
 
     @pytest.mark.parametrize(
         # Each test is ((tin,tout),(tin_expected,tout_expected))
@@ -193,8 +197,8 @@ class TestInitializerFromDataframe:
         actual_tout = ds.dataset.index[-1]
 
         # Names are well placed
-        assert np.isclose(actual_tin, expected_tin)
-        assert np.isclose(actual_tout, expected_tout)
+        assert np.isclose(actual_tin, expected_tin, atol=ATOL)
+        assert np.isclose(actual_tout, expected_tout, atol=ATOL)
 
 
 class TestInitializerWrongInputData:

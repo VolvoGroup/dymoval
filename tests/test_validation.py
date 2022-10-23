@@ -342,7 +342,7 @@ class Test_ClassValidatioNominal_sim_validation:
 
 
 class Test_Plots:
-    @pytest.mark.plot
+    @pytest.mark.plots
     def test_plots(self, good_dataframe: pd.DataFrame, tmp_path: str) -> None:
         df, u_labels, y_labels, fixture = good_dataframe
         name_ds = "my_dataset"
@@ -668,10 +668,12 @@ class Test_rsquared:
         )
 
         assert np.isclose(
-            rsquared_expected_SISO, rsquared_actual_SISO, atol=1e-4
+            rsquared_expected_SISO, rsquared_actual_SISO, atol=ATOL
         )
 
-        assert np.isclose(rsquared_expected_MIMO, rsquared_actual_MIMO)
+        assert np.isclose(
+            rsquared_expected_MIMO, rsquared_actual_MIMO, atol=ATOL
+        )
 
     @pytest.mark.parametrize(
         "y_values,y_sim_values",
@@ -704,7 +706,7 @@ class Test_xcorr_norm:
                 0.0763,
                 -0.1363,
                 -0.2526,
-                -0.8181,
+                1.0,
                 0.0515,
                 0.1090,
                 0.2606,
@@ -746,7 +748,7 @@ class Test_xcorr_norm:
                 0.1892,
                 0.2061,
                 -0.2843,
-                0.1957,
+                1.0,
                 -0.8060,
                 0.1135,
                 0.3371,
@@ -756,46 +758,70 @@ class Test_xcorr_norm:
 
         lags_test = np.arange(-4, 5)
 
-        norm_expected_SISO = 0.8181
-        norm_expected_SIMO = 1.0331
-        norm_expected_MISO = 1.0296
-        norm_expected_MIMO = 1.4401
+        acorr_norm_expected_SISO = 0.5233
+        xcorr_norm_expected_SISO = 1.0
+
+        acorr_norm_expected_SIMO = 0.8198
+        xcorr_norm_expected_SIMO = 1.1824
+
+        acorr_norm_expected_MISO = 0.8153
+        xcorr_norm_expected_MISO = 1.1794
+
+        acorr_norm_expected_MIMO = 1.3085
+        xcorr_norm_expected_MIMO = 1.6281
 
         # SISO Adjust test values
-        R_test = np.empty((len(lags_test), 1, 1))
-        R_test[:, 0, 0] = Rx1y1
+        R_test = np.empty(len(lags_test))
+        R_test = Rx1y1
         Rxy_test = {"values": R_test, "lags": lags_test}
 
         # Act
-        norm_actual = dmv.xcorr_norm(Rxy_test)
+        acorr_norm_actual = dmv.acorr_norm(Rxy_test)
+        xcorr_norm_actual = dmv.xcorr_norm(Rxy_test)
 
         # Assert
-        print("Rxy_test = ", Rxy_test)
-        assert np.isclose(norm_actual, norm_expected_SISO, atol=1e-4)
+        assert np.isclose(
+            acorr_norm_actual, acorr_norm_expected_SISO, atol=ATOL
+        )
+        assert np.isclose(
+            xcorr_norm_actual, xcorr_norm_expected_SISO, atol=ATOL
+        )
 
         # SIMO Adjust test values
-        R_test = np.empty((len(lags_test), 1, 2))
-        R_test[:, 0, 0] = Rx1y1
-        R_test[:, 0, 1] = Rx1y2
+        R_test = np.empty((len(lags_test), 2))
+        R_test[:, 0] = Rx1y1
+        R_test[:, 1] = Rx1y2
         Rxy_test = {"values": R_test, "lags": lags_test}
 
         # Act
-        norm_actual = dmv.xcorr_norm(Rxy_test)
+        acorr_norm_actual = dmv.acorr_norm(Rxy_test)
+        xcorr_norm_actual = dmv.xcorr_norm(Rxy_test)
 
         # Assert
-        assert np.isclose(norm_actual, norm_expected_SIMO, atol=1e-4)
+        assert np.isclose(
+            acorr_norm_actual, acorr_norm_expected_SIMO, atol=ATOL
+        )
+        assert np.isclose(
+            xcorr_norm_actual, xcorr_norm_expected_SIMO, atol=ATOL
+        )
 
         # MISO Adjust test values
-        R_test = np.empty((len(lags_test), 2, 1))
-        R_test[:, 0, 0] = Rx1y1
-        R_test[:, 1, 0] = Rx2y1
+        R_test = np.empty((len(lags_test), 2))
+        R_test[:, 0] = Rx1y1
+        R_test[:, 1] = Rx2y1
         Rxy_test = {"values": R_test, "lags": lags_test}
 
         # Act
-        norm_actual = dmv.xcorr_norm(Rxy_test)
+        acorr_norm_actual = dmv.acorr_norm(Rxy_test)
+        xcorr_norm_actual = dmv.xcorr_norm(Rxy_test)
 
         # Assert
-        assert np.isclose(norm_actual, norm_expected_MISO, atol=1e-4)
+        assert np.isclose(
+            acorr_norm_actual, acorr_norm_expected_MISO, atol=ATOL
+        )
+        assert np.isclose(
+            xcorr_norm_actual, xcorr_norm_expected_MISO, atol=ATOL
+        )
 
         # MIMO Adjust test values
         R_test = np.empty((len(lags_test), 2, 2))
@@ -806,10 +832,16 @@ class Test_xcorr_norm:
         Rxy_test = {"values": R_test, "lags": lags_test}
 
         # Act
-        norm_actual = dmv.xcorr_norm(Rxy_test)
+        acorr_norm_actual = dmv.acorr_norm(Rxy_test)
+        xcorr_norm_actual = dmv.xcorr_norm(Rxy_test)
 
         # Assert
-        assert np.isclose(norm_actual, norm_expected_MIMO, atol=1e-4)
+        assert np.isclose(
+            acorr_norm_actual, acorr_norm_expected_MIMO, atol=ATOL
+        )
+        assert np.isclose(
+            xcorr_norm_actual, xcorr_norm_expected_MIMO, atol=ATOL
+        )
 
     @pytest.mark.parametrize(
         "R",

@@ -265,9 +265,9 @@ class Dataset:
         NaN_intervals = {}
         for s in list(df.columns):
             NaN_index[s] = df.loc[df[s].isnull().to_numpy()].index
-            idx = np.where(~np.isclose(np.diff(NaN_index[s]), sampling_period))[
-                0
-            ]
+            idx = np.where(
+                ~np.isclose(np.diff(NaN_index[s]), sampling_period, atol=ATOL)
+            )[0]
             NaN_intervals[s] = np.split(NaN_index[s], idx + 1)
         return NaN_intervals
 
@@ -290,7 +290,7 @@ class Dataset:
             df_ext: pd.DataFrame,
             NaN_intervals: dict[str, list[np.ndarray]],
             overlap: bool,
-        ) -> tuple[float, float]:
+        ) -> tuple[float, float]:  # pragma: no cover
             # Select the time interval graphically
             # OBS! This part cannot be automatically tested because the it require
             # manual action from the user (resize window).
@@ -801,7 +801,7 @@ class Dataset:
         for s in signal_list:
             N = target_sampling_period / s["sampling_period"]
             # Check if N is integer
-            if np.isclose(N, round(N)):
+            if np.isclose(N, round(N), atol=ATOL):
                 s["values"] = s["values"][:: int(N)]
                 s["sampling_period"] = target_sampling_period
             else:
@@ -842,7 +842,8 @@ class Dataset:
 
         # Update excluded_signal attribute
         excluded_signals = [s["name"] for s in signals if s not in signals_ok]
-        ds.excluded_signals + excluded_signals
+        print("excluded_signals = ", excluded_signals)
+        ds.excluded_signals = ds.excluded_signals + excluded_signals
         if excluded_signals:
             raise Warning(f"Signals {excluded_signals} cannot be added.")
 
@@ -1640,10 +1641,10 @@ class Dataset:
     #     """To be implemented!"""
     #     print("Not implemented yet!")
 
-    def replace_NaNs(
+    def remove_NaNs(
         self,
         **kwargs: Any,
-    ) -> Dataset:
+    ) -> Dataset:  # pragma: no cover
         """Replace NaN:s in the dataset.
 
         It uses pandas *DataFrame.interpolate()* method, so the **kwargs are directly
@@ -1825,7 +1826,9 @@ def validate_signals(*signals: Signal) -> None:
         # samopling period check
         if not isinstance(s["sampling_period"], float):
             raise TypeError("Key 'sampling_period' must be a positive float.")
-        if s["sampling_period"] < 0.0 or np.isclose(s["sampling_period"], 0.0):
+        if s["sampling_period"] < 0.0 or np.isclose(
+            s["sampling_period"], 0.0, atol=ATOL
+        ):
             raise ValueError("Key 'sampling_period' must be a positive float.")
 
 
@@ -1939,7 +1942,7 @@ def validate_dataframe(
     # OBS! Builtin methds df.index.is_monotonic_increasing combined with
     # df.index.is_unique won't work due to floats.
     sampling_period = df.index[1] - df.index[0]
-    if not np.all(np.isclose(np.diff(df.index), sampling_period)):
+    if not np.all(np.isclose(np.diff(df.index), sampling_period, atol=ATOL)):
         raise ValueError(
             "Index must be a 1D vector of monotonically",
             "equi-spaced, increasing floats.",

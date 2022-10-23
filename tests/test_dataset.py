@@ -47,7 +47,7 @@ class Test_Dataset_nominal:
             "my_dataset", df, u_labels, y_labels, full_time_interval=True
         )
 
-        assert np.allclose(ds.dataset, df_expected)
+        assert np.allclose(ds.dataset, df_expected, atol=ATOL)
 
     def test__classify_signals_no_args(
         self,
@@ -270,6 +270,26 @@ class Test_Dataset_nominal:
             atol=ATOL,
         )
 
+        # Signal already exist
+        with pytest.raises(KeyError):
+            ds.add_input(test_signal1)
+
+        # Signal that cannot be added
+        test_bad_signal: dmv.Signal = {
+            "name": "bad_signal",
+            "values": np.random.rand(120),
+            "signal_unit": "m",
+            "sampling_period": np.pi,
+            "time_unit": "s",
+        }
+
+        with pytest.raises(Warning):
+            ds = ds.add_input(test_bad_signal)
+
+        # TODO : You can either test Warning OR that the signal is not added.
+        # ds = ds.add_input(test_bad_signal)
+        # assert test_bad_signal["name"] in ds.excluded_signals
+
     def test_remove_signals(self, sine_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = sine_dataframe
 
@@ -298,6 +318,10 @@ class Test_Dataset_nominal:
             with pytest.raises(KeyError):
                 ds.remove_signals("u1", "y1")
 
+        # Signal does not exist
+        with pytest.raises(KeyError):
+            ds.remove_signals("potato")
+
     def test_remove_means(self, sine_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = sine_dataframe
 
@@ -315,11 +339,13 @@ class Test_Dataset_nominal:
         ds_expected = ds.remove_means()
 
         # Lets see if it is true (the mean of a signal with removed mean is 0.0)
-        assert np.allclose(ds_expected.dataset.droplevel(0, axis=1).mean(), 0.0)
+        assert np.allclose(
+            ds_expected.dataset.droplevel(0, axis=1).mean(), 0.0, atol=ATOL
+        )
 
         # Lets check that the stored DataFrame has not been changed.
         df_actual = ds.dataset.droplevel(0, axis=1)
-        assert np.allclose(df_actual.to_numpy(), df.to_numpy())
+        assert np.allclose(df_actual.to_numpy(), df.to_numpy(), atol=ATOL)
 
     def test_remove_offset(self, constant_ones_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = constant_ones_dataframe
@@ -394,9 +420,9 @@ class Test_Dataset_nominal:
         ds_actual = ds.remove_offset(*test_values[fixture])
 
         # Assert
-        assert np.allclose(ds_actual.dataset, df_expected)
+        assert np.allclose(ds_actual.dataset, df_expected, atol=ATOL)
         # Assert that the internally stored dataset is not overwritten
-        assert np.allclose(ds.dataset, df)
+        assert np.allclose(ds.dataset, df, atol=ATOL)
 
     def test_remove_offset_only_input(
         self, constant_ones_dataframe: pd.DataFrame
@@ -462,10 +488,10 @@ class Test_Dataset_nominal:
         ds_actual = ds.remove_offset(*u_list[fixture])
 
         # Assert
-        assert np.allclose(ds_actual.dataset, df_expected)
+        assert np.allclose(ds_actual.dataset, df_expected, atol=ATOL)
 
         # Assert that the internally stored dataset is not overwritten
-        assert np.allclose(ds.dataset, df)
+        assert np.allclose(ds.dataset, df, atol=ATOL)
 
     def test_remove_offset_only_output(
         self, constant_ones_dataframe: pd.DataFrame
@@ -535,9 +561,9 @@ class Test_Dataset_nominal:
         ds_actual = ds.remove_offset(*y_list[fixture])
 
         # Assert that the offsets are removed
-        assert np.allclose(ds_actual.dataset, df_expected)
+        assert np.allclose(ds_actual.dataset, df_expected, atol=ATOL)
         # Assert that the internally stored dataset is not overwritten
-        assert np.allclose(ds.dataset, df)
+        assert np.allclose(ds.dataset, df, atol=ATOL)
 
     def test_dataset_values(self, sine_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = sine_dataframe
@@ -556,9 +582,9 @@ class Test_Dataset_nominal:
         t_actual, u_actual, y_actual = ds.dataset_values()
 
         # Assert
-        assert np.allclose(t_expected, t_actual)
-        assert np.allclose(u_expected, u_actual)
-        assert np.allclose(y_expected, y_actual)
+        assert np.allclose(t_expected, t_actual, atol=ATOL)
+        assert np.allclose(u_expected, u_actual, atol=ATOL)
+        assert np.allclose(y_expected, y_actual, atol=ATOL)
 
     def test_signal_names(self, sine_dataframe: pd.DataFrame) -> None:
         df, u_labels, y_labels, fixture = sine_dataframe
@@ -664,6 +690,12 @@ class Test_Dataset_nominal:
         assert np.linalg.norm(u_actual[:10] - u_expected[:10]) ** 2 < 0.1**2
         assert np.linalg.norm(y_actual[:10] - y_expected[:10]) ** 2 < 0.1**2
 
+        with pytest.raises(ValueError):
+            ds = ds.low_pass_filter(("u1", -0.3))
+
+        with pytest.raises(ValueError):
+            ds = ds.low_pass_filter(("y1", -0.3))
+
 
 class Test_Dataset_raise:
     def test__classify_signals_raise(
@@ -713,7 +745,7 @@ class Test_Dataset_plots:
     # Use a non-interactive backend
     matplotlib.use("Agg")
 
-    @pytest.mark.plot
+    @pytest.mark.plots
     def test_plot_nominal(
         self, good_signals: list[Signal], tmp_path: str
     ) -> None:
@@ -811,7 +843,7 @@ class Test_Dataset_plots:
         assert os.path.exists(filename + "_in.png")
         assert os.path.exists(filename + "_out.png")
 
-    @pytest.mark.plot
+    @pytest.mark.plots
     def test_plot_spectrum(
         self,
         good_dataframe: pd.DataFrame,
@@ -920,14 +952,14 @@ class Test_Dataset_plots:
         with pytest.raises(ValueError):
             _ = ds.plot_spectrum(kind="potato")
 
-    @pytest.mark.plot
+    @pytest.mark.plots
     def test_plot_Signals(self, good_signals: list[Signal]) -> None:
         # You should just get a plot.
         signal_list, u_labels, y_labels, fixture = good_signals
         _ = dmv.plot_signals(*signal_list)
         plt.close("all")
 
-    @pytest.mark.plot
+    @pytest.mark.plots
     def test_compare_datasets(
         self,
         good_dataframe: pd.DataFrame,
@@ -960,6 +992,9 @@ class Test_Dataset_plots:
         plt.close("all")
 
         dmv.compare_datasets(ds, ds1, ds2, kind="amplitude")
+        plt.close("all")
+
+        dmv.compare_datasets(ds, ds1, ds2, kind="psd")
         plt.close("all")
 
         dmv.compare_datasets(ds, ds1, ds2, kind="all")
