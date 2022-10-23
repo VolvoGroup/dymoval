@@ -842,7 +842,6 @@ class Dataset:
 
         # Update excluded_signal attribute
         excluded_signals = [s["name"] for s in signals if s not in signals_ok]
-        print("excluded_signals = ", excluded_signals)
         ds.excluded_signals = ds.excluded_signals + excluded_signals
         if excluded_signals:
             raise Warning(f"Signals {excluded_signals} cannot be added.")
@@ -874,7 +873,16 @@ class Dataset:
         )
 
         # concatenate new DataFrame containing the added signals
-        ds.dataset = pd.concat([ds.dataset, df_temp], axis=1).sort_index(axis=1)
+        ds.dataset = pd.concat([df_temp, ds.dataset], axis=1).sort_index(
+            axis=1,
+        )
+        # ds.dataset = (
+        #     pd.concat([df_temp, ds.dataset], axis=1)
+        #     .reindex(
+        #         columns=columns,
+        #     )
+        #     .sort_index(axis=1)
+        # )
 
         # Update NaN intervals
         NaN_intervals = self._find_nan_intervals(df_temp)
