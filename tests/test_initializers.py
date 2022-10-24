@@ -204,52 +204,52 @@ class TestInitializerFromDataframe:
 class TestInitializerWrongInputData:
     # def test_nominal_missing_tout(self, good_dataframe: pd.DataFrame) -> None:
     #     # Nominal data
-    #     df, u_labels, y_labels, _ = good_dataframe
+    #     df, u_names, y_names, _ = good_dataframe
     #     tin = 0.5
     #     with pytest.raises(Exception):
     #         dmv.dataset.Dataset(
     #             "potato",
     #             df,
-    #             u_labels,
-    #             y_labels,
+    #             u_names,
+    #             y_names,
     #             tin=tin,
     #         )
 
     def test_nominal_tin_ge_tout(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal data
-        df, u_labels, y_labels, _ = good_dataframe
+        df, u_names, y_names, _ = good_dataframe
         # tin > tout
         tin = 0.5
         tout = 0.1
         with pytest.raises(ValueError):
             dmv.dataset.Dataset(
-                "potato", df, u_labels, y_labels, tin=tin, tout=tout
+                "potato", df, u_names, y_names, tin=tin, tout=tout
             )
 
     def test_nominal_wrong_type(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal data
-        df, u_labels, y_labels, _ = good_dataframe
+        df, u_names, y_names, _ = good_dataframe
         # tin > tout
         tin = 0.1
         tout = 0.5
         with pytest.raises(TypeError):
             dmv.dataset.Dataset(
-                "potato", "string_type", u_labels, y_labels, tin=tin, tout=tout
+                "potato", "string_type", u_names, y_names, tin=tin, tout=tout
             )
 
 
 class TestOtherStuff:
     def test__str__(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal data
-        df, u_labels, y_labels, _ = good_dataframe
+        df, u_names, y_names, _ = good_dataframe
         # tin > tout
         tin = 0.1
         tout = 0.5
         ds = dmv.dataset.Dataset(
             "potato",
             df,
-            u_labels,
-            y_labels,
+            u_names,
+            y_names,
             tin=tin,
             tout=tout,
         )

@@ -152,7 +152,7 @@ ds = dmv.Dataset(
     overlap=True,
 )
 
-
+# %%
 # Once the dymoval Dataset is created, it is possible to handle with the NaN:s
 # in a number of ways
 ds = ds.remove_NaNs()

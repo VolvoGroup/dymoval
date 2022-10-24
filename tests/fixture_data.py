@@ -124,9 +124,9 @@ def good_dataframe(request):  # type: ignore
     num_samples = 100
     sampling_period = 0.1
     idx = np.arange(num_samples) * sampling_period
-    u_labels = ["u1", "u2", "u3"]
-    y_labels = ["y1", "y2"]
-    cols_name = [*u_labels, *y_labels]
+    u_names = ["u1", "u2", "u3"]
+    y_names = ["y1", "y2"]
+    cols_name = [*u_names, *y_names]
     df = pd.DataFrame(
         np.random.randn(num_samples, len(cols_name)),
         index=idx,
@@ -136,22 +136,22 @@ def good_dataframe(request):  # type: ignore
 
     if fixture_type == "SISO":
         # Slice signal list
-        u_labels = u_labels[0]
-        y_labels = y_labels[0]
-        cols = [u_labels, y_labels]
+        u_names = u_names[0]
+        y_names = y_names[0]
+        cols = [u_names, y_names]
     if fixture_type == "MISO":
         # Slice signal list
-        y_labels = y_labels[0]
-        cols = [*u_labels, y_labels]
+        y_names = y_names[0]
+        cols = [*u_names, y_names]
     if fixture_type == "SIMO":
         # Slice signal list
-        u_labels = u_labels[0]
-        cols = [u_labels, *y_labels]
+        u_names = u_names[0]
+        cols = [u_names, *y_names]
     if fixture_type == "MIMO":
-        cols = [*u_labels, *y_labels]
+        cols = [*u_names, *y_names]
     df = df.loc[:, cols]
     df = np.round(df, dmv.NUM_DECIMALS)
-    return df, u_labels, y_labels, fixture_type
+    return df, u_names, y_names, fixture_type
 
 
 @pytest.fixture(params=dataset_type)
@@ -174,14 +174,14 @@ def sine_dataframe(request):  # type: ignore
     f3 = 4.8
     w3 = 2 * np.pi * f3
 
-    u_labels = ["u1", "u2", "u3"]
+    u_names = ["u1", "u2", "u3"]
     u_values = [
         c1 + np.sin(w1 * t) + np.sin(w2 * t),
         c1 + np.sin(w2 * t),
         c1 + np.sin(w3 * t),
     ]
 
-    y_labels = ["y1", "y2", "y3", "y4"]
+    y_names = ["y1", "y2", "y3", "y4"]
     y_values = [
         c1 + np.sin(w1 * t) + np.sin(w3 * t),
         c3 + np.sin(w3 * t),
@@ -194,27 +194,27 @@ def sine_dataframe(request):  # type: ignore
         .transpose()
         .round(dmv.NUM_DECIMALS)
     )
-    df = pd.DataFrame(index=t, columns=[*u_labels, *y_labels], data=data)
+    df = pd.DataFrame(index=t, columns=[*u_names, *y_names], data=data)
     df.index.name = "Time"
 
     if fixture_type == "SISO":
         # Slice signal list
-        u_labels = u_labels[0]
-        y_labels = y_labels[0]
-        cols = [u_labels, y_labels]
+        u_names = u_names[0]
+        y_names = y_names[0]
+        cols = [u_names, y_names]
     if fixture_type == "MISO":
         # Slice signal list
-        y_labels = y_labels[0]
-        cols = [*u_labels, y_labels]
+        y_names = y_names[0]
+        cols = [*u_names, y_names]
     if fixture_type == "SIMO":
         # Slice signal list
-        u_labels = u_labels[0]
-        cols = [u_labels, *y_labels]
+        u_names = u_names[0]
+        cols = [u_names, *y_names]
     if fixture_type == "MIMO":
-        cols = [*u_labels, *y_labels]
+        cols = [*u_names, *y_names]
     df = df.loc[:, cols]
     np.round(df, dmv.NUM_DECIMALS)
-    return df, u_labels, y_labels, fixture_type
+    return df, u_names, y_names, fixture_type
 
 
 @pytest.fixture(params=dataset_type)
@@ -225,27 +225,27 @@ def constant_ones_dataframe(request):  # type: ignore
 
     N = 10
     idx = np.linspace(0, 1, N)
-    u_labels = ["u1", "u2", "u3"]
-    y_labels = ["y1", "y2", "y3"]
+    u_names = ["u1", "u2", "u3"]
+    y_names = ["y1", "y2", "y3"]
     values = np.ones((N, 6))
-    df = pd.DataFrame(index=idx, columns=[*u_labels, *y_labels], data=values)
+    df = pd.DataFrame(index=idx, columns=[*u_names, *y_names], data=values)
     df.index.name = "Time"
 
     if fixture_type == "SISO":
         # Slice signal list
-        u_labels = u_labels[0]
-        y_labels = y_labels[0]
-        cols = [u_labels, y_labels]
+        u_names = u_names[0]
+        y_names = y_names[0]
+        cols = [u_names, y_names]
     if fixture_type == "MISO":
         # Slice signal list
-        y_labels = y_labels[0]
-        cols = [*u_labels, y_labels]
+        y_names = y_names[0]
+        cols = [*u_names, y_names]
     if fixture_type == "SIMO":
         # Slice signal list
-        u_labels = u_labels[0]
-        cols = [u_labels, *y_labels]
+        u_names = u_names[0]
+        cols = [u_names, *y_names]
     if fixture_type == "MIMO":
-        cols = [*u_labels, *y_labels]
+        cols = [*u_names, *y_names]
     df = df.loc[:, cols]
     np.round(df, dmv.NUM_DECIMALS)
-    return df, u_labels, y_labels, fixture_type
+    return df, u_names, y_names, fixture_type
