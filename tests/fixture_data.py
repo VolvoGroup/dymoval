@@ -230,21 +230,30 @@ def sine_dataframe(request):  # type: ignore
     if fixture_type == "SISO":
         # Slice signal list
         u_names = u_names[0]
+        u_units = u_units[0]
         y_names = y_names[0]
-        cols = [u_names, y_names]
+        y_units = y_units[0]
+        u_cols = u_cols[0]
+        y_cols = y_cols[0]
+        cols = [u_cols, y_cols]
     if fixture_type == "MISO":
         # Slice signal list
         y_names = y_names[0]
-        cols = [*u_names, y_names]
+        y_units = y_units[0]
+        y_cols = y_cols[0]
+        cols = [*u_cols, y_cols]
     if fixture_type == "SIMO":
         # Slice signal list
         u_names = u_names[0]
-        cols = [u_names, *y_names]
+        u_units = u_units[0]
+        u_cols = u_cols[0]
+        cols = [u_cols, *y_cols]
     if fixture_type == "MIMO":
-        cols = [*u_names, *y_names]
+        cols = [*u_cols, *y_cols]
     df = df.loc[:, cols]
-    np.round(df, dmv.NUM_DECIMALS)
-    return df, u_names, y_names, fixture_type
+    df.round(NUM_DECIMALS)
+    df.columns = df.columns.to_flat_index()
+    return df, u_names, y_names, u_units, y_units, fixture_type
 
 
 @pytest.fixture(params=dataset_type)

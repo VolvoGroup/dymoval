@@ -57,7 +57,7 @@ class Test_Dataset_nominal:
         # and who is output
 
         # Arrange
-        df, u_names, y_names, fixture = sine_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = sine_dataframe
         ds = dmv.dataset.Dataset(
             "my_dataset", df, u_names, y_names, full_time_interval=True
         )
@@ -115,7 +115,7 @@ class Test_Dataset_nominal:
         # and who is output and it also return the in-out indices
 
         # Arrange
-        df, u_names, y_names, fixture = sine_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = sine_dataframe
         ds = dmv.dataset.Dataset(
             "my_dataset", df, u_names, y_names, full_time_interval=True
         )
@@ -187,7 +187,7 @@ class Test_Dataset_nominal:
     def test_add_input(
         self, kind: Signal_type, sine_dataframe: pd.DataFrame
     ) -> None:
-        df, u_names, y_names, fixture = sine_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = sine_dataframe
 
         # Expected value.
         # If you remove a mean from a signal, then the mean of the reminder
@@ -305,7 +305,7 @@ class Test_Dataset_nominal:
         # assert test_bad_signal["name"] in ds.excluded_signals
 
     def test_remove_signals(self, sine_dataframe: pd.DataFrame) -> None:
-        df, u_names, y_names, fixture = sine_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = sine_dataframe
 
         # Expected value.
         # If you remove a mean from a signal, then the mean of the reminder
@@ -337,7 +337,7 @@ class Test_Dataset_nominal:
             ds.remove_signals("potato")
 
     def test_remove_means(self, sine_dataframe: pd.DataFrame) -> None:
-        df, u_names, y_names, fixture = sine_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = sine_dataframe
 
         # Expected value.
         # If you remove a mean from a signal, then the mean of the reminder
@@ -580,7 +580,7 @@ class Test_Dataset_nominal:
         assert np.allclose(ds.dataset, df, atol=ATOL)
 
     def test_dataset_values(self, sine_dataframe: pd.DataFrame) -> None:
-        df, u_names, y_names, fixture = sine_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = sine_dataframe
 
         # Instantiate dataset
         name_ds = "my_dataset"
@@ -601,7 +601,7 @@ class Test_Dataset_nominal:
         assert np.allclose(y_expected, y_actual, atol=ATOL)
 
     def test_signal_names(self, sine_dataframe: pd.DataFrame) -> None:
-        df, u_names, y_names, fixture = sine_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = sine_dataframe
 
         # Instantiate dataset
         name_ds = "my_dataset"
@@ -646,7 +646,7 @@ class Test_Dataset_nominal:
         # Check if the passed dataset DataFrame is correctly stored as class attribute.
 
         # Arrange
-        df, u_names, y_names, fixture = sine_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = sine_dataframe
         ds = dmv.dataset.Dataset(
             "my_dataset", df, u_names, y_names, tin=0.0, tout=1.0
         )
@@ -718,7 +718,7 @@ class Test_Dataset_raise:
     ) -> None:
         # Check if the passed dataset DataFrame is correctly stored as class attribute.
         # Nominal data
-        df, u_names, y_names, fixture = sine_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = sine_dataframe
         ds = dmv.dataset.Dataset(
             "my_dataset", df, u_names, y_names, full_time_interval=True
         )
