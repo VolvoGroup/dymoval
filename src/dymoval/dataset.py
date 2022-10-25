@@ -315,29 +315,45 @@ class Dataset:
             if overlap:
                 n = max(p, q)
                 range_out = np.arange(0, q)
+                secondary_y = True
             else:
                 n = p + q
                 range_out = np.arange(p, p + q)
+                secondary_y = False
             nrows, ncols = factorize(n)  # noqa
 
             # Actual plot
             _, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
             axes = axes.T.flat
-            df_ext["INPUT"].plot(
+            df_ext["INPUT"].droplevel(level="units", axis=1).plot(
                 subplots=True,
                 grid=True,
                 color="b",
                 ylabel=u_units,
                 ax=axes[0:p],
             )
-            df_ext["OUTPUT"].plot(
+            df_ext["OUTPUT"].droplevel(level="units", axis=1).plot(
                 subplots=True,
                 grid=True,
                 ylabel=y_units,
                 color="g",
+                secondary_y=secondary_y,
                 ax=axes[range_out],
             )
 
+            # Set ylabels
+            for ii, unit in enumerate(u_units):
+                axes[ii].set_ylabel("(" + unit + ")")
+
+            if not sorted(u_units) == sorted(y_units):
+                for jj, unit in enumerate(y_units):
+                    if overlap:
+                        axes[jj].right_ax.set_ylabel("(" + unit + ")")
+                        axes[jj].right_ax.grid(None, axis="y")
+                    else:
+                        axes[p + jj].set_ylabel("(" + unit + ")")
+
+            # Set xlabel
             xlabel = (
                 f"{df_ext.index.name[0]} ({df_ext.index.name[1]})"  # Time (s)
             )
@@ -692,8 +708,8 @@ class Dataset:
 
         # Separate in from out.
         # By default take everything
-        u_names = list(df["INPUT"].columns)
-        y_names = list(df["OUTPUT"].columns)
+        u_names = list(df["INPUT"].droplevel(level="units", axis=1).columns)
+        y_names = list(df["OUTPUT"].droplevel(level="units", axis=1).columns)
 
         # Small check. Not very pythonic but still...
         signals_not_found = difference_lists_of_str(
@@ -711,8 +727,14 @@ class Dataset:
             y_names = [s for s in signals if s in df["OUTPUT"].columns]
 
         # Compute indices
-        u_names_idx = [df["INPUT"].columns.get_loc(u) for u in u_names]
-        y_names_idx = [df["OUTPUT"].columns.get_loc(y) for y in y_names]
+        u_names_idx = [
+            df["INPUT"].droplevel(level="units", axis=1).columns.get_loc(u)
+            for u in u_names
+        ]
+        y_names_idx = [
+            df["OUTPUT"].droplevel(level="units", axis=1).columns.get_loc(y)
+            for y in y_names
+        ]
 
         return u_names, y_names, u_names_idx, y_names_idx
 
@@ -1083,6 +1105,9 @@ class Dataset:
         p = len(u_names)
         q = len(y_names)
 
+        u_units = df["INPUT"].droplevel(level=["names"], axis=1).columns
+        y_units = df["OUTPUT"].droplevel(level=["names"], axis=1).columns
+
         # get some plot parameters based on user preferences
         n, range_in, range_out, u_titles, y_titles = self._get_plot_params(
             p, q, u_names_idx, y_names_idx, overlap
@@ -1093,6 +1118,11 @@ class Dataset:
         # think to the SISO case for example
         nrows, ncols = factorize(n)  # noqa
 
+        if overlap:
+            secondary_y = True
+        else:
+            secondary_y = False
+
         # Overwrite axes if you want the plot to be on the figure instantiated by the caller.
         if ax is None:  # Create new figure and axes
             fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
@@ -1102,8 +1132,9 @@ class Dataset:
         # Flatten array for more readable code
         axes = axes.T.flat
 
+        # You need this if in case you want to plot one single signal
         if u_names:
-            df["INPUT"].loc[:, u_names].plot(
+            df["INPUT"].droplevel(level="units", axis=1).loc[:, u_names].plot(
                 subplots=True,
                 grid=True,
                 color=line_color_input,
@@ -1113,6 +1144,7 @@ class Dataset:
                 ax=axes[range_in],
             )
 
+            print("u_names = ", u_names)
             self._shade_nans(
                 self._nan_intervals,
                 axes[range_in],
@@ -1121,12 +1153,13 @@ class Dataset:
             )
 
         if y_names:
-            df["OUTPUT"].loc[:, y_names].plot(
+            df["OUTPUT"].droplevel(level="units", axis=1).loc[:, y_names].plot(
                 subplots=True,
                 grid=True,
                 color=line_color_output,
                 linestyle=linestyle_output,
                 alpha=alpha_output,
+                secondary_y=secondary_y,
                 title=y_titles,
                 ax=axes[range_out],
             )
@@ -1138,8 +1171,24 @@ class Dataset:
                 color=line_color_output,
             )
 
+        # Set ylabels
+        # input
+        for ii, unit in enumerate(u_units):
+            axes[ii].set_ylabel("(" + unit + ")")
+
+        # Output
+        if not sorted(u_units) == sorted(y_units):
+            for jj, unit in enumerate(y_units):
+                if overlap:
+                    axes[jj].right_ax.set_ylabel("(" + unit + ")")
+                    axes[jj].right_ax.grid(None, axis="y")
+                else:
+                    axes[p + jj].set_ylabel("(" + unit + ")")
+
+        # Set xlabels
+        xlabel = f"{df.index.name[0]} ({df.index.name[1]})"  # Time (s)
         for ii in range(ncols):
-            axes[nrows - 1 :: nrows][ii].set_xlabel(df.index.name)
+            axes[nrows - 1 :: nrows][ii].set_xlabel(xlabel)
         plt.suptitle(f"Dataset {self.name}. ")
 
         # Eventually save and return figures.
@@ -1199,6 +1248,9 @@ class Dataset:
         u_names = list(set(u_names))
         y_names = list(set(y_names))
 
+        u_units = df["INPUT"].droplevel(level=["names"], axis=1).columns
+        y_units = df["OUTPUT"].droplevel(level=["names"], axis=1).columns
+
         # Input-output length and indices
         p = len(u_names)
         q = len(y_names)
@@ -1208,6 +1260,7 @@ class Dataset:
             p, q, u_names_idx, y_names_idx, overlap=False
         )
 
+        # This if is needed in case the user wants to plot only one signal
         if u_names:
             nrows_in, ncols_in = factorize(p)  # noqa
 
@@ -1215,24 +1268,24 @@ class Dataset:
                 fig_in, axes_in = plt.subplots(
                     nrows_in, ncols_in, squeeze=False
                 )
-                show_legend = False
             else:  # Otherwise use what is passed
                 axes_in = np.asarray(ax_in)
-                show_legend = True
 
-            axes_in = axes_in.flat
+            axes_in = axes_in.T.flat
             df["INPUT"].loc[:, u_names].hist(
                 grid=True,
                 bins=nbins,
                 color=line_color_input,
                 alpha=alpha_input,
-                legend=show_legend,
+                legend=True,
                 ax=axes_in[0:p],
             )
 
-            for ii in range(p):
-                axes_in[ii].set_xlabel(u_names[ii][1])
-            plt.suptitle("Coverage region.")
+            # Set xlabel
+            for ii, unit in enumerate(u_units):
+                axes_in[ii].set_title(f"INPUT #{u_names_idx[ii]}")
+                axes_in[ii].set_xlabel(f"({unit})")
+            plt.suptitle("Coverage region (INPUT).")
 
         if y_names:
             nrows_out, ncols_out = factorize(q)  # noqa
@@ -1241,24 +1294,24 @@ class Dataset:
                 fig_out, axes_out = plt.subplots(
                     nrows_out, ncols_out, squeeze=False
                 )
-                show_legend = False
             else:  # Otherwise use what is passed
                 axes_out = np.asarray(ax_out)
-                show_legend = True
 
-            axes_out = axes_out.flat
+            axes_out = axes_out.T.flat
             df["OUTPUT"].loc[:, y_names].hist(
                 grid=True,
                 bins=nbins,
                 color=line_color_output,
                 alpha=alpha_output,
-                legend=show_legend,
+                legend=True,
                 ax=axes_out[0:q],
             )
 
-            for ii in range(q):
-                axes_out[ii].set_xlabel(y_names[ii][1])
-            plt.suptitle("Coverage region.")
+            # Set xlabel, ylabels
+            for ii, unit in enumerate(y_units):
+                axes_out[ii].set_title(f"OUTPUT #{y_names_idx[ii]}")
+                axes_out[ii].set_xlabel(f"({unit})")
+            plt.suptitle("Coverage region (OUTPUT).")
 
         if save_as is not None:
             save_plot_as(fig_in, axes_in, save_as + "_in")  # noqa
@@ -1294,7 +1347,7 @@ class Dataset:
         # Validation
         u_names, y_names, _, _ = self._classify_signals(*signals)
         # Remove 'INPUT' 'OUTPUT' columns level from dataframe
-        df_temp = self.dataset.droplevel(level=0, axis=1)
+        df_temp = self.dataset.droplevel(level=["kind", "units"], axis=1)
 
         # Check if there are any NaN:s
         if df_temp.isna().any(axis=None):
@@ -2134,7 +2187,10 @@ def compare_datasets(
 
         # Arrange figure
         # Accumulate all the dataframes at signal_name level
-        dfs = [ds.dataset.droplevel(level=0, axis=1) for ds in datasets]
+        dfs = [
+            ds.dataset.droplevel(level=["kind", "units"], axis=1)
+            for ds in datasets
+        ]
         fig_time, axes_time = _arrange_fig_axes(*dfs)
 
         # All the plots made on the same axis
@@ -2192,7 +2248,10 @@ def compare_datasets(
 
         # Arrange figure
         # Accumulate all the dataframes at signal_name level
-        dfs = [ds.dataset.droplevel(level=0, axis=1) for ds in datasets]
+        dfs = [
+            ds.dataset.droplevel(level=["kind", "units"], axis=1)
+            for ds in datasets
+        ]
         fig_freq, axes_freq = _arrange_fig_axes(*dfs)
 
         if kind == "amplitude":
