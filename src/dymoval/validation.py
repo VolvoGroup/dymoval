@@ -343,10 +343,10 @@ class ValidationSession:
             )
 
     def _simulation_validation(
-        self, sim_name: str, y_labels: list[str], y_data: np.ndarray
+        self, sim_name: str, y_names: list[str], y_data: np.ndarray
     ) -> None:
 
-        if len(y_labels) != len(set(y_labels)):
+        if len(y_names) != len(set(y_names)):
             raise ValueError("Signals name must be unique.")
         if (
             not self.simulations_results.empty
@@ -357,7 +357,7 @@ class ValidationSession:
                 "HINT: check the loaded simulations names with"
                 "'simulations_namess()' method."
             )
-        if len(set(y_labels)) != len(
+        if len(set(y_names)) != len(
             set(self.Dataset.dataset["OUTPUT"].columns)
         ):
             raise IndexError(
@@ -369,7 +369,7 @@ class ValidationSession:
             raise ValueError(
                 "The type the input signal values must be a numpy ndarray."
             )
-        if len(y_labels) not in y_data.shape:
+        if len(y_names) not in y_data.shape:
             raise IndexError(
                 "The number of labels and the number of signals must be the same."
             )
@@ -654,7 +654,7 @@ class ValidationSession:
     def append_simulation(
         self,
         sim_name: str,
-        y_labels: list[str],
+        y_names: list[str],
         y_data: np.ndarray,
         l_norm: float | Literal["fro", "nuc"] | None = np.inf,
         matrix_norm: float | Literal["fro", "nuc"] | None = 2,
@@ -681,10 +681,10 @@ class ValidationSession:
             for this simulation.
         """
 
-        y_labels = str2list(y_labels)  # noqa
-        self._simulation_validation(sim_name, y_labels, y_data)
+        y_names = str2list(y_names)  # noqa
+        self._simulation_validation(sim_name, y_names, y_data)
         df_sim = self.simulations_results
-        new_label = pd.MultiIndex.from_product([[sim_name], y_labels])
+        new_label = pd.MultiIndex.from_product([[sim_name], y_names])
         df_sim[new_label] = y_data
         self.simulations_results = df_sim
 

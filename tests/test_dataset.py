@@ -30,21 +30,21 @@ class Test_Dataset_nominal:
     def test_init(self, good_dataframe: pd.DataFrame) -> None:
         # Check if the passed dataset DataFrame is correctly stored as class attribute.
         # Nominal data
-        df, u_labels, y_labels, fixture = good_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = good_dataframe
 
         # Expected value. Create a two-levels column from normal DataFrame
         df_expected = deepcopy(df)
-        u_labels = dmv.str2list(u_labels)
-        y_labels = dmv.str2list(y_labels)
-        u_extended_labels = list(zip(["INPUT"] * len(u_labels), u_labels))
-        y_extended_labels = list(zip(["OUTPUT"] * len(y_labels), y_labels))
+        u_names = dmv.str2list(u_names)
+        y_names = dmv.str2list(y_names)
+        u_extended_labels = list(zip(["INPUT"] * len(u_names), u_names))
+        y_extended_labels = list(zip(["OUTPUT"] * len(y_names), y_names))
         df_expected.columns = pd.MultiIndex.from_tuples(
             [*u_extended_labels, *y_extended_labels]
         )
 
         # Actual value. Pass the single-level DataFrame to the Dataset constructor.
         ds = dmv.dataset.Dataset(
-            "my_dataset", df, u_labels, y_labels, full_time_interval=True
+            "my_dataset", df, u_names, y_names, full_time_interval=True
         )
 
         assert np.allclose(ds.dataset, df_expected, atol=ATOL)
@@ -57,21 +57,17 @@ class Test_Dataset_nominal:
         # and who is output
 
         # Arrange
-        df, u_labels, y_labels, fixture = sine_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = sine_dataframe
         ds = dmv.dataset.Dataset(
-            "my_dataset", df, u_labels, y_labels, full_time_interval=True
+            "my_dataset", df, u_names, y_names, full_time_interval=True
         )
 
-        expected_u_labels = (
-            [u_labels] if isinstance(u_labels, str) else u_labels
-        )
-        expected_y_labels = (
-            [y_labels] if isinstance(y_labels, str) else y_labels
-        )
+        expected_u_names = [u_names] if isinstance(u_names, str) else u_names
+        expected_y_names = [y_names] if isinstance(y_names, str) else y_names
         # Act
         (
-            actual_u_labels,
-            actual_y_labels,
+            actual_u_names,
+            actual_y_names,
             actual_u_idx,
             actual_y_idx,
         ) = ds._classify_signals()
@@ -91,10 +87,10 @@ class Test_Dataset_nominal:
 
         # Assert: if no arguments is passed it returns the whole list of
         # input and output signals
-        assert expected_u_labels == actual_u_labels
+        assert expected_u_names == actual_u_names
         assert expected_u_idx == actual_u_idx
 
-        assert expected_y_labels == actual_y_labels
+        assert expected_y_names == actual_y_names
         assert expected_y_idx == actual_y_idx
 
     @pytest.mark.parametrize(
@@ -119,59 +115,59 @@ class Test_Dataset_nominal:
         # and who is output and it also return the in-out indices
 
         # Arrange
-        df, u_labels, y_labels, fixture = sine_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = sine_dataframe
         ds = dmv.dataset.Dataset(
-            "my_dataset", df, u_labels, y_labels, full_time_interval=True
+            "my_dataset", df, u_names, y_names, full_time_interval=True
         )
 
         # Expected values
         if fixture == "SISO":
             test_in = [test_in[0]] if test_in else []
-            expected_u_labels = [test_in[0]] if test_in else []
+            expected_u_names = [test_in[0]] if test_in else []
             expected_u_idx = [expected_in_idx[0]] if expected_in_idx else []
 
             test_out = [test_out[0]] if test_out else []
-            expected_y_labels = [test_out[0]] if test_out else []
+            expected_y_names = [test_out[0]] if test_out else []
             expected_y_idx = [expected_out_idx[0]] if expected_out_idx else []
 
         if fixture == "SIMO":
             test_in = [test_in[0]] if test_in else []
-            expected_u_labels = [test_in[0]] if test_in else []
+            expected_u_names = [test_in[0]] if test_in else []
             expected_u_idx = [expected_in_idx[0]] if expected_in_idx else []
 
-            expected_y_labels = test_out if test_out else []
+            expected_y_names = test_out if test_out else []
             expected_y_idx = expected_out_idx
 
         if fixture == "MISO":
-            expected_u_labels = test_in if test_in else []
+            expected_u_names = test_in if test_in else []
             expected_u_idx = expected_in_idx
 
             test_out = [test_out[0]] if test_out else []
-            expected_y_labels = [test_out[0]] if test_out else []
+            expected_y_names = [test_out[0]] if test_out else []
             expected_y_idx = [expected_out_idx[0]] if expected_out_idx else []
 
         if fixture == "MIMO":
-            expected_u_labels = test_in if test_in else []
+            expected_u_names = test_in if test_in else []
             expected_u_idx = expected_in_idx
 
-            expected_y_labels = test_out if test_out else []
+            expected_y_names = test_out if test_out else []
             expected_y_idx = expected_out_idx
 
         test_signal_names = test_in + test_out
 
         # Acual values
         (
-            actual_u_labels,
-            actual_y_labels,
+            actual_u_names,
+            actual_y_names,
             actual_u_idx,
             actual_y_idx,
         ) = ds._classify_signals(*test_signal_names)
 
         # Assert
-        assert sorted(expected_u_labels) == sorted(actual_u_labels)
+        assert sorted(expected_u_names) == sorted(actual_u_names)
         assert sorted(expected_u_idx) == sorted(actual_u_idx)
 
-        assert sorted(expected_y_labels) == sorted(actual_y_labels)
+        assert sorted(expected_y_names) == sorted(actual_y_names)
         assert sorted(expected_y_idx) == sorted(actual_y_idx)
 
     def test__validate_name_value_tuples(self) -> None:
@@ -191,7 +187,7 @@ class Test_Dataset_nominal:
     def test_add_input(
         self, kind: Signal_type, sine_dataframe: pd.DataFrame
     ) -> None:
-        df, u_labels, y_labels, fixture = sine_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = sine_dataframe
 
         # Expected value.
         # If you remove a mean from a signal, then the mean of the reminder
@@ -201,7 +197,7 @@ class Test_Dataset_nominal:
         # Arrange
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
+            name_ds, df, u_names, y_names, full_time_interval=True
         )
         # You should get a dataframe with zero mean.
         # Stored dataframe shall be left unchanged.
@@ -309,7 +305,7 @@ class Test_Dataset_nominal:
         # assert test_bad_signal["name"] in ds.excluded_signals
 
     def test_remove_signals(self, sine_dataframe: pd.DataFrame) -> None:
-        df, u_labels, y_labels, fixture = sine_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = sine_dataframe
 
         # Expected value.
         # If you remove a mean from a signal, then the mean of the reminder
@@ -318,7 +314,7 @@ class Test_Dataset_nominal:
         # Actual value
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
+            name_ds, df, u_names, y_names, full_time_interval=True
         )
         # You should get a dataframe with zero mean.
         # Stored dataframe shall be left unchanged.
@@ -341,7 +337,7 @@ class Test_Dataset_nominal:
             ds.remove_signals("potato")
 
     def test_remove_means(self, sine_dataframe: pd.DataFrame) -> None:
-        df, u_labels, y_labels, fixture = sine_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = sine_dataframe
 
         # Expected value.
         # If you remove a mean from a signal, then the mean of the reminder
@@ -350,7 +346,7 @@ class Test_Dataset_nominal:
         # Actual value
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
+            name_ds, df, u_names, y_names, full_time_interval=True
         )
         # You should get a dataframe with zero mean.
         # Stored dataframe shall be left unchanged.
@@ -366,7 +362,7 @@ class Test_Dataset_nominal:
         assert np.allclose(df_actual.to_numpy(), df.to_numpy(), atol=ATOL)
 
     def test_remove_offset(self, constant_ones_dataframe: pd.DataFrame) -> None:
-        df, u_labels, y_labels, fixture = constant_ones_dataframe
+        df, u_names, y_names, fixture = constant_ones_dataframe
 
         # Test values, i.e. offset to be removed from the specified signal.
         # The first value of the tuple indicates the signal name, whereas
@@ -376,7 +372,7 @@ class Test_Dataset_nominal:
         # Arrange
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
+            name_ds, df, u_names, y_names, full_time_interval=True
         )
 
         test_values = {
@@ -399,7 +395,7 @@ class Test_Dataset_nominal:
         if fixture == "SISO":
             values = -1.0 * np.ones((N, 2))  # Expected
             df_expected = pd.DataFrame(
-                index=idx, columns=[u_labels, y_labels], data=values
+                index=idx, columns=[u_names, y_names], data=values
             )
             df_expected.index.name = "Time (s)"
         if fixture == "SIMO":
@@ -412,13 +408,13 @@ class Test_Dataset_nominal:
                 )
             ).transpose()  # Expected
             df_expected = pd.DataFrame(
-                index=idx, columns=[u_labels, *y_labels], data=values
+                index=idx, columns=[u_names, *y_names], data=values
             )
             df_expected.index.name = "Time (s)"
         if fixture == "MISO":
             values = -1.0 * np.ones((N, 4))  # Expected
             df_expected = pd.DataFrame(
-                index=idx, columns=[*u_labels, y_labels], data=values
+                index=idx, columns=[*u_names, y_names], data=values
             )
             df_expected.index.name = "Time (s)"
         if fixture == "MIMO":
@@ -430,7 +426,7 @@ class Test_Dataset_nominal:
                 )
             )  # Expected
             df_expected = pd.DataFrame(
-                index=idx, columns=[*u_labels, *y_labels], data=values
+                index=idx, columns=[*u_names, *y_names], data=values
             )
             df_expected.index.name = "Time (s)"
 
@@ -446,7 +442,7 @@ class Test_Dataset_nominal:
         self, constant_ones_dataframe: pd.DataFrame
     ) -> None:
         # It is the same as above.
-        df, u_labels, y_labels, fixture = constant_ones_dataframe
+        df, u_names, y_names, fixture = constant_ones_dataframe
 
         u_list = {
             "SISO": [("u1", 2.0)],
@@ -463,7 +459,7 @@ class Test_Dataset_nominal:
                 (-1.0 * np.ones((N, 1)), np.ones((N, 1)))
             )  # Expected
             df_expected = pd.DataFrame(
-                index=idx, columns=[u_labels, y_labels], data=values
+                index=idx, columns=[u_names, y_names], data=values
             )
             df_expected.index.name = "Time (s)"
         if fixture == "SIMO":
@@ -474,7 +470,7 @@ class Test_Dataset_nominal:
                 )
             )
             df_expected = pd.DataFrame(
-                index=idx, columns=[u_labels, *y_labels], data=values
+                index=idx, columns=[u_names, *y_names], data=values
             )
             df_expected.index.name = "Time (s)"
         if fixture == "MISO":
@@ -482,7 +478,7 @@ class Test_Dataset_nominal:
                 (-1.0 * np.ones((N, 3)), np.ones((N, 1)))
             )  # Expected
             df_expected = pd.DataFrame(
-                index=idx, columns=[*u_labels, y_labels], data=values
+                index=idx, columns=[*u_names, y_names], data=values
             )
             df_expected.index.name = "Time (s)"
         if fixture == "MIMO":
@@ -493,14 +489,14 @@ class Test_Dataset_nominal:
                 )
             )  # Expected
             df_expected = pd.DataFrame(
-                index=idx, columns=[*u_labels, *y_labels], data=values
+                index=idx, columns=[*u_names, *y_names], data=values
             )
             df_expected.index.name = "Time (s)"
 
         # Actual value
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
+            name_ds, df, u_names, y_names, full_time_interval=True
         )
         # Function call
         ds_actual = ds.remove_offset(*u_list[fixture])
@@ -515,7 +511,7 @@ class Test_Dataset_nominal:
         self, constant_ones_dataframe: pd.DataFrame
     ) -> None:
         # It is the same as above.
-        df, u_labels, y_labels, fixture = constant_ones_dataframe
+        df, u_names, y_names, fixture = constant_ones_dataframe
 
         y_list = {
             "SISO": [("y1", 2.0)],
@@ -532,7 +528,7 @@ class Test_Dataset_nominal:
                 (np.ones((N, 1)), -1.0 * np.ones((N, 1)))
             )  # Expected
             df_expected = pd.DataFrame(
-                index=idx, columns=[u_labels, y_labels], data=values
+                index=idx, columns=[u_names, y_names], data=values
             )
             df_expected.index.name = "Time (s)"
         if fixture == "SIMO":
@@ -545,7 +541,7 @@ class Test_Dataset_nominal:
                 )
             )
             df_expected = pd.DataFrame(
-                index=idx, columns=[u_labels, *y_labels], data=values
+                index=idx, columns=[u_names, *y_names], data=values
             )
             df_expected.index.name = "Time (s)"
         if fixture == "MISO":
@@ -553,7 +549,7 @@ class Test_Dataset_nominal:
                 (np.ones((N, 3)), -1.0 * np.ones((N, 1)))
             )  # Expected
             df_expected = pd.DataFrame(
-                index=idx, columns=[*u_labels, y_labels], data=values
+                index=idx, columns=[*u_names, y_names], data=values
             )
             df_expected.index.name = "Time (s)"
         if fixture == "MIMO":
@@ -566,14 +562,14 @@ class Test_Dataset_nominal:
                 )
             )  # Expected
             df_expected = pd.DataFrame(
-                index=idx, columns=[*u_labels, *y_labels], data=values
+                index=idx, columns=[*u_names, *y_names], data=values
             )
             df_expected.index.name = "Time (s)"
 
         # Actual value
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
+            name_ds, df, u_names, y_names, full_time_interval=True
         )
         # Function call
         ds_actual = ds.remove_offset(*y_list[fixture])
@@ -584,17 +580,17 @@ class Test_Dataset_nominal:
         assert np.allclose(ds.dataset, df, atol=ATOL)
 
     def test_dataset_values(self, sine_dataframe: pd.DataFrame) -> None:
-        df, u_labels, y_labels, fixture = sine_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = sine_dataframe
 
         # Instantiate dataset
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
+            name_ds, df, u_names, y_names, full_time_interval=True
         )
         # Expected vectors
         t_expected = df.index.to_numpy().round(NUM_DECIMALS)
-        u_expected = df[u_labels].to_numpy().round(NUM_DECIMALS)
-        y_expected = df[y_labels].to_numpy().round(NUM_DECIMALS)
+        u_expected = df[u_names].to_numpy().round(NUM_DECIMALS)
+        y_expected = df[y_names].to_numpy().round(NUM_DECIMALS)
 
         # Actuals
         t_actual, u_actual, y_actual = ds.dataset_values()
@@ -605,12 +601,12 @@ class Test_Dataset_nominal:
         assert np.allclose(y_expected, y_actual, atol=ATOL)
 
     def test_signal_names(self, sine_dataframe: pd.DataFrame) -> None:
-        df, u_labels, y_labels, fixture = sine_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = sine_dataframe
 
         # Instantiate dataset
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
+            name_ds, df, u_names, y_names, full_time_interval=True
         )
 
         # Expected based on fixture
@@ -650,9 +646,9 @@ class Test_Dataset_nominal:
         # Check if the passed dataset DataFrame is correctly stored as class attribute.
 
         # Arrange
-        df, u_labels, y_labels, fixture = sine_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = sine_dataframe
         ds = dmv.dataset.Dataset(
-            "my_dataset", df, u_labels, y_labels, tin=0.0, tout=1.0
+            "my_dataset", df, u_names, y_names, tin=0.0, tout=1.0
         )
 
         # Filter cutoff frequency
@@ -722,9 +718,9 @@ class Test_Dataset_raise:
     ) -> None:
         # Check if the passed dataset DataFrame is correctly stored as class attribute.
         # Nominal data
-        df, u_labels, y_labels, fixture = sine_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = sine_dataframe
         ds = dmv.dataset.Dataset(
-            "my_dataset", df, u_labels, y_labels, full_time_interval=True
+            "my_dataset", df, u_names, y_names, full_time_interval=True
         )
 
         # Test values
@@ -735,14 +731,14 @@ class Test_Dataset_raise:
             ds._classify_signals(u_name_test, y_name_test)
 
     def test__validate_name_value_tuples_raise(self, good_signals: Any) -> None:
-        signal_list, u_labels, y_labels, fixture = good_signals
+        signal_list, u_names, y_names, u_units, y_units, fixture = good_signals
 
         # Actual value
         ds = dmv.dataset.Dataset(
             "my_dataset",
             signal_list,
-            u_labels,
-            y_labels,
+            u_names,
+            y_names,
             overlap=True,
             full_time_interval=True,
             verbosity=1,
@@ -769,14 +765,14 @@ class Test_Dataset_plots:
     ) -> None:
 
         # You should just get a plot.
-        signal_list, u_labels, y_labels, fixture = good_signals
+        signal_list, u_names, y_names, u_units, y_units, fixture = good_signals
 
         # Actual value
         ds = dmv.dataset.Dataset(
             "my_dataset",
             signal_list,
-            u_labels,
-            y_labels,
+            u_names,
+            y_names,
             overlap=True,
             full_time_interval=True,
             verbosity=1,
@@ -869,15 +865,15 @@ class Test_Dataset_plots:
         tmp_path: str,
     ) -> None:
         # You should just get a plot.
-        df, u_labels, y_labels, fixture = good_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = good_dataframe
 
         # Actua value
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
             name_ds,
             df,
-            u_labels,
-            y_labels,
+            u_names,
+            y_names,
             overlap=True,
             tin=0.0,
         )
@@ -951,15 +947,15 @@ class Test_Dataset_plots:
 
         # ======= If NaN:s raise =====================
         # good_signals have some NaN:s
-        df, u_labels, y_labels, fixture = good_signals
+        df, u_names, y_names, u_units, y_units, fixture = good_signals
 
         # Actua value
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
             name_ds,
             df,
-            u_labels,
-            y_labels,
+            u_names,
+            y_names,
             overlap=True,
             full_time_interval=True,
         )
@@ -973,7 +969,7 @@ class Test_Dataset_plots:
     @pytest.mark.plots
     def test_plot_Signals(self, good_signals: list[Signal]) -> None:
         # You should just get a plot.
-        signal_list, u_labels, y_labels, fixture = good_signals
+        signal_list, u_names, y_names, u_units, y_units, fixture = good_signals
         _ = dmv.plot_signals(*signal_list)
         plt.close("all")
 
@@ -985,15 +981,15 @@ class Test_Dataset_plots:
         tmp_path: str,
     ) -> None:
         # You should just get a plot.
-        df, u_labels, y_labels, fixture = good_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = good_dataframe
 
         # Actua value
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
             name_ds,
             df,
-            u_labels,
-            y_labels,
+            u_names,
+            y_names,
             overlap=True,
             tin=0.0,
         )
@@ -1028,15 +1024,23 @@ class Test_Dataset_plots:
 class Test_Signal_validation:
     def test_name_unicity(self, good_signals: list[Signal]) -> None:
         # Nominal values
-        signal_list, _, _, _ = good_signals
+        signal_list, _, _, _, _, _ = good_signals
 
         signal_list[1]["name"] = signal_list[0]["name"]
         with pytest.raises(ValueError):
             dmv.validate_signals(*signal_list)
 
+    def test_different_time_units(self, good_signals: list[Signal]) -> None:
+        # Nominal values
+        signal_list, _, _, _, _, _ = good_signals
+
+        signal_list[0]["time_unit"] = "hourszs"
+        with pytest.raises(ValueError):
+            dmv.validate_signals(*signal_list)
+
     def test_key_not_found(self, good_signals: list[Signal]) -> None:
         # Nominal values
-        signal_list, _, _, _ = good_signals
+        signal_list, _, _, _, _, _ = good_signals
 
         idx = random.randrange(0, len(signal_list))
         key = "name"
@@ -1046,7 +1050,7 @@ class Test_Signal_validation:
 
     def test_wrong_key(self, good_signals: list[Signal]) -> None:
         # Nominal values
-        signal_list, _, _, _ = good_signals
+        signal_list, _, _, _, _, _ = good_signals
 
         idx = random.randrange(0, len(signal_list))
         k_new = "potato"
@@ -1072,7 +1076,7 @@ class Test_Signal_validation:
         expected: Any,
     ) -> None:
         # Nominal values
-        signal_list, _, _, _ = good_signals
+        signal_list, _, _, _, _, _ = good_signals
 
         idx = random.randrange(0, len(signal_list))
         signal_list[idx]["values"] = test_input
@@ -1091,7 +1095,7 @@ class Test_Signal_validation:
         self, good_signals: list[Signal], test_input: Any, expected: Any
     ) -> None:
         # Nominal values
-        signal_list, _, _, _ = good_signals
+        signal_list, _, _, _, _, _ = good_signals
 
         idx = random.randrange(0, len(signal_list))
         signal_list[idx]["sampling_period"] = test_input
@@ -1104,98 +1108,98 @@ class Test_validate_dataframe:
         self, good_dataframe: pd.DataFrame
     ) -> None:
         # Nominal values
-        df, u_labels, y_labels, _ = good_dataframe
-        u_labels = []
+        df, u_names, y_names, u_units, y_units, _ = good_dataframe
+        u_names = []
         with pytest.raises(IndexError):
-            dmv.validate_dataframe(df, u_labels, y_labels)
+            dmv.validate_dataframe(df, u_names, y_names)
 
     def test_name_unicity(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal values
-        df, u_labels, y_labels, fixture = good_dataframe
-        u_labels_test = u_labels
-        y_labels_test = y_labels
+        df, u_names, y_names, u_units, y_units, fixture = good_dataframe
+        u_names_test = u_names
+        y_names_test = y_names
         if fixture == "SISO":  # If SISO the names are obviously unique.
-            u_labels = y_labels
-            u_labels_test = y_labels
+            u_names = y_names
+            u_names_test = y_names
         if fixture == "MISO" or fixture == "MIMO":
-            u_labels_test[-1] = u_labels_test[-2]
+            u_names_test[-1] = u_names_test[-2]
         if fixture == "SIMO" or fixture == "MIMO":
-            y_labels_test[0] = y_labels_test[1]
+            y_names_test[0] = y_names_test[1]
         with pytest.raises(ValueError):
-            dmv.validate_dataframe(df, u_labels_test, y_labels)
+            dmv.validate_dataframe(df, u_names_test, y_names)
         with pytest.raises(ValueError):
-            dmv.validate_dataframe(df, u_labels, y_labels_test)
+            dmv.validate_dataframe(df, u_names, y_names_test)
         with pytest.raises(ValueError):
-            dmv.validate_dataframe(df, u_labels_test, y_labels_test)
+            dmv.validate_dataframe(df, u_names_test, y_names_test)
 
     def test_input_or_output_not_found(
         self, good_dataframe: pd.DataFrame
     ) -> None:
         # Nominal values
-        df, u_labels, y_labels, fixture = good_dataframe
-        u_labels_test = u_labels
-        y_labels_test = y_labels
+        df, u_names, y_names, u_units, y_units, fixture = good_dataframe
+        u_names_test = u_names
+        y_names_test = y_names
         if fixture == "SISO":  # If SISO the names are obviously unique.
-            u_labels_test = "potato"
+            u_names_test = "potato"
         if fixture == "MISO" or fixture == "MIMO":
-            u_labels_test[0] = "potato"
+            u_names_test[0] = "potato"
         if fixture == "SIMO" or fixture == "MIMO":
-            y_labels_test[0] = "potato"
+            y_names_test[0] = "potato"
         with pytest.raises(ValueError):
-            dmv.validate_dataframe(df, u_labels_test, y_labels)
+            dmv.validate_dataframe(df, u_names_test, y_names)
 
     def test_dataframe_one_level_indices(
         self, good_dataframe: pd.DataFrame
     ) -> None:
         # Nominal values
-        df, u_labels, y_labels, _ = good_dataframe
+        df, u_names, y_names, u_units, y_units, _ = good_dataframe
         df_test = df
         df_test.columns = pd.MultiIndex.from_product([df.columns, ["potato"]])
         with pytest.raises(IndexError):
-            dmv.validate_dataframe(df_test, u_labels, y_labels)
+            dmv.validate_dataframe(df_test, u_names, y_names)
         df_test = df
         df_test.index = pd.MultiIndex.from_product([df.index, ["potato"]])
         with pytest.raises(IndexError):
-            dmv.validate_dataframe(df_test, u_labels, y_labels)
+            dmv.validate_dataframe(df_test, u_names, y_names)
 
     def test_at_least_two_samples_per_signal(
         self, good_dataframe: pd.DataFrame
     ) -> None:
         # Nominal values
-        df, u_labels, y_labels, _ = good_dataframe
+        df, u_names, y_names, u_units, y_units, _ = good_dataframe
         df_test = df.head(1)
         with pytest.raises(IndexError):
-            dmv.validate_dataframe(df_test, u_labels, y_labels)
+            dmv.validate_dataframe(df_test, u_names, y_names)
 
     def test_labels_exist_in_dataframe(
         self, good_dataframe: pd.DataFrame
     ) -> None:
         # Nominal values
-        df, u_labels, y_labels, fixture = good_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = good_dataframe
         if fixture == "SISO":
-            u_labels = [u_labels]
-            y_labels = [y_labels]
+            u_names = [u_names]
+            y_names = [y_names]
         if fixture == "MISO":
-            y_labels = [y_labels]
+            y_names = [y_names]
         if fixture == "SIMO":
-            u_labels = [u_labels]
-        u_labels[-1] = "potato"
+            u_names = [u_names]
+        u_names[-1] = "potato"
         with pytest.raises(ValueError):
-            dmv.validate_dataframe(df, u_labels, y_labels)
+            dmv.validate_dataframe(df, u_names, y_names)
 
     def test_index_monotonicity(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal values
-        df, u_labels, y_labels, _ = good_dataframe
+        df, u_names, y_names, u_units, y_units, _ = good_dataframe
         df.index.values[0:2] = df.index[0]
         with pytest.raises(ValueError):
-            dmv.validate_dataframe(df, u_labels, y_labels)
+            dmv.validate_dataframe(df, u_names, y_names)
 
     def test_values_are_float(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal values
-        df, u_labels, y_labels, _ = good_dataframe
+        df, u_names, y_names, u_units, y_units, _ = good_dataframe
         df.iloc[0:1, 0:1] = "potato"
         with pytest.raises(TypeError):
-            dmv.validate_dataframe(df, u_labels, y_labels)
+            dmv.validate_dataframe(df, u_names, y_names)
 
 
 class Test_fix_sampling_periods:
@@ -1205,6 +1209,8 @@ class Test_fix_sampling_periods:
             signal_list,
             input_signal_names,
             output_signal_names,
+            input_signal_units,
+            output_signal_units,
             fixture,
         ) = good_signals
 
@@ -1249,6 +1255,8 @@ class Test_fix_sampling_periods:
             signal_list,
             input_signal_names,
             output_signal_names,
+            input_signal_units,
+            output_signal_units,
             fixture,
         ) = good_signals
 

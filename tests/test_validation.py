@@ -11,10 +11,10 @@ import os
 class Test_ClassValidationNominal:
     def test_init(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal data
-        df, u_labels, y_labels, fixture = good_dataframe
+        df, u_names, y_names, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
+            name_ds, df, u_names, y_names, full_time_interval=True
         )
         name_vs = "my_validation"
         vs = dmv.ValidationSession(name_vs, ds)
@@ -27,10 +27,10 @@ class Test_ClassValidationNominal:
             assert all(vs.Dataset.coverage[ii] == ds.coverage[ii])
 
     def test_random_walk(self, good_dataframe: pd.DataFrame) -> None:
-        df, u_labels, y_labels, fixture = good_dataframe
+        df, u_names, y_names, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
+            name_ds, df, u_names, y_names, full_time_interval=True
         )
 
         name_vs = "my_validation"
@@ -119,10 +119,10 @@ class Test_ClassValidationNominal:
     def test_get_sim_signal_list_and_metrics_raise(
         self, good_dataframe: pd.DataFrame
     ) -> None:
-        df, u_labels, y_labels, fixture = good_dataframe
+        df, u_names, y_names, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
+            name_ds, df, u_names, y_names, full_time_interval=True
         )
         name_vs = "my_validation"
         vs = dmv.ValidationSession(name_vs, ds)
@@ -150,10 +150,10 @@ class Test_ClassValidationNominal:
 
 class Test_ClassValidatioNominal_sim_validation:
     def test_existing_sim_raise(self, good_dataframe: pd.DataFrame) -> None:
-        df, u_labels, y_labels, fixture = good_dataframe
+        df, u_names, y_names, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
+            name_ds, df, u_names, y_names, full_time_interval=True
         )
         name_vs = "my_validation"
         vs = dmv.ValidationSession(name_vs, ds)
@@ -173,10 +173,10 @@ class Test_ClassValidatioNominal_sim_validation:
             vs.append_simulation(sim1_name, sim1_labels, sim1_values)
 
     def test_too_many_signals_raise(self, good_dataframe: pd.DataFrame) -> None:
-        df, u_labels, y_labels, fixture = good_dataframe
+        df, u_names, y_names, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
+            name_ds, df, u_names, y_names, full_time_interval=True
         )
 
         name_vs = "my_validation"
@@ -198,10 +198,10 @@ class Test_ClassValidatioNominal_sim_validation:
             vs.append_simulation(sim1_name, sim1_labels, sim1_values)
 
     def test_duplicate_names_raise(self, good_dataframe: pd.DataFrame) -> None:
-        df, u_labels, y_labels, fixture = good_dataframe
+        df, u_names, y_names, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
+            name_ds, df, u_names, y_names, full_time_interval=True
         )
 
         name_vs = "my_validation"
@@ -224,10 +224,10 @@ class Test_ClassValidatioNominal_sim_validation:
     def test_mismatch_labels_values_raise(
         self, good_dataframe: pd.DataFrame
     ) -> None:
-        df, u_labels, y_labels, fixture = good_dataframe
+        df, u_names, y_names, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
+            name_ds, df, u_names, y_names, full_time_interval=True
         )
 
         name_vs = "my_validation"
@@ -247,10 +247,10 @@ class Test_ClassValidatioNominal_sim_validation:
             vs.append_simulation(sim1_name, sim1_labels, sim1_values)
 
     def test_too_many_values_raise(self, good_dataframe: pd.DataFrame) -> None:
-        df, u_labels, y_labels, fixture = good_dataframe
+        df, u_names, y_names, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
+            name_ds, df, u_names, y_names, full_time_interval=True
         )
 
         name_vs = "my_validation"
@@ -272,10 +272,10 @@ class Test_ClassValidatioNominal_sim_validation:
     def test_values_not_ndarray_raise(
         self, good_dataframe: pd.DataFrame
     ) -> None:
-        df, u_labels, y_labels, fixture = good_dataframe
+        df, u_names, y_names, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
+            name_ds, df, u_names, y_names, full_time_interval=True
         )
 
         name_vs = "my_validation"
@@ -293,10 +293,10 @@ class Test_ClassValidatioNominal_sim_validation:
             vs.append_simulation(sim1_name, sim1_labels, sim1_values)
 
     def test_ydata_too_short_raise(self, good_dataframe: pd.DataFrame) -> None:
-        df, u_labels, y_labels, fixture = good_dataframe
+        df, u_names, y_names, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
+            name_ds, df, u_names, y_names, full_time_interval=True
         )
 
         name_vs = "my_validation"
@@ -316,10 +316,10 @@ class Test_ClassValidatioNominal_sim_validation:
             vs.append_simulation(sim1_name, sim1_labels, sim1_values)
 
     def test_drop_simulation_raise(self, good_dataframe: pd.DataFrame) -> None:
-        df, u_labels, y_labels, fixture = good_dataframe
+        df, u_names, y_names, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
+            name_ds, df, u_names, y_names, full_time_interval=True
         )
 
         # Create validation session.
@@ -344,10 +344,10 @@ class Test_ClassValidatioNominal_sim_validation:
 class Test_Plots:
     @pytest.mark.plots
     def test_plots(self, good_dataframe: pd.DataFrame, tmp_path: str) -> None:
-        df, u_labels, y_labels, fixture = good_dataframe
+        df, u_names, y_names, fixture = good_dataframe
         name_ds = "my_dataset"
         ds = dmv.dataset.Dataset(
-            name_ds, df, u_labels, y_labels, full_time_interval=True
+            name_ds, df, u_names, y_names, full_time_interval=True
         )
 
         name_vs = "my_validation"

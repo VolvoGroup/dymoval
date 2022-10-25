@@ -149,10 +149,10 @@ ds = dmv.Dataset(
     input_signal_names,
     output_signal_names,
     target_sampling_period=0.1,
-    overlap=True,
+    # overlap=True,
 )
 
-
+# %%
 # Once the dymoval Dataset is created, it is possible to handle with the NaN:s
 # in a number of ways
 ds = ds.remove_NaNs()
