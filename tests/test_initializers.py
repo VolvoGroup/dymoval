@@ -23,6 +23,8 @@ class TestInitializerFromSignals:
             signal_list,
             input_signal_names,
             output_signal_names,
+            input_signal_units,
+            output_signal_units,
             fixture,
         ) = good_signals
 
@@ -39,20 +41,41 @@ class TestInitializerFromSignals:
         if fixture == "SISO":  # Convert string to list
             input_signal_names = [input_signal_names]
             output_signal_names = [output_signal_names]
+            input_signal_units = [input_signal_units]
+            output_signal_units = [output_signal_units]
         if fixture == "MISO":
             output_signal_names = [output_signal_names]
+            output_signal_units = [output_signal_units]
         if fixture == "SIMO":  # Convert string to list
             input_signal_names = [input_signal_names]
+            input_signal_units = [input_signal_units]
         expected_input_names = input_signal_names
         expected_output_names = output_signal_names
-        actual_input_names = ds.dataset["INPUT"].columns
-        actual_output_names = ds.dataset["OUTPUT"].columns
+        actual_input_names = ds.dataset["INPUT"].columns.get_level_values(
+            "names"
+        )
+        actual_output_names = ds.dataset["OUTPUT"].columns.get_level_values(
+            "names"
+        )
         # Check that names are well placed
         assert sorted(expected_input_names) == sorted(actual_input_names)
         assert sorted(expected_output_names) == sorted(actual_output_names)
+
+        expected_input_units = input_signal_units
+        expected_output_units = output_signal_units
+        actual_input_units = ds.dataset["INPUT"].columns.get_level_values(
+            "units"
+        )
+        actual_output_units = ds.dataset["OUTPUT"].columns.get_level_values(
+            "units"
+        )
+        # Check that units are well placed
+        assert sorted(expected_input_units) == sorted(actual_input_units)
+        assert sorted(expected_output_units) == sorted(actual_output_units)
+
         # Time index starts from 0.0
         assert np.isclose(ds.dataset.index[0], 0.0, atol=ATOL)
-        assert ds.dataset.index.name == "Time"
+        assert ds.dataset.index.name == ("Time", "s")
         # Check that time vector is periodic
         assert all(
             np.isclose(x, target_sampling_period, atol=ATOL)
@@ -111,6 +134,8 @@ class TestInitializerFromSignals:
             signal_list,
             input_signal_names,
             output_signal_names,
+            input_signal_units,
+            output_signal_units,
             fixture,
         ) = good_signals
 
@@ -135,17 +160,28 @@ class TestInitializerFromDataframe:
             df_expected,
             expected_input_names,
             expected_output_names,
+            expected_input_units,
+            expected_output_units,
             fixture,
         ) = good_dataframe
+
+        print("df_expected cols = ", df_expected.columns)
 
         sampling_period = 0.1  # from good_dataframe fixture
         if fixture == "SISO":
             expected_input_names = [expected_input_names]
             expected_output_names = [expected_output_names]
+            expected_input_units = [expected_input_units]
+            expected_output_units = [expected_output_units]
         if fixture == "MISO":
             expected_output_names = [expected_output_names]
+            expected_output_units = [expected_output_units]
         if fixture == "SIMO":
             expected_input_names = [expected_input_names]
+            expected_input_units = [expected_input_units]
+
+        print("expected input names = ", expected_input_names)
+        # Act
         ds = dmv.dataset.Dataset(
             "potato",
             df_expected,
@@ -154,11 +190,27 @@ class TestInitializerFromDataframe:
             full_time_interval=True,
         )
 
-        actual_input_names = ds.dataset["INPUT"].columns
-        actual_output_names = ds.dataset["OUTPUT"].columns
+        # assert names
+        actual_input_names = ds.dataset["INPUT"].columns.get_level_values(
+            "names"
+        )
+        actual_output_names = ds.dataset["OUTPUT"].columns.get_level_values(
+            "names"
+        )
         # Names are well placed
         assert sorted(expected_input_names) == sorted(actual_input_names)
         assert sorted(expected_output_names) == sorted(actual_output_names)
+
+        # Assert units
+        actual_input_units = ds.dataset["INPUT"].columns.get_level_values(
+            "units"
+        )
+        actual_output_units = ds.dataset["OUTPUT"].columns.get_level_values(
+            "units"
+        )
+        # Names are well placed
+        assert sorted(expected_input_units) == sorted(actual_input_units)
+        assert sorted(expected_output_units) == sorted(actual_output_units)
 
         # assert sampling period
         assert np.isclose(ds.sampling_period, sampling_period, atol=ATOL)
@@ -179,6 +231,8 @@ class TestInitializerFromDataframe:
             df_expected,
             expected_input_names,
             expected_output_names,
+            _,
+            _,
             _,
         ) = good_dataframe
         tin = test_input[0]
@@ -217,7 +271,7 @@ class TestInitializerWrongInputData:
 
     def test_nominal_tin_ge_tout(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal data
-        df, u_names, y_names, _ = good_dataframe
+        df, u_names, y_names, _, _, _ = good_dataframe
         # tin > tout
         tin = 0.5
         tout = 0.1
@@ -228,7 +282,7 @@ class TestInitializerWrongInputData:
 
     def test_nominal_wrong_type(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal data
-        df, u_names, y_names, _ = good_dataframe
+        df, u_names, y_names, _, _, _ = good_dataframe
         # tin > tout
         tin = 0.1
         tout = 0.5
@@ -241,7 +295,7 @@ class TestInitializerWrongInputData:
 class TestOtherStuff:
     def test__str__(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal data
-        df, u_names, y_names, _ = good_dataframe
+        df, u_names, y_names, _, _, _ = good_dataframe
         # tin > tout
         tin = 0.1
         tout = 0.5

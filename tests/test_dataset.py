@@ -30,7 +30,7 @@ class Test_Dataset_nominal:
     def test_init(self, good_dataframe: pd.DataFrame) -> None:
         # Check if the passed dataset DataFrame is correctly stored as class attribute.
         # Nominal data
-        df, u_names, y_names, fixture = good_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = good_dataframe
 
         # Expected value. Create a two-levels column from normal DataFrame
         df_expected = deepcopy(df)
@@ -731,7 +731,7 @@ class Test_Dataset_raise:
             ds._classify_signals(u_name_test, y_name_test)
 
     def test__validate_name_value_tuples_raise(self, good_signals: Any) -> None:
-        signal_list, u_names, y_names, fixture = good_signals
+        signal_list, u_names, y_names, u_units, y_units, fixture = good_signals
 
         # Actual value
         ds = dmv.dataset.Dataset(
@@ -765,7 +765,7 @@ class Test_Dataset_plots:
     ) -> None:
 
         # You should just get a plot.
-        signal_list, u_names, y_names, fixture = good_signals
+        signal_list, u_names, y_names, u_units, y_units, fixture = good_signals
 
         # Actual value
         ds = dmv.dataset.Dataset(
@@ -865,7 +865,7 @@ class Test_Dataset_plots:
         tmp_path: str,
     ) -> None:
         # You should just get a plot.
-        df, u_names, y_names, fixture = good_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = good_dataframe
 
         # Actua value
         name_ds = "my_dataset"
@@ -947,7 +947,7 @@ class Test_Dataset_plots:
 
         # ======= If NaN:s raise =====================
         # good_signals have some NaN:s
-        df, u_names, y_names, fixture = good_signals
+        df, u_names, y_names, u_units, y_units, fixture = good_signals
 
         # Actua value
         name_ds = "my_dataset"
@@ -969,7 +969,7 @@ class Test_Dataset_plots:
     @pytest.mark.plots
     def test_plot_Signals(self, good_signals: list[Signal]) -> None:
         # You should just get a plot.
-        signal_list, u_names, y_names, fixture = good_signals
+        signal_list, u_names, y_names, u_units, y_units, fixture = good_signals
         _ = dmv.plot_signals(*signal_list)
         plt.close("all")
 
@@ -981,7 +981,7 @@ class Test_Dataset_plots:
         tmp_path: str,
     ) -> None:
         # You should just get a plot.
-        df, u_names, y_names, fixture = good_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = good_dataframe
 
         # Actua value
         name_ds = "my_dataset"
@@ -1024,7 +1024,7 @@ class Test_Dataset_plots:
 class Test_Signal_validation:
     def test_name_unicity(self, good_signals: list[Signal]) -> None:
         # Nominal values
-        signal_list, _, _, _ = good_signals
+        signal_list, _, _, _, _, _ = good_signals
 
         signal_list[1]["name"] = signal_list[0]["name"]
         with pytest.raises(ValueError):
@@ -1032,7 +1032,7 @@ class Test_Signal_validation:
 
     def test_different_time_units(self, good_signals: list[Signal]) -> None:
         # Nominal values
-        signal_list, _, _, _ = good_signals
+        signal_list, _, _, _, _, _ = good_signals
 
         signal_list[0]["time_unit"] = "hourszs"
         with pytest.raises(ValueError):
@@ -1040,7 +1040,7 @@ class Test_Signal_validation:
 
     def test_key_not_found(self, good_signals: list[Signal]) -> None:
         # Nominal values
-        signal_list, _, _, _ = good_signals
+        signal_list, _, _, _, _, _ = good_signals
 
         idx = random.randrange(0, len(signal_list))
         key = "name"
@@ -1050,7 +1050,7 @@ class Test_Signal_validation:
 
     def test_wrong_key(self, good_signals: list[Signal]) -> None:
         # Nominal values
-        signal_list, _, _, _ = good_signals
+        signal_list, _, _, _, _, _ = good_signals
 
         idx = random.randrange(0, len(signal_list))
         k_new = "potato"
@@ -1076,7 +1076,7 @@ class Test_Signal_validation:
         expected: Any,
     ) -> None:
         # Nominal values
-        signal_list, _, _, _ = good_signals
+        signal_list, _, _, _, _, _ = good_signals
 
         idx = random.randrange(0, len(signal_list))
         signal_list[idx]["values"] = test_input
@@ -1095,7 +1095,7 @@ class Test_Signal_validation:
         self, good_signals: list[Signal], test_input: Any, expected: Any
     ) -> None:
         # Nominal values
-        signal_list, _, _, _ = good_signals
+        signal_list, _, _, _, _, _ = good_signals
 
         idx = random.randrange(0, len(signal_list))
         signal_list[idx]["sampling_period"] = test_input
@@ -1108,14 +1108,14 @@ class Test_validate_dataframe:
         self, good_dataframe: pd.DataFrame
     ) -> None:
         # Nominal values
-        df, u_names, y_names, _ = good_dataframe
+        df, u_names, y_names, u_units, y_units, _ = good_dataframe
         u_names = []
         with pytest.raises(IndexError):
             dmv.validate_dataframe(df, u_names, y_names)
 
     def test_name_unicity(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal values
-        df, u_names, y_names, fixture = good_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = good_dataframe
         u_names_test = u_names
         y_names_test = y_names
         if fixture == "SISO":  # If SISO the names are obviously unique.
@@ -1136,7 +1136,7 @@ class Test_validate_dataframe:
         self, good_dataframe: pd.DataFrame
     ) -> None:
         # Nominal values
-        df, u_names, y_names, fixture = good_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = good_dataframe
         u_names_test = u_names
         y_names_test = y_names
         if fixture == "SISO":  # If SISO the names are obviously unique.
@@ -1152,7 +1152,7 @@ class Test_validate_dataframe:
         self, good_dataframe: pd.DataFrame
     ) -> None:
         # Nominal values
-        df, u_names, y_names, _ = good_dataframe
+        df, u_names, y_names, u_units, y_units, _ = good_dataframe
         df_test = df
         df_test.columns = pd.MultiIndex.from_product([df.columns, ["potato"]])
         with pytest.raises(IndexError):
@@ -1166,7 +1166,7 @@ class Test_validate_dataframe:
         self, good_dataframe: pd.DataFrame
     ) -> None:
         # Nominal values
-        df, u_names, y_names, _ = good_dataframe
+        df, u_names, y_names, u_units, y_units, _ = good_dataframe
         df_test = df.head(1)
         with pytest.raises(IndexError):
             dmv.validate_dataframe(df_test, u_names, y_names)
@@ -1175,7 +1175,7 @@ class Test_validate_dataframe:
         self, good_dataframe: pd.DataFrame
     ) -> None:
         # Nominal values
-        df, u_names, y_names, fixture = good_dataframe
+        df, u_names, y_names, u_units, y_units, fixture = good_dataframe
         if fixture == "SISO":
             u_names = [u_names]
             y_names = [y_names]
@@ -1189,14 +1189,14 @@ class Test_validate_dataframe:
 
     def test_index_monotonicity(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal values
-        df, u_names, y_names, _ = good_dataframe
+        df, u_names, y_names, u_units, y_units, _ = good_dataframe
         df.index.values[0:2] = df.index[0]
         with pytest.raises(ValueError):
             dmv.validate_dataframe(df, u_names, y_names)
 
     def test_values_are_float(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal values
-        df, u_names, y_names, _ = good_dataframe
+        df, u_names, y_names, u_units, y_units, _ = good_dataframe
         df.iloc[0:1, 0:1] = "potato"
         with pytest.raises(TypeError):
             dmv.validate_dataframe(df, u_names, y_names)
@@ -1209,6 +1209,8 @@ class Test_fix_sampling_periods:
             signal_list,
             input_signal_names,
             output_signal_names,
+            input_signal_units,
+            output_signal_units,
             fixture,
         ) = good_signals
 
@@ -1253,6 +1255,8 @@ class Test_fix_sampling_periods:
             signal_list,
             input_signal_names,
             output_signal_names,
+            input_signal_units,
+            output_signal_units,
             fixture,
         ) = good_signals
 

@@ -16,7 +16,8 @@ from .config import *  # noqa
 from .utils import *  # noqa, Type
 from typing import TypedDict, Any, Literal
 from copy import deepcopy
-from itertools import product
+
+# from itertools import product
 
 
 class Signal(TypedDict):
@@ -698,7 +699,9 @@ class Dataset:
     def _classify_signals(
         self,
         *signals: str,
-    ) -> tuple[list[str], list[str], list[int], list[int]]:
+    ) -> tuple[
+        list[str], list[str], list[str], list[str], list[int], list[int]
+    ]:
         # You pass a list of signal and the function recognizes who is input
         # and who is output
         # Is no argument is passed, then it takes the whole for u_names and y_names
@@ -708,8 +711,11 @@ class Dataset:
 
         # Separate in from out.
         # By default take everything
-        u_names = list(df["INPUT"].droplevel(level="units", axis=1).columns)
-        y_names = list(df["OUTPUT"].droplevel(level="units", axis=1).columns)
+        u_names = list(df["INPUT"].columns.get_level_values("names"))
+        y_names = list(df["OUTPUT"].columns.get_level_values("names"))
+
+        u_units = list(df["INPUT"].columns.get_level_values("units"))
+        y_units = list(df["OUTPUT"].columns.get_level_values("units"))
 
         # Small check. Not very pythonic but still...
         signals_not_found = difference_lists_of_str(
@@ -723,8 +729,16 @@ class Dataset:
 
         # ...then select if signals are passed.
         if signals:
-            u_names = [s for s in signals if s in df["INPUT"].columns]
-            y_names = [s for s in signals if s in df["OUTPUT"].columns]
+            u_names = [
+                s
+                for s in signals
+                if s in df["INPUT"].columns.get_level_values("names")
+            ]
+            y_names = [
+                s
+                for s in signals
+                if s in df["OUTPUT"].columns.get_level_values("names")
+            ]
 
         # Compute indices
         u_names_idx = [
@@ -736,7 +750,15 @@ class Dataset:
             for y in y_names
         ]
 
-        return u_names, y_names, u_names_idx, y_names_idx
+        # Use the indices to locate the units
+        u_units = list(
+            df["INPUT"].iloc[:, u_names_idx].columns.get_level_values("units")
+        )
+        y_units = list(
+            df["OUTPUT"].iloc[:, y_names_idx].columns.get_level_values("units")
+        )
+
+        return u_names, y_names, u_units, y_units, u_names_idx, y_names_idx
 
     def _validate_name_value_tuples(
         self,
@@ -744,20 +766,25 @@ class Dataset:
     ) -> tuple[
         list[str],
         list[str],
+        list[str],
+        list[str],
         list[tuple[str, float]],
         list[tuple[str, float]],
     ]:
         # This function is needed to validate inputs like [("u1",3.2), ("y1", 0.5)]
         # Think for example to the "remove_offset" function.
-        # Return both the list of input and output names and the validated tuples.
+        # Return both the list of input and output names along their units
+        # and the validated tuples.
 
         signals = [s[0] for s in signals_values]
-        u_names, y_names, _, _ = self._classify_signals(*signals)
+        u_names, y_names, u_units, y_units, _, _ = self._classify_signals(
+            *signals
+        )
 
         u_list = [(s[0], s[1]) for s in signals_values if s[0] in u_names]
         y_list = [(s[0], s[1]) for s in signals_values if s[0] in y_names]
 
-        return u_names, y_names, u_list, y_list
+        return u_names, y_names, u_units, y_units, u_list, y_list
 
     def _get_plot_params(
         self,
@@ -886,29 +913,29 @@ class Dataset:
 
     def _add_signals(self, kind: Signal_type, *signals: Signal) -> Any:
 
-        # Extract the dymoval Signals
+        # Validate the dymoval Signals
         validate_signals(*signals)
 
         # Target dataset
         ds = deepcopy(self)
 
         # Check if the sampling period is OK
-        ATOL = 10**-NUM_DECIMALS
         signals_ok = [
             s
             for s in signals
             if np.isclose(s["sampling_period"], ds.sampling_period, atol=ATOL)
         ]
         signals_name = [s["name"] for s in signals]
+        signals_unit = [s["signal_unit"] for s in signals]
 
-        # Update excluded_signal attribute
+        # Update excluded_signals attribute
         excluded_signals = [s["name"] for s in signals if s not in signals_ok]
         ds.excluded_signals = ds.excluded_signals + excluded_signals
         if excluded_signals:
             raise Warning(f"Signals {excluded_signals} cannot be added.")
 
         # Check if the signal name(s) already exist in the current Dataset
-        _, signal_names = zip(*self.signal_names())
+        _, signal_names, _ = zip(*self.signal_names())
         name_found = [
             s["name"] for s in signals_ok if s["name"] in signal_names
         ]
@@ -929,21 +956,15 @@ class Dataset:
         # the current dataset
         data = np.stack([s["values"] for s in signals_ok]).round(NUM_DECIMALS).T
         df_temp = pd.DataFrame(data=data, index=ds.dataset.index)
-        df_temp.columns = pd.MultiIndex.from_product(
-            [str2list(kind), signals_name]
+        df_temp.columns = pd.MultiIndex.from_tuples(
+            zip(str2list(kind) * len(signals_name), signals_name, signals_unit),
+            name=["kind", "names", "units"],
         )
 
         # concatenate new DataFrame containing the added signals
         ds.dataset = pd.concat([df_temp, ds.dataset], axis=1).sort_index(
-            axis=1,
+            level="kind", axis=1
         )
-        # ds.dataset = (
-        #     pd.concat([df_temp, ds.dataset], axis=1)
-        #     .reindex(
-        #         columns=columns,
-        #     )
-        #     .sort_index(axis=1)
-        # )
 
         # Update NaN intervals
         NaN_intervals = self._find_nan_intervals(df_temp)
@@ -969,14 +990,14 @@ class Dataset:
         """
 
         # If there is a scalar input or output to avoid returning a column vector.
-        if len(self.dataset["INPUT"].columns) == 1:
+        if len(self.dataset["INPUT"].columns.get_level_values("names")) == 1:
             u_values = (
                 self.dataset["INPUT"].to_numpy().round(NUM_DECIMALS)[:, 0]
             )
         else:
             u_values = self.dataset["INPUT"].to_numpy().round(NUM_DECIMALS)
 
-        if len(self.dataset["OUTPUT"].columns) == 1:
+        if len(self.dataset["OUTPUT"].columns.get_level_values("names")) == 1:
             y_values = (
                 self.dataset["OUTPUT"].to_numpy().round(NUM_DECIMALS)[:, 0]
             )
@@ -1001,8 +1022,8 @@ class Dataset:
         """
 
         (t, u, y) = self.dataset_values()
-        u_names = list(self.dataset["INPUT"].columns)
-        y_names = list(self.dataset["OUTPUT"].columns)
+        u_names = list(self.dataset["INPUT"].columns.get_level_values("names"))
+        y_names = list(self.dataset["OUTPUT"].columns.get_level_values("names"))
 
         u_dict = {
             "INPUT": {
@@ -1019,7 +1040,7 @@ class Dataset:
 
         io.savemat(filename, dsdict, oned_as="column", appendmat=True)
 
-    def signal_names(self) -> list[tuple[str, str]]:
+    def signal_names(self) -> list[tuple[str, str, str]]:
         """Return the list of signal names of the dataset."""
         return list(self.dataset.columns)
 
@@ -1058,6 +1079,7 @@ class Dataset:
         linestyle_output: str = "-",
         alpha_output: float = 1.0,
         ax: matplotlib.axes.Axes | None = None,
+        p_max: int = 0,
         save_as: str | None = None,
     ) -> matplotlib.axes.Axes:
         # -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
@@ -1097,17 +1119,20 @@ class Dataset:
         df = self.dataset
 
         # Arguments validation
-        u_names, y_names, u_names_idx, y_names_idx = self._classify_signals(
-            *signals
-        )
+        (
+            u_names,
+            y_names,
+            u_units,
+            y_units,
+            u_names_idx,
+            y_names_idx,
+        ) = self._classify_signals(*signals)
 
         # Input-output length and indices
         p = len(u_names)
         q = len(y_names)
 
-        u_units = df["INPUT"].droplevel(level=["names"], axis=1).columns
-        y_units = df["OUTPUT"].droplevel(level=["names"], axis=1).columns
-
+        print("u_names = ", u_names)
         # get some plot parameters based on user preferences
         n, range_in, range_out, u_titles, y_titles = self._get_plot_params(
             p, q, u_names_idx, y_names_idx, overlap
@@ -1128,6 +1153,7 @@ class Dataset:
             fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
         else:  # Otherwise use what is passed
             axes = np.asarray(ax)
+            range_out = np.arange(p_max, p_max + q)
 
         # Flatten array for more readable code
         axes = axes.T.flat
@@ -1144,7 +1170,6 @@ class Dataset:
                 ax=axes[range_in],
             )
 
-            print("u_names = ", u_names)
             self._shade_nans(
                 self._nan_intervals,
                 axes[range_in],
@@ -1161,6 +1186,7 @@ class Dataset:
                 alpha=alpha_output,
                 secondary_y=secondary_y,
                 title=y_titles,
+                legend=y_names,
                 ax=axes[range_out],
             )
 
@@ -1187,6 +1213,7 @@ class Dataset:
 
         # Set xlabels
         xlabel = f"{df.index.name[0]} ({df.index.name[1]})"  # Time (s)
+        # Set xlabels only on the last row
         for ii in range(ncols):
             axes[nrows - 1 :: nrows][ii].set_xlabel(xlabel)
         plt.suptitle(f"Dataset {self.name}. ")
@@ -1240,16 +1267,18 @@ class Dataset:
         # Extract dataset
         df = self.dataset
 
-        u_names, y_names, u_names_idx, y_names_idx = self._classify_signals(
-            *signals
-        )
+        (
+            u_names,
+            y_names,
+            u_units,
+            y_units,
+            u_names_idx,
+            y_names_idx,
+        ) = self._classify_signals(*signals)
 
         # Remove duplicated labels as they are not needed for coverage
         u_names = list(set(u_names))
         y_names = list(set(y_names))
-
-        u_units = df["INPUT"].droplevel(level=["names"], axis=1).columns
-        y_units = df["OUTPUT"].droplevel(level=["names"], axis=1).columns
 
         # Input-output length and indices
         p = len(u_names)
@@ -1277,7 +1306,7 @@ class Dataset:
                 bins=nbins,
                 color=line_color_input,
                 alpha=alpha_input,
-                legend=True,
+                legend=u_names,
                 ax=axes_in[0:p],
             )
 
@@ -1303,7 +1332,7 @@ class Dataset:
                 bins=nbins,
                 color=line_color_output,
                 alpha=alpha_output,
-                legend=True,
+                legend=y_names,
                 ax=axes_out[0:q],
             )
 
@@ -1345,7 +1374,7 @@ class Dataset:
             If the dataset contains *NaN*:s
         """
         # Validation
-        u_names, y_names, _, _ = self._classify_signals(*signals)
+        u_names, y_names, _, _, _, _ = self._classify_signals(*signals)
         # Remove 'INPUT' 'OUTPUT' columns level from dataframe
         df_temp = self.dataset.droplevel(level=["kind", "units"], axis=1)
 
@@ -1372,7 +1401,16 @@ class Dataset:
         )
         df_freq = pd.DataFrame(data=vals.round(NUM_DECIMALS), columns=cols)
         df_freq = df_freq.T.drop_duplicates().T  # Drop duplicated columns
-        df_freq.index.name = "Frequency"
+        time2freq_units = {
+            "s": "Hz",
+            "ms": "kHz",
+            "us": "MHz",
+            "ns": "GHz",
+            "ps": "THz",
+        }
+        df_freq.index.name = (
+            f"Frequency ({time2freq_units[df_temp.index.name[1]]})"
+        )
 
         return df_freq
 
@@ -1439,9 +1477,14 @@ class Dataset:
             If *kind* doen not match any allowed values.
         """
         # validation
-        u_names, y_names, u_names_idx, y_names_idx = self._classify_signals(
-            *signals
-        )
+        (
+            u_names,
+            y_names,
+            u_units,
+            y_units,
+            u_names_idx,
+            y_names_idx,
+        ) = self._classify_signals(*signals)
 
         if kind not in SPECTRUM_KIND:
             raise ValueError(f"kind must be one of {SPECTRUM_KIND}")
@@ -1507,6 +1550,11 @@ class Dataset:
         # Find nrwos and ncols for the plot
         nrows, ncols = factorize(n)
 
+        if overlap:
+            secondary_y = True
+        else:
+            secondary_y = False
+
         if kind == "amplitude":
             # To have the phase plot below the abs plot, then the number
             # of rows must be an even number, otherwise the plot got screwed.
@@ -1543,11 +1591,37 @@ class Dataset:
                 color=line_color_output,
                 linestyle=linestyle_output,
                 alpha=alpha_output,
+                secondary_y=secondary_y,
                 legend=y_names,
                 title=y_titles,
                 ax=axes[range_out],
             )
 
+        # Set ylabels
+        # input
+        for ii, unit in enumerate(u_units):
+            if kind == "power":
+                axes[ii].set_ylabel("(" + unit + ")**2")
+            elif kind == "psd":
+                axes[ii].set_ylabel("(" + unit + ")**2/Hz")
+
+        # Output
+        if not sorted(u_units) == sorted(y_units):
+            for jj, unit in enumerate(y_units):
+                if overlap:
+                    if kind == "power":
+                        axes[jj].right_ax.set_ylabel("(" + unit + ")**2")
+                    elif kind == "psd":
+                        axes[jj].right_ax.set_ylabel("(" + unit + ")**2/Hz")
+                    axes[jj].right_ax.grid(None, axis="y")
+
+                else:
+                    if kind == "power":
+                        axes[p + jj].set_ylabel("(" + unit + ")**2")
+                    elif kind == "psd":
+                        axes[p + jj].set_ylabel("(" + unit + ")**2/Hz")
+
+        # Set xlabel
         for ii in range(ncols):
             axes[nrows - 1 :: nrows][ii].set_xlabel(df_freq.index.name)
 
@@ -1574,22 +1648,29 @@ class Dataset:
             the input signals in the dataset.
         """
         # Arguments validation
-        u_names, y_names, _, _ = self._classify_signals(*signals)
+        u_names, y_names, u_units, y_units, _, _ = self._classify_signals(
+            *signals
+        )
 
         # Safe copy
         ds_temp = deepcopy(self)
-        df_temp = ds_temp.dataset
+        df_temp = ds_temp.dataset.droplevel(level="units", axis=1)
 
         # Remove means from input signals
-        cols = list(zip(len(u_names) * ["INPUT"], u_names))
+        cols = list(
+            zip(["INPUT"] * len(u_names), u_names, u_units),
+        )
+
         df_temp.loc[:, cols] = (
-            self.dataset.loc[:, cols] - self.dataset.loc[:, cols].mean()
+            df_temp.loc[:, cols] - df_temp.loc[:, cols].mean()
         )
 
         # Remove means from output signals
-        cols = list(zip(len(y_names) * ["OUTPUT"], y_names))
+        cols = list(
+            zip(["OUTPUT"] * len(y_names), y_names, y_units),
+        )
         df_temp.loc[:, cols] = (
-            self.dataset.loc[:, cols] - self.dataset.loc[:, cols].mean()
+            df_temp.loc[:, cols] - df_temp.loc[:, cols].mean()
         )
 
         # round result
@@ -1628,6 +1709,8 @@ class Dataset:
         (
             u_names,
             y_names,
+            u_units,
+            y_units,
             u_list,
             y_list,
         ) = self._validate_name_value_tuples(*signals_values)
@@ -1635,21 +1718,26 @@ class Dataset:
         # First adjust the input columns
         if u_list:
             u_offset = [u[1] for u in u_list]
-            cols = list(zip(len(u_names) * ["INPUT"], u_names))
+            cols = list(
+                zip(["INPUT"] * len(u_names), u_names, u_units),
+            )
 
-            df_temp.loc[:, cols] = self.dataset.loc[:, cols].apply(
+            df_temp.loc[:, cols] = df_temp.loc[:, cols].apply(
                 lambda x: x.subtract(u_offset), axis=1
             )
 
         # Then adjust the output columns
         if y_list:
             y_offset = [y[1] for y in y_list]
-            cols = list(zip(len(y_names) * ["OUTPUT"], y_names))
-            df_temp.loc[:, cols] = self.dataset.loc[:, cols].apply(
+            cols = list(
+                zip(["OUTPUT"] * len(y_names), y_names, y_units),
+            )
+            df_temp.loc[:, cols] = df_temp.loc[:, cols].apply(
                 lambda x: x.subtract(y_offset), axis=1
             )
 
         df_temp.round(NUM_DECIMALS)
+        # ds_temp.dataset.loc[:, :] = df_temp.to_numpy().round(NUM_DECIMALS)
 
         return ds_temp
 
@@ -1690,16 +1778,17 @@ class Dataset:
         (
             u_names,
             y_names,
+            u_units,
+            y_units,
             u_list,
             y_list,
         ) = self._validate_name_value_tuples(*signals_values)
 
         # Sampling frequency
-        fs = 1 / (self.dataset.index[1] - self.dataset.index[0])
-        N = len(self.dataset.index)
+        fs = 1 / (ds_temp.dataset.index[1] - ds_temp.dataset.index[0])
+        N = len(ds_temp.dataset.index)
 
-        # List of all the requested input cutoff frequencies
-        # INPUT
+        # INPUT LPF
         if u_list:
             u_fc = [u[1] for u in u_list]
             if any(u_val < 0 for u_val in u_fc):
@@ -1819,19 +1908,26 @@ class Dataset:
         for s in signals:
             # Input detected
             cond1 = (
-                s in list(ds.dataset["INPUT"].columns)
-                and len(list(ds.dataset["INPUT"].columns)) > 1
+                s in list(ds.dataset["INPUT"].columns.get_level_values("names"))
+                and len(
+                    list(ds.dataset["INPUT"].columns.get_level_values("names"))
+                )
+                > 1
             )
 
             # Output detected
             cond2 = (
-                s in list(ds.dataset["OUTPUT"].columns)
-                and len(list(ds.dataset["OUTPUT"].columns)) > 1
+                s
+                in list(ds.dataset["OUTPUT"].columns.get_level_values("names"))
+                and len(
+                    list(ds.dataset["OUTPUT"].columns.get_level_values("names"))
+                )
+                > 1
             )
 
             # Remove Signal
             if cond1 or cond2:
-                ds.dataset = ds.dataset.drop(s, axis=1, level=1)
+                ds.dataset = ds.dataset.drop(s, axis=1, level="names")
                 del ds._nan_intervals[s]
             else:
                 raise KeyError(
@@ -2156,20 +2252,23 @@ def compare_datasets(
 
     def _arrange_fig_axes(
         *dfs: pd.DataFrame,
-    ) -> tuple[matplotlib.axes.Figure, matplotlib.axes.Axes]:
+    ) -> tuple[matplotlib.axes.Figure, matplotlib.axes.Axes, int]:
         # When performing many plots on the same figure,
         # it find the largest number of axes needed
 
         # Find the larger dataset
-        n = max([len(df.columns) for df in dfs])
+        # n = max([len(df.columns) for df in dfs])
+        p_max = max([len(df["INPUT"].columns) for df in dfs])
+        q_max = max([len(df["OUTPUT"].columns) for df in dfs])
+        n = p_max + q_max
 
         # Set nrows and ncols
         nrows, ncols = factorize(n)
 
         # Create a unified figure
         fig, ax = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-
-        return fig, ax
+        print("p_max = ", p_max)
+        return fig, ax, p_max
 
     # ========================================
     #    MAIN IMPLEMENTATION
@@ -2182,16 +2281,12 @@ def compare_datasets(
     # ========================================
     # time comparison
     # ========================================
-    # Get size of wider dataset
     if kind == "time" or kind == "all":
 
         # Arrange figure
         # Accumulate all the dataframes at signal_name level
-        dfs = [
-            ds.dataset.droplevel(level=["kind", "units"], axis=1)
-            for ds in datasets
-        ]
-        fig_time, axes_time = _arrange_fig_axes(*dfs)
+        dfs = [ds.dataset.droplevel(level="units", axis=1) for ds in datasets]
+        fig_time, axes_time, p_max = _arrange_fig_axes(*dfs)
 
         # All the plots made on the same axis
         cmap = plt.get_cmap(COLORMAP)
@@ -2200,6 +2295,7 @@ def compare_datasets(
                 line_color_input=cmap(ii),
                 line_color_output=cmap(ii),
                 ax=axes_time,
+                p_max=p_max,
             )
 
         # Adjust legend
@@ -2214,11 +2310,11 @@ def compare_datasets(
 
         # INPUT
         dfs_in = [ds.dataset["INPUT"] for ds in datasets]
-        fig_cov_in, ax_cov_in = _arrange_fig_axes(*dfs_in)
+        fig_cov_in, ax_cov_in, _ = _arrange_fig_axes(*dfs_in)
 
         # OUTPUT
         dfs_out = [ds.dataset["OUTPUT"] for ds in datasets]
-        fig_cov_out, ax_cov_out = _arrange_fig_axes(*dfs_out)
+        fig_cov_out, ax_cov_out, _ = _arrange_fig_axes(*dfs_out)
 
         # Actual plot
         cmap = plt.get_cmap(COLORMAP)  # noqa
@@ -2248,11 +2344,8 @@ def compare_datasets(
 
         # Arrange figure
         # Accumulate all the dataframes at signal_name level
-        dfs = [
-            ds.dataset.droplevel(level=["kind", "units"], axis=1)
-            for ds in datasets
-        ]
-        fig_freq, axes_freq = _arrange_fig_axes(*dfs)
+        dfs = [ds.dataset.droplevel(level="units", axis=1) for ds in datasets]
+        fig_freq, axes_freq, p_max = _arrange_fig_axes(*dfs)
 
         if kind == "amplitude":
             nrows_old: int = axes_freq.shape[0]
@@ -2279,6 +2372,7 @@ def compare_datasets(
                 line_color_input=cmap(ii),
                 line_color_output=cmap(ii),
                 ax=axes_freq,
+                # p_max=p_max,
                 kind=kind,  # type:ignore
             )
 
