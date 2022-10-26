@@ -197,8 +197,8 @@ sim2_values = vs.Dataset.dataset["OUTPUT"].values + np.random.rand(
 
 # We use the ValidationSession's method append_simulation to append the simulation
 # results.
-vs.append_simulation(sim1_name, sim1_labels, sim1_values)
-vs.append_simulation(sim2_name, sim2_labels, sim2_values)
+vs = vs.append_simulation(sim1_name, sim1_labels, sim1_values)
+vs = vs.append_simulation(sim2_name, sim2_labels, sim2_values)
 
 # %% We can visually inspect the results...
 vs.plot_simulations()

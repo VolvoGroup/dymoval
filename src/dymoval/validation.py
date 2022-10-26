@@ -1,6 +1,7 @@
 # mypy: show_error_codes
 """Module containing everything related to validation."""
 
+from __future__ import annotations
 
 import matplotlib
 from typing import TypedDict
@@ -264,8 +265,9 @@ class ValidationSession:
 
         # Simulation based
         self.name: str = name  #: The validation session name.
+
         self.simulations_results: pd.DataFrame = pd.DataFrame(
-            index=validation_dataset.dataset.index, columns=[[], []]
+            index=validation_dataset.dataset.index, columns=[[], [], []]
         )  #: The appended simulation results.
 
         self.auto_correlation: dict[str, XCorrelation] = {}
@@ -355,7 +357,7 @@ class ValidationSession:
             raise ValueError(
                 f"Simulation name '{sim_name}' already exists. \n"
                 "HINT: check the loaded simulations names with"
-                "'simulations_namess()' method."
+                "'simulations_names()' method."
             )
         if len(set(y_names)) != len(
             set(self.Dataset.dataset["OUTPUT"].columns)
@@ -435,7 +437,7 @@ class ValidationSession:
         # check if the sim list is empty
         self._sim_list_validate()
 
-        # Check the passed list of simulations if non-empty.
+        # Check the passed list of simulations is non-empty.
         if not list_sims:
             list_sims = self.simulations_names()
         else:
@@ -452,8 +454,8 @@ class ValidationSession:
         # Now we start
         df_val = self.Dataset.dataset
         df_sim = self.simulations_results
-        q = len(df_val["OUTPUT"].columns)
-        p = len(df_val["INPUT"].columns)
+        q = len(df_val["OUTPUT"].columns.get_level_values("names"))
+        p = len(df_val["INPUT"].columns.get_level_values("names"))
 
         # ================================================================
         # Start the plot. Note how idx work as a filter to select signals
@@ -467,7 +469,7 @@ class ValidationSession:
         axes = axes.flat
         for ii, sim_name in enumerate(list_sims):
             # Scan simulation names.
-            df_sim.loc[:, (sim_name, df_sim[sim_name].columns)].plot(
+            df_sim.loc[:, sim_name].plot(
                 subplots=True,
                 grid=True,
                 ax=axes[0:q],
@@ -477,7 +479,7 @@ class ValidationSession:
 
         # TODO: from here, additional plots
         if dataset == "only_out" or dataset == "all":
-            df_val.loc[:, ("OUTPUT", df_val["OUTPUT"].columns)].plot(
+            df_val.loc[:, "OUTPUT"].plot(
                 subplots=True,
                 grid=True,
                 color="k",
@@ -485,7 +487,7 @@ class ValidationSession:
             )
 
         if dataset == "all":
-            df_val.loc[:, ("INPUT", df_val["INPUT"].columns)].plot(
+            df_val.loc[:, "INPUT"].plot(
                 subplots=True,
                 grid=True,
                 color="gray",
@@ -501,7 +503,7 @@ class ValidationSession:
         self.Dataset._shade_nans(
             self.Dataset._nan_intervals,
             axes[0:q],
-            list(df_val["OUTPUT"].columns),
+            list(df_val["OUTPUT"].droplevel(level="units", axis=1).columns),
             color="k",
         )
         # ===============================================================
@@ -645,11 +647,13 @@ class ValidationSession:
         """Return a list of names of the stored simulations."""
         return list(self.simulations_results.columns.levels[0])
 
-    def clear(self) -> None:
+    def clear(self) -> ValidationSession:
         """Clear all the stored simulation results."""
-        sim_names = self.simulations_names()
+        vs_temp = deepcopy(self)
+        sim_names = vs_temp.simulations_names()
         for x in sim_names:
-            self.drop_simulation(x)
+            vs_temp = vs_temp.drop_simulation(x)
+        return vs_temp
 
     def append_simulation(
         self,
@@ -658,7 +662,7 @@ class ValidationSession:
         y_data: np.ndarray,
         l_norm: float | Literal["fro", "nuc"] | None = np.inf,
         matrix_norm: float | Literal["fro", "nuc"] | None = 2,
-    ) -> None:
+    ) -> ValidationSession:
         """
         Append simulation results..
 
@@ -680,19 +684,35 @@ class ValidationSession:
             The matrix norm used for computing the validation results
             for this simulation.
         """
+        vs_temp = deepcopy(self)
+        # df_sim = vs_temp.simulations_results
 
         y_names = str2list(y_names)  # noqa
-        self._simulation_validation(sim_name, y_names, y_data)
-        df_sim = self.simulations_results
-        new_label = pd.MultiIndex.from_product([[sim_name], y_names])
-        df_sim[new_label] = y_data
-        self.simulations_results = df_sim
+        vs_temp._simulation_validation(sim_name, y_names, y_data)
+
+        y_units = list(
+            vs_temp.Dataset.dataset["OUTPUT"].columns.get_level_values("units")
+        )
+
+        # Initialize sim df
+        df_sim = pd.DataFrame(data=y_data, index=vs_temp.Dataset.dataset.index)
+        multicols = list(zip([sim_name] * len(y_names), y_names, y_units))
+        df_sim.columns = pd.MultiIndex.from_tuples(
+            multicols, names=["sim_names", "signal_names", "units"]
+        )
+
+        # Concatenate df_sim with the current sim results
+        vs_temp.simulations_results = pd.concat(
+            [df_sim, vs_temp.simulations_results], axis=1
+        )
 
         # Update residuals auto-correlation and cross-correlation attributes
-        self._append_correlations_tensors(sim_name)
-        self._append_validation_results(sim_name)
+        vs_temp._append_correlations_tensors(sim_name)
+        vs_temp._append_validation_results(sim_name)
 
-    def drop_simulation(self, *args: str) -> None:
+        return vs_temp
+
+    def drop_simulation(self, *args: str) -> ValidationSession:
         """Drop simulation results from the validation session.
 
 
@@ -708,17 +728,20 @@ class ValidationSession:
         ValueError
             If the simulation name is not found.
         """
-        self._sim_list_validate()
+        vs_temp = deepcopy(self)
+        vs_temp._sim_list_validate()
 
         for sim_name in args:
-            if sim_name not in self.simulations_names():
+            if sim_name not in vs_temp.simulations_names():
                 raise ValueError(f"Simulation {sim_name} not found.")
-            self.simulations_results.drop(sim_name, axis=1, inplace=True)
-            self.simulations_results.columns = (
-                self.simulations_results.columns.remove_unused_levels()
+            vs_temp.simulations_results.drop(sim_name, axis=1, inplace=True)
+            vs_temp.simulations_results.columns = (
+                vs_temp.simulations_results.columns.remove_unused_levels()
             )
 
-            self.auto_correlation.pop(sim_name)
-            self.cross_correlation.pop(sim_name)
+            vs_temp.auto_correlation.pop(sim_name)
+            vs_temp.cross_correlation.pop(sim_name)
 
-            self.validation_results.drop(sim_name, axis=1, inplace=True)
+            vs_temp.validation_results.drop(sim_name, axis=1, inplace=True)
+
+        return vs_temp
