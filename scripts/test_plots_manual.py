@@ -11,13 +11,15 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# ===========================================================================
-# Arange
-# ===========================================================================
+
 plt.ion()
+
+# ===========================================================================
+# Arange: SELECT THE FIXTURE TYPE
+# ===========================================================================
 # Setup the test type
 dataset_type = ["MIMO", "SISO", "SIMO", "MISO"]
-fixture_type = "SISO"
+fixture_type = "MIMO"
 
 # Set test data
 nan_thing = np.empty(200)
@@ -106,14 +108,16 @@ ds = dmv.Dataset(
     overlap=True,
 )
 
-# This shall raise
-ds.plot_amplitude_spectrum()
+# This shall raise because there are NaNs
+ds.plot_spectrum()
 
 
 # %%
-ds.replace_NaNs("fillna", 0.0, inplace=True)
+ds = ds.remove_NaNs()
 
 ds.plot()
+
+# Test some colors, etc.
 ds.plot(
     line_color_input="r",
     linestyle_input=":",
@@ -122,20 +126,72 @@ ds.plot(
     overlap=True,
 )
 
-ds.plot(return_figure=True)
 
 # Conditional plot
 if fixture_type == "MIMO" or fixture_type == "MISO":
-    ds.plot(u_labels=["u1", "u2"], y_labels="y1", overlap=True)
+    ds.plot("u1", "u2", "y1", overlap=True)
+    # Duplicated signals
+    ds.plot("u1", "u1", "y1", overlap=True)
+    ds.plot("u1", "y1", "y1", overlap=True)
 else:
-    ds.plot(u_labels="u1", y_labels="y1")
+    ds.plot("u1", "y1")
 
+# %% Save
 ds.plot(save_as="c:/vas/github/dymoval/dataset_plot")
-# %% Coverage
 
+
+# ===========================================================================
+# Act: plot_coverage test
+# ===========================================================================
+# %% Coverage
 ds.plot_coverage()
 ds.plot_coverage(line_color_input="r", line_color_output="c", alpha_output=0.5)
+
+# Conditional plot
+if fixture_type == "MIMO" or fixture_type == "MISO":
+    ds.plot_coverage("u1", "u2", "y1")
+    # Duplicated signals
+    ds.plot_coverage("u1", "u1", "y1")
+    ds.plot_coverage("u1", "y1", "y1")
+else:
+    ds.plot_coverage("u1", "y1")
+
+
+# %% Save again
 ds.plot_coverage(save_as="./coverage_test")
+
+
+# ===========================================================================
+# Act: plot_spectrum test
+# ===========================================================================
+ds.plot_spectrum()
+ds.plot_spectrum(line_color_input="r", line_color_output="c", alpha_output=0.5)
+
+# %%
+ds.plot_spectrum(kind="psd")
+ds.plot_spectrum(
+    kind="psd", line_color_input="r", line_color_output="c", alpha_output=0.5
+)
+
+# %%
+ds.plot_spectrum(kind="amplitude")
+ds.plot_spectrum(
+    kind="amplitude",
+    line_color_input="r",
+    line_color_output="c",
+    alpha_output=0.5,
+)
+
+# %%
+# Conditional plot
+if fixture_type == "MIMO" or fixture_type == "MISO":
+    ds.plot_spectrum("u1", "u2", "y1")
+    # Duplicated signals
+    ds.plot_spectrum("u1", "u1", "y1")
+    ds.plot_spectrum("u1", "y1", "y1", kind="amplitude")
+else:
+    ds.plot_spectrum("u1", "y1")
+
 
 # ===========================================================================
 # Act: ValidatonSession plots test

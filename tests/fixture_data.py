@@ -264,27 +264,43 @@ def constant_ones_dataframe(request):  # type: ignore
 
     N = 10
     idx = np.linspace(0, 1, N)
-    u_names = [("u1", "m"), ("u2", "m/s"), ("u3", "bar")]
-    y_names = [("y1", "deg"), ("y2", "m/s**2"), ("y3", "V")]
+    u_names = ["u1", "u2", "u3"]
+    u_units = ["m", "m/s", "bar"]
+    u_cols = list(zip(u_names, u_units))
+
+    y_names = ["y1", "y2", "y3"]
+    y_units = ["deg", "m/s**2", "V"]
+    y_cols = list(zip(y_names, y_units))
+
+    cols_name = u_cols + y_cols
     values = np.ones((N, 6))
-    df = pd.DataFrame(index=idx, columns=[*u_names, *y_names], data=values)
+    df = pd.DataFrame(index=idx, columns=cols_name, data=values)
     df.index.name = ("Time", "s")
 
     if fixture_type == "SISO":
         # Slice signal list
         u_names = u_names[0]
+        u_units = u_units[0]
         y_names = y_names[0]
-        cols = [u_names, y_names]
+        y_units = y_units[0]
+        u_cols = u_cols[0]
+        y_cols = y_cols[0]
+        cols = [u_cols, y_cols]
     if fixture_type == "MISO":
         # Slice signal list
         y_names = y_names[0]
-        cols = [*u_names, y_names]
+        y_units = y_units[0]
+        y_cols = y_cols[0]
+        cols = [*u_cols, y_cols]
     if fixture_type == "SIMO":
         # Slice signal list
         u_names = u_names[0]
-        cols = [u_names, *y_names]
+        u_units = u_units[0]
+        u_cols = u_cols[0]
+        cols = [u_cols, *y_cols]
     if fixture_type == "MIMO":
-        cols = [*u_names, *y_names]
+        cols = [*u_cols, *y_cols]
     df = df.loc[:, cols]
-    np.round(df, dmv.NUM_DECIMALS)
-    return df, u_names, y_names, fixture_type
+    df.round(NUM_DECIMALS)
+    df.columns = df.columns.to_flat_index()
+    return df, u_names, y_names, u_units, y_units, fixture_type

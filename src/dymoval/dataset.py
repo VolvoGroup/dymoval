@@ -702,7 +702,7 @@ class Dataset:
     ) -> tuple[
         list[str], list[str], list[str], list[str], list[int], list[int]
     ]:
-        # You pass a list of signal and the function recognizes who is input
+        # You pass a list of signal names and the function recognizes who is input
         # and who is output
         # Is no argument is passed, then it takes the whole for u_names and y_names
         # If only input or output signals are passed, then it return an empty list
@@ -1132,7 +1132,6 @@ class Dataset:
         p = len(u_names)
         q = len(y_names)
 
-        print("u_names = ", u_names)
         # get some plot parameters based on user preferences
         n, range_in, range_out, u_titles, y_titles = self._get_plot_params(
             p, q, u_names_idx, y_names_idx, overlap
@@ -1277,8 +1276,13 @@ class Dataset:
         ) = self._classify_signals(*signals)
 
         # Remove duplicated labels as they are not needed for coverage
-        u_names = list(set(u_names))
-        y_names = list(set(y_names))
+        # This because you don't need to overlap e.g. (u1,y1), (u1,y2), etc
+        # The following is the way from Python 3.7 you remove items while
+        # preserving the order
+        u_names = list(dict.fromkeys(u_names))
+        u_units = list(dict.fromkeys(u_units))
+        y_names = list(dict.fromkeys(y_names))
+        y_units = list(dict.fromkeys(y_units))
 
         # Input-output length and indices
         p = len(u_names)
@@ -1301,7 +1305,7 @@ class Dataset:
                 axes_in = np.asarray(ax_in)
 
             axes_in = axes_in.T.flat
-            df["INPUT"].loc[:, u_names].hist(
+            df["INPUT"].droplevel(level="units", axis=1).loc[:, u_names].hist(
                 grid=True,
                 bins=nbins,
                 color=line_color_input,
@@ -1312,7 +1316,7 @@ class Dataset:
 
             # Set xlabel
             for ii, unit in enumerate(u_units):
-                axes_in[ii].set_title(f"INPUT #{u_names_idx[ii]}")
+                axes_in[ii].set_title(f"INPUT #{u_names_idx[ii]+1}")
                 axes_in[ii].set_xlabel(f"({unit})")
             plt.suptitle("Coverage region (INPUT).")
 
@@ -1327,7 +1331,7 @@ class Dataset:
                 axes_out = np.asarray(ax_out)
 
             axes_out = axes_out.T.flat
-            df["OUTPUT"].loc[:, y_names].hist(
+            df["OUTPUT"].droplevel(level="units", axis=1).loc[:, y_names].hist(
                 grid=True,
                 bins=nbins,
                 color=line_color_output,
@@ -1338,7 +1342,7 @@ class Dataset:
 
             # Set xlabel, ylabels
             for ii, unit in enumerate(y_units):
-                axes_out[ii].set_title(f"OUTPUT #{y_names_idx[ii]}")
+                axes_out[ii].set_title(f"OUTPUT #{y_names_idx[ii]+1}")
                 axes_out[ii].set_xlabel(f"({unit})")
             plt.suptitle("Coverage region (OUTPUT).")
 
@@ -1654,7 +1658,7 @@ class Dataset:
 
         # Safe copy
         ds_temp = deepcopy(self)
-        df_temp = ds_temp.dataset.droplevel(level="units", axis=1)
+        df_temp = ds_temp.dataset
 
         # Remove means from input signals
         cols = list(
@@ -1674,7 +1678,7 @@ class Dataset:
         )
 
         # round result
-        df_temp.round(decimals=NUM_DECIMALS)
+        ds_temp.dataset = df_temp.round(NUM_DECIMALS)
 
         return ds_temp
 
@@ -2092,7 +2096,7 @@ def validate_dataframe(
     y_names = str2list(y_names)  # noqa
 
     # ==========================================
-    # Passed u_names and y_names check
+    # u_names and y_names arguments check
     # ========================================
 
     # Check that you have at least one input and one output
@@ -2113,7 +2117,7 @@ def validate_dataframe(
         )
 
     # ==========================================
-    # Passed DataFrame check
+    # DataFrame check
     # ========================================
 
     # Check that all elements in columns are tuples
@@ -2125,10 +2129,16 @@ def validate_dataframe(
             "Each column name shall be of the form (name,unit), where 'name' and 'unit' are strings."
         )
 
+    # check if the index is a tuple
+    if not isinstance(df.index.name, tuple):
+        raise TypeError("Index name must be ('Time',unit).")
+
     # Check that each component of the tuple is a string
     available_names, available_units = list(zip(*df.columns))
     available_names = list(available_names)
     available_units = list(available_units)
+    print("available_names = ", available_names)
+    print("available_units = ", available_units)
 
     cond1 = all(isinstance(name, str) for name in available_names)
     cond2 = all(isinstance(unit, str) for unit in available_units)
@@ -2139,17 +2149,13 @@ def validate_dataframe(
         )
 
     # Check that the DataFrame must have only one index and columns levels
-    if df.columns.nlevels > 1 or df.index.nlevels > 1:
-        raise IndexError(
-            "The number index levels must be one for both the index and the columns.",
-            "The index shall represent a time vector of equi-distant time instants",
-            "and each column shall correspond to one signal values.",
-        )
-
-    # check if the index is a tuple
-    if not isinstance(df.index.name, tuple):
-        raise TypeError("Index name must be ('Time',unit).")
-
+    #     if df.columns.nlevels > 1 or df.index.nlevels > 1:
+    #         raise IndexError(
+    #             "The number index levels must be one for both the index and the columns.",
+    #             "The index shall represent a time vector of equi-distant time instants",
+    #             "and each column shall correspond to one signal values.",
+    #         )
+    #
     # At least two samples
     if df.index.size < 2:
         raise IndexError("A signal needs at least two samples.")
@@ -2242,22 +2248,24 @@ def compare_datasets(
 
         for ii, ax in enumerate(axes):
             handles, labels = ax.get_legend_handles_labels()
+            # print(handles)
+            # print(labels)
             # Be sure that your plot show legends!
             if labels:
                 new_labels = [
                     ds_names[jj] + ", " + labels[jj]
                     for jj, _ in enumerate(ds_names)
+                    if jj < len(labels)
                 ]
             ax.legend(handles, new_labels)
 
     def _arrange_fig_axes(
         *dfs: pd.DataFrame,
-    ) -> tuple[matplotlib.axes.Figure, matplotlib.axes.Axes, int]:
+    ) -> tuple[matplotlib.axes.Figure, matplotlib.axes.Axes, int, int]:
         # When performing many plots on the same figure,
         # it find the largest number of axes needed
 
         # Find the larger dataset
-        # n = max([len(df.columns) for df in dfs])
         p_max = max([len(df["INPUT"].columns) for df in dfs])
         q_max = max([len(df["OUTPUT"].columns) for df in dfs])
         n = p_max + q_max
@@ -2268,7 +2276,7 @@ def compare_datasets(
         # Create a unified figure
         fig, ax = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
         print("p_max = ", p_max)
-        return fig, ax, p_max
+        return fig, ax, p_max, q_max
 
     # ========================================
     #    MAIN IMPLEMENTATION
@@ -2286,7 +2294,7 @@ def compare_datasets(
         # Arrange figure
         # Accumulate all the dataframes at signal_name level
         dfs = [ds.dataset.droplevel(level="units", axis=1) for ds in datasets]
-        fig_time, axes_time, p_max = _arrange_fig_axes(*dfs)
+        fig_time, axes_time, p_max, _ = _arrange_fig_axes(*dfs)
 
         # All the plots made on the same axis
         cmap = plt.get_cmap(COLORMAP)
@@ -2308,13 +2316,24 @@ def compare_datasets(
     # ========================================
     if kind == "coverage" or kind == "all":
 
+        dfs = [ds.dataset.droplevel(level="units", axis=1) for ds in datasets]
+
+        # The following is a bit of code repetition but I could not come
+        # with a better idea.
+
         # INPUT
-        dfs_in = [ds.dataset["INPUT"] for ds in datasets]
-        fig_cov_in, ax_cov_in, _ = _arrange_fig_axes(*dfs_in)
+        p_max = max([len(df["INPUT"].columns) for df in dfs])
+        nrows, ncols = factorize(p_max)
+        fig_cov_in, ax_cov_in = plt.subplots(
+            nrows, ncols, sharex=True, squeeze=False
+        )
 
         # OUTPUT
-        dfs_out = [ds.dataset["OUTPUT"] for ds in datasets]
-        fig_cov_out, ax_cov_out, _ = _arrange_fig_axes(*dfs_out)
+        q_max = max([len(df["OUTPUT"].columns) for df in dfs])
+        nrows, ncols = factorize(q_max)
+        fig_cov_out, ax_cov_out = plt.subplots(
+            nrows, ncols, sharex=True, squeeze=False
+        )
 
         # Actual plot
         cmap = plt.get_cmap(COLORMAP)  # noqa
@@ -2345,7 +2364,7 @@ def compare_datasets(
         # Arrange figure
         # Accumulate all the dataframes at signal_name level
         dfs = [ds.dataset.droplevel(level="units", axis=1) for ds in datasets]
-        fig_freq, axes_freq, p_max = _arrange_fig_axes(*dfs)
+        fig_freq, axes_freq, p_max, _ = _arrange_fig_axes(*dfs)
 
         if kind == "amplitude":
             nrows_old: int = axes_freq.shape[0]
