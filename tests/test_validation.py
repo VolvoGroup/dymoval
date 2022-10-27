@@ -36,6 +36,8 @@ class Test_ClassValidationNominal:
         name_vs = "my_validation"
         vs = dmv.ValidationSession(name_vs, ds)
 
+        if isinstance(y_units, str):
+            y_units = [y_units]
         # ==================================
         # Append simulations test
         # ==================================
@@ -88,8 +90,8 @@ class Test_ClassValidationNominal:
 
         assert sorted(expected_sims) == sorted(vs.simulations_names())
 
-        expected_signals1 = list(zip(sim1_labels, [y_units]))
-        expected_signals2 = list(zip(sim2_labels, [y_units]))
+        expected_signals1 = list(zip(sim1_labels * len(y_units), y_units))
+        expected_signals2 = list(zip(sim2_labels * len(y_units), y_units))
 
         assert sorted(expected_signals1) == sorted(
             vs.simulation_signals_list(sim1_name)
@@ -147,7 +149,7 @@ class Test_ClassValidationNominal:
         )
 
         # Same sim nmane
-        vs.append_simulation(sim1_name, sim1_labels, sim1_values)
+        vs = vs.append_simulation(sim1_name, sim1_labels, sim1_values)
 
         # Search for a non-existing simulation
         with pytest.raises(KeyError):
@@ -174,7 +176,7 @@ class Test_ClassValidatioNominal_sim_validation:
         )
 
         # Same sim nmane
-        vs.append_simulation(sim1_name, sim1_labels, sim1_values)
+        vs = vs.append_simulation(sim1_name, sim1_labels, sim1_values)
         with pytest.raises(ValueError):
             vs.append_simulation(sim1_name, sim1_labels, sim1_values)
 
@@ -341,7 +343,7 @@ class Test_ClassValidatioNominal_sim_validation:
             len(df.iloc[:, 0].values), len(sim1_labels)
         )
 
-        vs.append_simulation(sim1_name, sim1_labels, sim1_values)
+        vs = vs.append_simulation(sim1_name, sim1_labels, sim1_values)
 
         with pytest.raises(ValueError):
             vs.drop_simulation("potato")
@@ -367,7 +369,7 @@ class Test_Plots:
         sim1_values = np.random.rand(
             len(df.iloc[:, 0].values), len(sim1_labels)
         )
-        vs.append_simulation(sim1_name, sim1_labels, sim1_values)
+        vs = vs.append_simulation(sim1_name, sim1_labels, sim1_values)
 
         # Add a second
         sim2_name = "Model 2"
@@ -377,7 +379,7 @@ class Test_Plots:
         sim2_values = vs.Dataset.dataset["OUTPUT"].values + np.random.rand(
             len(vs.Dataset.dataset["OUTPUT"].values), 1
         )
-        vs.append_simulation(sim2_name, sim2_labels, sim2_values)
+        vs = vs.append_simulation(sim2_name, sim2_labels, sim2_values)
 
         # =============================
         # plot simulations
@@ -416,7 +418,7 @@ class Test_Plots:
         with pytest.raises(KeyError):
             fig, _ = vs.plot_simulations("potato")
         # Test plot - filtered wrong
-        vs.clear()
+        vs = vs.clear()
         with pytest.raises(KeyError):
             fig, _ = vs.plot_simulations()
         with pytest.raises(KeyError):
@@ -425,8 +427,8 @@ class Test_Plots:
         # =============================
         # plot residuals
         # =============================
-        vs.append_simulation(sim1_name, sim1_labels, sim1_values)
-        vs.append_simulation(sim2_name, sim2_labels, sim2_values)
+        vs = vs.append_simulation(sim1_name, sim1_labels, sim1_values)
+        vs = vs.append_simulation(sim2_name, sim2_labels, sim2_values)
 
         fig1, _, fig2, _ = vs.plot_residuals()
         fig1.clf()
@@ -468,7 +470,7 @@ class Test_Plots:
             fig, _, fig2, _ = vs.plot_residuals("potato")
 
         # Empty simulation list
-        vs.clear()
+        vs = vs.clear()
         with pytest.raises(KeyError):
             fig, _, fig2, _ = vs.plot_residuals()
 

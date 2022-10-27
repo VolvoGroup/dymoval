@@ -734,7 +734,9 @@ class ValidationSession:
         for sim_name in args:
             if sim_name not in vs_temp.simulations_names():
                 raise ValueError(f"Simulation {sim_name} not found.")
-            vs_temp.simulations_results.drop(sim_name, axis=1, inplace=True)
+            vs_temp.simulations_results = vs_temp.simulations_results.drop(
+                sim_name, axis=1, level="sim_names"
+            )
             vs_temp.simulations_results.columns = (
                 vs_temp.simulations_results.columns.remove_unused_levels()
             )
@@ -742,6 +744,8 @@ class ValidationSession:
             vs_temp.auto_correlation.pop(sim_name)
             vs_temp.cross_correlation.pop(sim_name)
 
-            vs_temp.validation_results.drop(sim_name, axis=1, inplace=True)
+            vs_temp.validation_results = vs_temp.validation_results.drop(
+                sim_name, axis=1
+            )
 
         return vs_temp
