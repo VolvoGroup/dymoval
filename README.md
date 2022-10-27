@@ -74,7 +74,8 @@ If you are already familiar with model validation, then the best way to learn dy
 	dmv.open_tutorial()
 
 
-Otherwise, you can get an inroduction by taking a look at the [documentation](https://volvogroup.github.io/dymoval/).
+**UPDATE** The tutorial won't work in its current status. You can take a look at the [documentation](https://volvogroup.github.io/dymoval/) in the meantime.
+
 
 Note
 ----
