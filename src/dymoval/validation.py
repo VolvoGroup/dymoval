@@ -386,13 +386,7 @@ class ValidationSession:
         # Cam be a positional or a keyword arg
         list_sims: str | list[str] | None = None,
         *,
-        dataset: Literal["all", "only_out"] | None = None,
-        line_color_input: str = "k",
-        linestyle_input: str = "-",
-        alpha_input: float = 1.0,
-        line_color_output: str = "k",
-        linestyle_output: str = "-",
-        alpha_output: float = 1.0,
+        overlap: Literal["in", "out", "both"] | None = None,
         save_as: str | None = None,
     ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
         """Plot the stored simulation results.
@@ -407,24 +401,13 @@ class ValidationSession:
         ----------
         list_sims:
             List of simulation names.
-        dataset:
-            Specify if you want to plot the dataset over the simulations.
+        overlap:
+            Specify whether the dataset shall be overlapped to the simulations results.
 
-            - **all**: include both input and output signals of the dataset.
-            - **only_out**: include only the output signals of the dataset.
+            - **in**: overlap only the input signals of the dataset.
+            - **out**: overlap only the output signals of the dataset.
+            - **both**: overlap both the input and the output signals of the dataset.
 
-        line_color_input:
-            Line color for the input signals.
-        linestyle_input:
-            Line style for the input signals.
-        alpha_input:
-            Alpha channel value for the input signals.
-        line_color_output:
-            Line color for the output signals.
-        linestyle_output:
-            Line style for the output signals.
-        alpha_output:
-            Alpha channel value for the output signals.
         save_as:
             Save the figure with a specified name.
             The figure is automatically resized with a 16:9 aspect ratio.
@@ -438,6 +421,7 @@ class ValidationSession:
         self._sim_list_validate()
 
         # Check the passed list of simulations is non-empty.
+        # or that the passed name actually exist
         if not list_sims:
             list_sims = self.simulations_names()
         else:
@@ -452,19 +436,26 @@ class ValidationSession:
                 )
 
         # Now we start
-        df_val = self.Dataset.dataset
+        ds_val = self.Dataset
+        df_val = ds_val.dataset
         df_sim = self.simulations_results
         q = len(df_val["OUTPUT"].columns.get_level_values("names"))
         p = len(df_val["INPUT"].columns.get_level_values("names"))
+        u_units = df_val["INPUT"].columns.get_level_values("units")
+        y_units = df_val["OUTPUT"].columns.get_level_values("units")
 
         # ================================================================
-        # Start the plot. Note how idx work as a filter to select signals
-        # in a certain position in all the simulations.
+        # Start the plot.
         # ================================================================
+        # Arange figure
+        cmap = plt.get_cmap(COLORMAP)
+        if overlap == "in" or overlap == "both":
+            n = max(p, q)
+        else:
+            n = q
+        nrows, ncols = factorize(n)  # noqa
 
-        cmap = plt.get_cmap(COLORMAP)  # noqa
-        nrows, ncols = factorize(max(p, q))  # noqa
-        # Plot the output signals
+        # Plot the simulations output signals
         fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
         axes = axes.flat
         for ii, sim_name in enumerate(list_sims):
@@ -477,35 +468,76 @@ class ValidationSession:
                 title="Simulations results.",
             )
 
-        # TODO: from here, additional plots
-        if dataset == "only_out" or dataset == "all":
+        # In case the user also wants to see the dataset
+        if overlap == "out" or overlap == "both":
             df_val.loc[:, "OUTPUT"].plot(
                 subplots=True,
                 grid=True,
-                color="k",
+                color="gray",
                 ax=axes[0:q],
             )
 
-        if dataset == "all":
-            df_val.loc[:, "INPUT"].plot(
-                subplots=True,
-                grid=True,
-                color="gray",
-                ax=axes[0:p],
-            )
-        # I would be attempted to raise an error if dataset is a weird string,
-        # but I will not.
-
-        # Plot the last details: x-axis legend
-        for ii in range((nrows - 1) * ncols, nrows * ncols):
-            axes[ii].set_xlabel("Time")
-        # Plot the last details: shade NaN:s areas.
-        self.Dataset._shade_nans(
+        # Shade NaN:s areas.
+        ds_val._shade_nans(
             self.Dataset._nan_intervals,
             axes[0:q],
             list(df_val["OUTPUT"].droplevel(level="units", axis=1).columns),
             color="k",
         )
+
+        # ==========================================================
+        # INPUT signal hanling
+        # ==========================================================
+        if overlap == "in" or overlap == "both":
+            df_val.loc[:, "INPUT"].plot(
+                subplots=True,
+                grid=True,
+                color="gray",
+                linestyle=":",
+                ax=axes[0:p],
+            )
+
+            #     for ii, unit in enumerate(u_units):
+            #         axes[jj].right_ax.set_ylabel("(" + unit + ")")
+            #         axes[jj].right_ax.grid(None, axis="y")
+
+            # Plot the last details: shade NaN:s areas.
+            ds_val._shade_nans(
+                ds_val._nan_intervals,
+                axes[0:p],
+                list(df_val["INPUT"].droplevel(level="units", axis=1).columns),
+                color="k",
+            )
+
+        # ==========================================================
+        # Legends, labels, etc
+        # ==========================================================
+        # Set legend
+        q = len(df_val["OUTPUT"].columns.get_level_values("names"))
+        labels = list(df_sim.droplevel(level="units", axis=1).columns)
+
+        if overlap == "out":
+            labels += list(df_val["OUTPUT"].columns.get_level_values("names"))
+        if overlap == "both":
+            labels += list(
+                df_val["OUTPUT"].columns.get_level_values("names")
+            ) + list(df_val["INPUT"].columns.get_level_values("names"))
+        print("labels = ", labels)
+        for ii, ax in enumerate(axes):
+            # Handles are essentially Line2D objects
+            handles, _ = ax.get_legend_handles_labels()
+            new_labels = labels[ii::q]
+            ax.legend(handles, new_labels)
+
+        # Set y-labels
+        for jj, unit in enumerate(y_units):
+            axes[jj].set_ylabel("(" + unit + ")")
+
+        # Set xlabels
+        xlabel = f"{df_val.index.name[0]} ({df_val.index.name[1]})"  # Time (s)
+        for ii in range((nrows - 1) * ncols, nrows * ncols):
+            axes[ii].set_xlabel(xlabel)
+
         # ===============================================================
         # Save and eventually return figures.
         # ===============================================================

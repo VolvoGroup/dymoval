@@ -2137,8 +2137,6 @@ def validate_dataframe(
     available_names, available_units = list(zip(*df.columns))
     available_names = list(available_names)
     available_units = list(available_units)
-    print("available_names = ", available_names)
-    print("available_units = ", available_units)
 
     cond1 = all(isinstance(name, str) for name in available_names)
     cond2 = all(isinstance(unit, str) for unit in available_units)
