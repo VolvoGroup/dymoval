@@ -441,7 +441,7 @@ class ValidationSession:
         df_sim = self.simulations_results
         q = len(df_val["OUTPUT"].columns.get_level_values("names"))
         p = len(df_val["INPUT"].columns.get_level_values("names"))
-        u_units = df_val["INPUT"].columns.get_level_values("units")
+        # u_units = df_val["INPUT"].columns.get_level_values("units")
         y_units = df_val["OUTPUT"].columns.get_level_values("units")
 
         # ================================================================
