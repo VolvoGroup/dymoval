@@ -210,6 +210,7 @@ class Dataset:
         NaN_intervals: dict[str, list[np.ndarray]],
         axes: matplotlib.axes.Axes,
         signal_names: list[str],
+        secondary_y: bool = False,
         color: str = "k",
     ) -> None:
 
@@ -217,8 +218,12 @@ class Dataset:
             signal_name = signal_names[ii]
             for idx, val in enumerate(NaN_intervals[signal_name]):
                 if not val.size == 0:
-                    ax.axvspan(min(val), max(val), color=color, alpha=0.2)
-
+                    if secondary_y:
+                        ax.right_ax.axvspan(
+                            min(val), max(val), color=color, alpha=0.2
+                        )
+                    else:
+                        ax.axvspan(min(val), max(val), color=color, alpha=0.2)
         #     def _shade_output_nans(
         #         self,
         #         df: pd.DataFrame,

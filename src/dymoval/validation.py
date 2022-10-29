@@ -445,6 +445,11 @@ class ValidationSession:
         u_units = df_val["INPUT"].columns.get_level_values("units")
         y_units = df_val["OUTPUT"].columns.get_level_values("units")
 
+        if dataset == "in" or dataset == "both":
+            secondary_y = True
+        else:
+            secondary_y = False
+
         # ================================================================
         # Start the plot.
         # ================================================================
@@ -465,16 +470,18 @@ class ValidationSession:
                 subplots=True,
                 grid=True,
                 ax=axes[0:q],
+                secondary_y=secondary_y,
                 color=cmap(ii),
                 title="Simulations results.",
             )
 
-        #  Plot the dataset (if requested)
+        #  Plot the out dataset (if requested)
         if dataset == "out" or dataset == "both":
             df_val.loc[:, "OUTPUT"].plot(
                 subplots=True,
                 grid=True,
                 color="gray",
+                secondary_y=secondary_y,
                 ax=axes[0:q],
             )
 
@@ -483,6 +490,7 @@ class ValidationSession:
             ds_val._nan_intervals,
             axes[0:q],
             list(df_val["OUTPUT"].droplevel(level="units", axis=1).columns),
+            secondary_y=secondary_y,
             color="k",
         )
 
@@ -501,15 +509,22 @@ class ValidationSession:
                 list(df_val["OUTPUT"].columns.get_level_values("names")),
             )
 
-        for ii, ax in enumerate(axes):
-            # Handles are essentially Line2D objects
-            handles, _ = ax.get_legend_handles_labels()
+        for ii, ax in enumerate(axes[0:q]):
             new_labels = labels[ii::q]
-            ax.legend(handles, new_labels)
+            if secondary_y:
+                handles, _ = ax.right_ax.get_legend_handles_labels()
+                ax.right_ax.legend(handles, new_labels)
+            else:
+                handles, _ = ax.get_legend_handles_labels()
+                ax.legend(handles, new_labels)
 
         # Set y-labels
         for jj, unit in enumerate(y_units):
-            axes[jj].set_ylabel("(" + unit + ")")
+            ylabel = f"({unit })"
+            if secondary_y:
+                axes[jj].right_ax.set_ylabel(ylabel)
+            else:
+                axes[jj].set_ylabel(ylabel)
 
         # Set xlabels
         xlabel = f"{df_val.index.name[0]} ({df_val.index.name[1]})"  # Time (s)
@@ -525,7 +540,6 @@ class ValidationSession:
                 grid=True,
                 color="gray",
                 linestyle="--",
-                secondary_y=True,
                 ax=axes[0:p],
             )
 
@@ -541,17 +555,15 @@ class ValidationSession:
             u_names = list(df_val["INPUT"].columns.get_level_values("names"))
             u_labels = list(product([ds_val.name], u_names))
             for ii in range(p):
-                axes[ii].right_ax.legend(
-                    [f"{u_labels[ii][0], u_labels[ii][1]}"]
-                )
+                axes[ii].legend([f"{u_labels[ii][0], u_labels[ii][1]}"])
 
             # Set y_labels
             for ii, unit in enumerate(u_units):
-                axes[ii].right_ax.set_ylabel("(" + unit + ")")
+                axes[ii].set_ylabel("(" + unit + ")")
 
             # Set grid
             for jj in range(q):
-                axes[jj].right_ax.grid(None, axis="y")
+                axes[jj].grid(None, axis="y")
 
         # ===============================================================
         # Save and eventually return figures.
