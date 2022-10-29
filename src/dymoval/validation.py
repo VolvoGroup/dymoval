@@ -13,6 +13,7 @@ from .config import *  # noqa
 from .utils import *  # noqa
 from .dataset import *  # noqa
 from typing import Literal
+from itertools import product
 
 
 class XCorrelation(TypedDict):
@@ -386,7 +387,7 @@ class ValidationSession:
         # Cam be a positional or a keyword arg
         list_sims: str | list[str] | None = None,
         *,
-        overlap: Literal["in", "out", "both"] | None = None,
+        dataset: Literal["in", "out", "both"] | None = None,
         save_as: str | None = None,
     ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
         """Plot the stored simulation results.
@@ -401,12 +402,12 @@ class ValidationSession:
         ----------
         list_sims:
             List of simulation names.
-        overlap:
-            Specify whether the dataset shall be overlapped to the simulations results.
+        dataset:
+            Specify whether the dataset shall be datasetped to the simulations results.
 
-            - **in**: overlap only the input signals of the dataset.
-            - **out**: overlap only the output signals of the dataset.
-            - **both**: overlap both the input and the output signals of the dataset.
+            - **in**: dataset only the input signals of the dataset.
+            - **out**: dataset only the output signals of the dataset.
+            - **both**: dataset both the input and the output signals of the dataset.
 
         save_as:
             Save the figure with a specified name.
@@ -441,7 +442,7 @@ class ValidationSession:
         df_sim = self.simulations_results
         q = len(df_val["OUTPUT"].columns.get_level_values("names"))
         p = len(df_val["INPUT"].columns.get_level_values("names"))
-        # u_units = df_val["INPUT"].columns.get_level_values("units")
+        u_units = df_val["INPUT"].columns.get_level_values("units")
         y_units = df_val["OUTPUT"].columns.get_level_values("units")
 
         # ================================================================
@@ -449,7 +450,7 @@ class ValidationSession:
         # ================================================================
         # Arange figure
         cmap = plt.get_cmap(COLORMAP)
-        if overlap == "in" or overlap == "both":
+        if dataset == "in" or dataset == "both":
             n = max(p, q)
         else:
             n = q
@@ -457,7 +458,7 @@ class ValidationSession:
 
         # Plot the simulations output signals
         fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        axes = axes.flat
+        axes = axes.T.flat
         for ii, sim_name in enumerate(list_sims):
             # Scan simulation names.
             df_sim.loc[:, sim_name].plot(
@@ -468,8 +469,8 @@ class ValidationSession:
                 title="Simulations results.",
             )
 
-        # In case the user also wants to see the dataset
-        if overlap == "out" or overlap == "both":
+        #  Plot the dataset (if requested)
+        if dataset == "out" or dataset == "both":
             df_val.loc[:, "OUTPUT"].plot(
                 subplots=True,
                 grid=True,
@@ -479,50 +480,27 @@ class ValidationSession:
 
         # Shade NaN:s areas.
         ds_val._shade_nans(
-            self.Dataset._nan_intervals,
+            ds_val._nan_intervals,
             axes[0:q],
             list(df_val["OUTPUT"].droplevel(level="units", axis=1).columns),
             color="k",
         )
 
         # ==========================================================
-        # INPUT signal hanling
-        # ==========================================================
-        if overlap == "in" or overlap == "both":
-            df_val.loc[:, "INPUT"].plot(
-                subplots=True,
-                grid=True,
-                color="gray",
-                linestyle=":",
-                ax=axes[0:p],
-            )
-
-            #     for ii, unit in enumerate(u_units):
-            #         axes[jj].right_ax.set_ylabel("(" + unit + ")")
-            #         axes[jj].right_ax.grid(None, axis="y")
-
-            # Plot the last details: shade NaN:s areas.
-            ds_val._shade_nans(
-                ds_val._nan_intervals,
-                axes[0:p],
-                list(df_val["INPUT"].droplevel(level="units", axis=1).columns),
-                color="k",
-            )
-
-        # ==========================================================
         # Legends, labels, etc
         # ==========================================================
+
         # Set legend
         q = len(df_val["OUTPUT"].columns.get_level_values("names"))
         labels = list(df_sim.droplevel(level="units", axis=1).columns)
 
-        if overlap == "out":
-            labels += list(df_val["OUTPUT"].columns.get_level_values("names"))
-        if overlap == "both":
-            labels += list(
-                df_val["OUTPUT"].columns.get_level_values("names")
-            ) + list(df_val["INPUT"].columns.get_level_values("names"))
-        print("labels = ", labels)
+        # Legend for the dataset
+        if dataset == "out" or dataset == "both":
+            labels += product(
+                [ds_val.name],
+                list(df_val["OUTPUT"].columns.get_level_values("names")),
+            )
+
         for ii, ax in enumerate(axes):
             # Handles are essentially Line2D objects
             handles, _ = ax.get_legend_handles_labels()
@@ -537,6 +515,43 @@ class ValidationSession:
         xlabel = f"{df_val.index.name[0]} ({df_val.index.name[1]})"  # Time (s)
         for ii in range((nrows - 1) * ncols, nrows * ncols):
             axes[ii].set_xlabel(xlabel)
+
+        # ==========================================================
+        # INPUT signal hanling
+        # ==========================================================
+        if dataset == "in" or dataset == "both":
+            df_val.loc[:, "INPUT"].plot(
+                subplots=True,
+                grid=True,
+                color="gray",
+                linestyle="--",
+                secondary_y=True,
+                ax=axes[0:p],
+            )
+
+            # Plot the last details: shade NaN:s areas.
+            ds_val._shade_nans(
+                ds_val._nan_intervals,
+                axes[0:p],
+                list(df_val["INPUT"].droplevel(level="units", axis=1).columns),
+                color="k",
+            )
+
+            # Set legend
+            u_names = list(df_val["INPUT"].columns.get_level_values("names"))
+            u_labels = list(product([ds_val.name], u_names))
+            for ii in range(p):
+                axes[ii].right_ax.legend(
+                    [f"{u_labels[ii][0], u_labels[ii][1]}"]
+                )
+
+            # Set y_labels
+            for ii, unit in enumerate(u_units):
+                axes[ii].right_ax.set_ylabel("(" + unit + ")")
+
+            # Set grid
+            for jj in range(q):
+                axes[jj].right_ax.grid(None, axis="y")
 
         # ===============================================================
         # Save and eventually return figures.
@@ -622,7 +637,7 @@ class ValidationSession:
                     #  ax1[ii, jj].set_title(
                     #      rf"$\hat r_{{\epsilon_{ii}\epsilon_{jj}}}$"
                     #  )
-                    ax1[ii, jj].set_title(rf"r_eps_{ii}eps_{jj}")
+                    ax1[ii, jj].set_title(rf"r_eps{ii}eps_{jj}")
                     ax1[ii, jj].legend()
         plt.suptitle("Residuals auto-correlation")
 
