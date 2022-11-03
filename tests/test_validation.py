@@ -388,17 +388,17 @@ class Test_Plots:
         fig.clf()
         plt.close("all")
 
-        fig, _ = vs.plot_simulations(dataset="all")
+        fig, _ = vs.plot_simulations(dataset="both")
         fig.clf()
         plt.close("all")
 
         # Test plot - filtered
-        fig, _ = vs.plot_simulations("Model 2", dataset="only_out")
+        fig, _ = vs.plot_simulations("Model 2", dataset="out")
         fig.clf()
         plt.close("all")
 
         # Test plot - all the options
-        fig, _ = vs.plot_simulations(["Model 1", "Model 2"], dataset="all")
+        fig, _ = vs.plot_simulations(["Model 1", "Model 2"], dataset="in")
         fig.clf()
         plt.close("all")
 

@@ -1116,7 +1116,7 @@ class Test_Signal_validation:
         signal_list, _, _, _, _, _ = good_signals
 
         signal_list[1]["name"] = signal_list[0]["name"]
-        with pytest.raises(ValueError):
+        with pytest.raises(KeyError):
             dmv.validate_signals(*signal_list)
 
     @pytest.mark.parametrize(

@@ -21,14 +21,14 @@ from copy import deepcopy
 
 
 class Signal(TypedDict):
-    """Signals are used to represent real-world signals.
+    """*Signals* are used to represent real-world measurements.
 
-    They are used to instantiate :py:class:`Dataset <dymoval.dataset.Dataset>` class objects.
-
-    It is possible to validate Signals through :py:meth:`~dymoval.dataset.validate_signals`.
+    They are used to instantiate :py:class:`Dataset <dymoval.dataset.Dataset>` objects.
+    Before instantiating a :py:class:`Dataset <dymoval.dataset.Dataset>` object, it is good practice
+    to validate Signals through the :py:meth:`~dymoval.dataset.validate_signals` function.
 
     Although Signals have compulsory attribtues, there is freedom
-    to append additionals.
+    to append additional ones.
 
 
     Example
@@ -64,18 +64,18 @@ class Signal(TypedDict):
 
 
 class Dataset:
-    """The *Dataset* class stores the signals to be used as a dataset
+    """The *Dataset* class stores the candidate signals to be used as a dataset
     and it provides methods for analyzing and manipulating them.
 
     A *Signal* list shall be passed to the initializer along with two lists of labels
-    defining which signal(s) shall be consiedered
+    specifying which signal(s) shall be consiedered
     as input and which signal(s) shall be considered as output.
 
     The signals list can be either a list
     of dymoval :py:class:`Signals <dymoval.dataset.Signal>` type or a
     pandas DataFrame with a well-defined structure.
-    See  :py:meth:`~dymoval.dataset.validate_dataframe` for more
-    information.
+    See :py:meth:`~dymoval.dataset.validate_signals` and
+    :py:meth:`~dymoval.dataset.validate_dataframe` for more information.
 
 
     Parameters
@@ -108,6 +108,7 @@ class Dataset:
     overlap :
         If *True* it will overlap the input and output signals plots during the
         dataset time interval selection.
+        The units of the outputs are displayed on the secondary y-axis.
     verbosity:
         Display information depending on its level.
 
@@ -193,15 +194,6 @@ class Dataset:
     def __str__(self) -> str:
         return f"Dymoval dataset called '{self.name}'."
 
-    # ============= NOT READY =======================
-    # def __eq__(self, other):
-    #     if not isinstance(other, Dataset):
-    #         # don't attempt to compare against unrelated types
-    #         return NotImplemented
-    #     return all(self.dataset.columns == other.dataset.columns)
-    # and self._nan_intervals == other._nan_intervals
-    # ==============================================
-
     # ==============================================
     #   Class methods
     # ==============================================
@@ -224,23 +216,6 @@ class Dataset:
                         )
                     else:
                         ax.axvspan(min(val), max(val), color=color, alpha=0.2)
-        #     def _shade_output_nans(
-        #         self,
-        #         df: pd.DataFrame,
-        #         NaN_intervals: dict[str, dict[str, list[np.ndarray]]],
-        #         axes: matplotlib.axes.Axes,
-        #         y_names: list[str],
-        #         color: str = "g",
-        #     ) -> None:
-        #
-        # y_names are forwarded from other functions and are already
-        # converted into a list[str].
-
-    #  for ii, ax in enumerate(axes):
-    #      output_name = y_names[ii]
-    #      for idx, val in enumerate(NaN_intervals["OUTPUT"][output_name]):
-    #          if not val.size == 0:
-    #              ax.axvspan(min(val), max(val), color=color, alpha=0.2)
 
     def _init_dataset_coverage(
         self, df: pd.DataFrame
@@ -289,7 +264,7 @@ class Dataset:
         # We have to trim the signals to have a meaningful dataset
         # This can be done both graphically or by passing tin and tout
         # if the user knows them before hand.
-        # Once done, the dataset shall be shifted to the point tin = 0.0
+        # Once done, the dataset shall be shifted to the point tin = 0.0.
 
         def _graph_selection(
             df_ext: pd.DataFrame,
@@ -311,6 +286,7 @@ class Dataset:
 
             # This is pretty much identical to the method plot() but we have
             # to use it because the class attributes are not set yet.
+
             # Number of inputs and outputs
             p = len(df_ext["INPUT"].columns)
             q = len(df_ext["OUTPUT"].columns)
@@ -371,6 +347,9 @@ class Dataset:
                 "Select the dataset time interval by resizing "
                 "the picture."
             )
+
+            # tight layout
+            fig.tight_layout()
 
             # Shade NaN areas
             # We have to pass NaN_intervals because they are not yet a self attribute
@@ -539,6 +518,7 @@ class Dataset:
         # This is the Dataset initializer when the signals are arranged
         # in a pandas DataFrame
         # ==============================================================
+
         # Arguments validation
         if tin is None and tout is not None:
             tin = df.index[0]
@@ -550,8 +530,8 @@ class Dataset:
                 f" Value of tin ( ={tin}) shall be smaller than the value of tout ( ={tout})."
             )
         # If the user passes a str cast into a list[str]
-        u_names = str2list(u_names)  # noqa
-        y_names = str2list(y_names)  # noqa
+        u_names = str2list(u_names)
+        y_names = str2list(y_names)
 
         # TODO: Start here for adding units
         validate_dataframe(df, u_names, y_names)
@@ -626,8 +606,8 @@ class Dataset:
     ]:
 
         # If the user pass a string, we need to convert into list
-        u_names = str2list(u_names)  # noqa
-        y_names = str2list(y_names)  # noqa
+        u_names = str2list(u_names)
+        y_names = str2list(y_names)
 
         # Arguments validation
         validate_signals(*signal_list)
@@ -799,6 +779,7 @@ class Dataset:
         y_names_idx: list[int],
         overlap: bool,
     ) -> tuple[int, np.ndarray, np.ndarray, list[str], list[str]]:
+        # Return n, range_in, range_out, u_titles, y_titles.
 
         # Input range is always [0:p]
         range_in = np.arange(0, p)
@@ -837,8 +818,6 @@ class Dataset:
         target_sampling_period: float | None = None,
         verbosity: int = 0,
     ) -> tuple[list[Signal], list[str]]:
-        # TODO: Implement some other re-sampling mechanism.
-        # """
         # Resample the :py:class:`Signals <dymoval.dataset.Signal>` in the *signal_list*.
 
         # The signals are resampled either with the slowest sampling period as target,
@@ -968,7 +947,7 @@ class Dataset:
 
         # concatenate new DataFrame containing the added signals
         ds.dataset = pd.concat([df_temp, ds.dataset], axis=1).sort_index(
-            level="kind", axis=1
+            level="kind", axis=1, sort_remaining=False
         )
 
         # Update NaN intervals
@@ -1049,27 +1028,6 @@ class Dataset:
         """Return the list of signal names of the dataset."""
         return list(self.dataset.columns)
 
-    #     def rename_signals(self, name_map: dic[str, str]) -> Dataset:
-    #
-    #         # name_map = {name[1]:name[1]+"_pi" for name in ds.signal_names()}
-    #         ds = deepcopy(self)
-    #         ds.dataset = ds.dataset.rename(
-    #             columns=name_map, level=1, errors="raise"
-    #         )
-    #
-    #         # Update other references for signals name
-    #         for key in ds._nan_intervals["INPUT"].keys():
-    #             ds._nan_intervals["INPUT"][name_map[key]] = ds._nan_intervals[
-    #                 "INPUT"
-    #             ].pop(key)
-    #
-    #         for key in ds._nan_intervals["OUTPUT"].keys():
-    #             ds._nan_intervals["OUTPUT"][name_map[key]] = ds._nan_intervals[
-    #                 "OUTPUT"
-    #             ].pop(key)
-    #
-    #         return ds
-
     def plot(
         self,
         # Only positional arguments
@@ -1087,7 +1045,6 @@ class Dataset:
         p_max: int = 0,
         save_as: str | None = None,
     ) -> matplotlib.axes.Axes:
-        # -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
         """Plot the Dataset.
 
         Possible values for the parameters describing the line used in the plot
@@ -1101,6 +1058,7 @@ class Dataset:
         overlap:
             If true *True* overlaps the input and the output signals plots
             pairwise.
+            The units of the outputs are displayed on the secondary y-axis.
         line_color_input:
             Line color for the input signals.
         linestyle_input:
@@ -1115,9 +1073,12 @@ class Dataset:
             Alpha channel value for the output signals.
         ax:
             Matplotlib Axes where to place the plot.
+        p_max:
+            Maximum number of inputs. It is a parameters used internally so
+            it can be left alone.
         save_as:
             Save the figure with a specified name.
-            The figure is automatically resized with a 16:9 aspect ratio.
+            The figure is automatically resized to try to keep a 16:9 aspect ratio.
             You must specify the complete *filename*, including the path.
         """
         # df points to self.dataset.
@@ -1204,16 +1165,16 @@ class Dataset:
         # Set ylabels
         # input
         for ii, unit in enumerate(u_units):
-            axes[ii].set_ylabel("(" + unit + ")")
+            axes[ii].set_ylabel(f"({unit})")
 
         # Output
         if not sorted(u_units) == sorted(y_units):
             for jj, unit in enumerate(y_units):
                 if overlap:
-                    axes[jj].right_ax.set_ylabel("(" + unit + ")")
+                    axes[jj].right_ax.set_ylabel("({unit})")
                     axes[jj].right_ax.grid(None, axis="y")
                 else:
-                    axes[p + jj].set_ylabel("(" + unit + ")")
+                    axes[p + jj].set_ylabel("({unit})")
 
         # Set xlabels
         xlabel = f"{df.index.name[0]} ({df.index.name[1]})"  # Time (s)
@@ -1221,6 +1182,10 @@ class Dataset:
         for ii in range(ncols):
             axes[nrows - 1 :: nrows][ii].set_xlabel(xlabel)
         plt.suptitle(f"Dataset {self.name}. ")
+
+        # Tight layout if no axes are passed
+        if ax is None:
+            fig.tight_layout()
 
         # Eventually save and return figures.
         if save_as is not None and ax is None:
@@ -1325,6 +1290,10 @@ class Dataset:
                 axes_in[ii].set_xlabel(f"({unit})")
             plt.suptitle("Coverage region (INPUT).")
 
+            # Tight figure if no ax is passed (e.g. from compare_datasets())
+            if ax_in is None:
+                fig_in.tight_layout()
+
         if y_names:
             nrows_out, ncols_out = factorize(q)  # noqa
 
@@ -1350,6 +1319,10 @@ class Dataset:
                 axes_out[ii].set_title(f"OUTPUT #{y_names_idx[ii]+1}")
                 axes_out[ii].set_xlabel(f"({unit})")
             plt.suptitle("Coverage region (OUTPUT).")
+
+            # tight figure if no ax is passed (e.g. from compare_datasets())
+            if ax_out is None:
+                fig_out.tight_layout()
 
         if save_as is not None:
             save_plot_as(fig_in, axes_in, save_as + "_in")  # noqa
@@ -1426,6 +1399,7 @@ class Dataset:
     def plot_spectrum(
         self,
         *signals: str,
+        kind: Literal["amplitude", "power", "psd"] = "power",
         overlap: bool = False,
         line_color_input: str = "b",
         linestyle_input: str = "-",
@@ -1434,7 +1408,6 @@ class Dataset:
         linestyle_output: str = "-",
         alpha_output: float = 1.0,
         ax: matplotlib.axes.Axes | None = None,
-        kind: Literal["amplitude", "power", "psd"] = "power",
         save_as: str | None = None,
     ) -> matplotlib.axes.Axes:
         """
@@ -1448,8 +1421,6 @@ class Dataset:
         ----------
         *signals:
             The spectrum of these signals will be plotted.
-        overlap:
-            If true it overlaps the input and the output signals plots.
         kind:
 
             - *amplitude* plot both the amplitude and phase spectrum.
@@ -1459,7 +1430,9 @@ class Dataset:
               If the signal has unit V, then the amplitude has unit *V^2*.
             - *psd* plot the power density spectrum.
               If the signal has unit V and the time is *s*, then the amplitude has unit *V^2/Hz*.
-
+        overlap:
+            If true it overlaps the input and the output signals plots.
+            The units of the outputs are displayed on the secondary y-axis.
         line_color_input:
             Line color for the input signals.
         linestyle_input:
@@ -1610,31 +1583,47 @@ class Dataset:
         # input
         for ii, unit in enumerate(u_units):
             if kind == "power":
-                axes[ii].set_ylabel("(" + unit + ")**2")
+                axes[ii].set_ylabel(f"({unit}**2)")
             elif kind == "psd":
-                axes[ii].set_ylabel("(" + unit + ")**2/Hz")
+                axes[ii].set_ylabel(f"({unit}**2/Hz)")
+            elif kind == "amplitude":
+                axes[2 * ii].set_ylabel(f"({unit})")
+                axes[2 * ii + 1].set_ylabel("(rad)")
 
         # Output
         if not sorted(u_units) == sorted(y_units):
             for jj, unit in enumerate(y_units):
                 if overlap:
                     if kind == "power":
-                        axes[jj].right_ax.set_ylabel("(" + unit + ")**2")
+                        axes[jj].right_ax.set_ylabel(f"({unit}**2)")
+                        axes[jj].right_ax.grid(None, axis="y")
                     elif kind == "psd":
-                        axes[jj].right_ax.set_ylabel("(" + unit + ")**2/Hz")
-                    axes[jj].right_ax.grid(None, axis="y")
+                        axes[jj].right_ax.set_ylabel(f"({unit}**2/Hz)")
+                        axes[jj].right_ax.grid(None, axis="y")
+                    elif kind == "amplitude":
+                        axes[2 * jj].right_ax.set_ylabel(f"({unit})")
+                        axes[2 * jj].right_ax.grid(None, axis="y")
+                        axes[2 * jj + 1].set_ylabel("(rad)")
+                        axes[2 * jj + 1].right_ax.grid(None, axis="y")
 
                 else:
                     if kind == "power":
-                        axes[p + jj].set_ylabel("(" + unit + ")**2")
+                        axes[p + jj].set_ylabel(f"({unit}**2)")
                     elif kind == "psd":
-                        axes[p + jj].set_ylabel("(" + unit + ")**2/Hz")
+                        axes[p + jj].set_ylabel(f"({unit}**2/Hz)")
+                    elif kind == "amplitude":
+                        axes[p + 2 * jj].set_ylabel(f"({unit})")
+                        axes[p + 2 * jj + 1].set_ylabel("(rad)")
 
         # Set xlabel
         for ii in range(ncols):
             axes[nrows - 1 :: nrows][ii].set_xlabel(df_freq.index.name)
 
         plt.suptitle(f"{kind.capitalize()} spectrum.")
+
+        # Tight figure if no ax is passed (e.g. from compare_datasets())
+        if ax is None:
+            fig.tight_layout()
 
         # Save and return
         if save_as is not None:
@@ -1778,6 +1767,8 @@ class Dataset:
         ------
         TypeError
             If no arguments are passed.
+        ValueError
+            If any of the passed cut-off frequencies is negative.
         """
         # Safe copy
         ds_temp = deepcopy(self)
@@ -1868,18 +1859,12 @@ class Dataset:
         Signals who are shorter, will be padded with 'NaN:s'
 
         Excluded signals are stored in the *excluded_signals* attibute
-        of the calling  Dataset.
+        of the calling Dataset object.
 
         Parameters
         ----------
         *signals:
             Signals to be added in form *("INPUT"|"OUTPUT", Signal)*.
-
-
-        Raises
-        ------
-        KeyError:
-            If signal(s) already exist.
         """
         kind: Signal_type = "INPUT"
         return self._add_signals(kind, *signals)
@@ -1902,7 +1887,16 @@ class Dataset:
         return self._add_signals(kind, *signals)
 
     def remove_signals(self, *signals: str) -> Dataset:
-        """Remove signals from dataset."""
+        """Remove signals from dataset.
+
+
+        Raises
+        ------
+        KeyError:
+            If signal(s) not found in the *Dataset* object.
+        KeyError:
+            If the reminder Dataset object has less than one input or one output.
+        """
 
         ds = deepcopy(self)
 
@@ -1956,6 +1950,7 @@ def change_axes_layout(
     nrows: int,
     ncols: int,
 ) -> tuple[matplotlib.axes.Figure, matplotlib.axes.Axes]:
+    """Change *Axes* layout of an existing Matplotlib *Figure*."""
 
     old_nrows: int = axes.shape[0]
     old_ncols: int = axes.shape[1]
@@ -1993,10 +1988,12 @@ def validate_signals(*signals: Signal) -> None:
     Raises
     ------
     ValueError
-        If signal names are not unique, or if values is not a *1-D numpy ndarray*,
-        or if sampling period must positive.
+        If values is not a *1-D numpy ndarray*,
+        or if sampling period must positive or the signals *time_unit* keys are
+        not the same.
     KeyError
-        If signal attributes are not found or not allowed.
+        If signal attributes are not found or not allowed or if signal names are
+        not unique,
     IndexError
         If signal have less than two samples.
     TypeError
@@ -2006,7 +2003,7 @@ def validate_signals(*signals: Signal) -> None:
     # Name unicity
     signal_names = [s["name"] for s in signals]
     if len(signal_names) > len(set(signal_names)):
-        raise ValueError("Signal names are not unique")
+        raise KeyError("Signal names are not unique")
     #
     for s in signals:
         # Check that the user wrote the necessary keys
@@ -2048,26 +2045,29 @@ def validate_dataframe(
     y_names: str | list[str],
 ) -> None:
     """
-    Check if a pandas Dataframe is suitable for instantiating
+    Check if a pandas DataFrame is suitable for instantiating
     a :py:class:`Dataset <dymoval.dataset.Dataset>` object.
 
-    When the signals are sampled with the same period, then they can be arranged
-    in a pandas DataFrame, where the index represents the common time vector
-    and each column represent a signal values.
+    The index of the DataFrame shall represent the common timeline for all the
+    signals, whereas the *j-th* column shall represents the realizations
+    of the *j-th* signal.
 
-    Once the signals are arranged in a DataFrame,
-    it must be specified which signal(s) are the input through the *u_names* and
+    It must be specified which signal(s) are the input through the *u_names* and
     which signal(s) is the output through the  *y_names* parameters.
 
-    Furthermore, the candidate DataFrame shall meet the following requirements
+    The candidate DataFrame shall meet the following requirements
 
-    - The index shall represent the common timeline for all the signals,
-    - only one index and columns levels are allowed (no *MultiIndex*),
-    - each column shall correspond to one signal,
-    - the column names must be unique,
-    - each signal must have at least two samples (i.e. the DataFrame has at least two rows),
-    - both the index values and the column values must be *float*,
-    - each signal in the *u_names* and *y_names* must be equal to exactly, one column name of the input DataFrame.
+    - Columns names shall be unique,
+    - Columns name shall be a tuple of *str* of the form *(name,unit)*,
+    - The index shall represent the common timeline for all  and its
+      name shall be *'(Time, s)'*
+    - Each signal must have at least two samples (i.e. the DataFrame has at least two rows),
+    - Only one index and columns levels are allowed (no *MultiIndex*),
+    - There shall be at least two signals representing one input and one output,
+    - Each signal in the *u_names* and *y_names* must be equal to exactly,
+      one column name of the input DataFrame.
+    - Both the index values and the column values must be *float* and the index values
+      must be a a 1D vector of monotonically, equi-spaced, increasing *floats*.
 
     Parameters
     ----------
@@ -2080,18 +2080,8 @@ def validate_dataframe(
 
     Raises
     ------
-    IndexError
-        If there is not at least one input and output signal,
-        or if there is any signal that don't have at least two samples,
-        or if there is any *MultiIndex* index.
-    ValueError
-        If the signal names are not unique,
-        or if the DataFrame *Index* (time vector) values are not monotonically increasing,
-        or if some input or output signal names don't correspond to any
-        DataFrame column name.
-    TypeError
-        If the DataFrame values are not all *float*.
-        If the column names and the index are not *tuples* of *strings*.
+    Error:
+        Depending on the issue found an appropriate error will be raised.
     """
     # ===================================================================
     # Checks performed: Read below
@@ -2233,7 +2223,9 @@ def compare_datasets(
     kind: Literal["time", "coverage"] | Spectrum_type = "time",
 ) -> None:
     """
-    Compare different :py:class:`Datasets <dymoval.dataset.Dignal>` graphically.
+    Compare different :py:class:`Datasets <dymoval.dataset.Dignal>` graphically
+    by overlapping them.
+
 
     Parameters
     ----------
@@ -2278,7 +2270,6 @@ def compare_datasets(
 
         # Create a unified figure
         fig, ax = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        print("p_max = ", p_max)
         return fig, ax, p_max, q_max
 
     # ========================================

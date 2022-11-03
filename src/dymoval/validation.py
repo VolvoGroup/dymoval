@@ -32,7 +32,7 @@ class XCorrelation(TypedDict):
         It is a *Nxpxq* tensor, where *N* is the number of lags.
     """
 
-    values: np.ndarray  # values collide with collide() method of dict and won't be rendered
+    values: np.ndarray  # values collide with values() method of dict and won't be rendered
     lags: np.ndarray
     """Lags of the cross-correlation.
     It is a vector of length *N*,where *N* is the number of lags."""
@@ -140,7 +140,7 @@ def _xcorr_norm_validation(
     # R cannot have dimension greater than 3
     elif R.ndim > 3:
         raise IndexError(
-            "The correlation tensor must be a 3D np.array where "
+            "The correlation tensor must be a *3D np.ndarray* where "
             "the first dimension size is equal to the number of observartions 'N', "
             "the second dimension size is equal to the number of inputs 'p' "
             "and the third dimension size is equal to the number of outputs 'q.'"
@@ -411,7 +411,7 @@ class ValidationSession:
 
         save_as:
             Save the figure with a specified name.
-            The figure is automatically resized with a 16:9 aspect ratio.
+            The figure is automatically resized with a 16:9-like aspect ratio.
             You must specify the complete *filename*, including the path.
         """
 
@@ -509,14 +509,17 @@ class ValidationSession:
                 list(df_val["OUTPUT"].columns.get_level_values("names")),
             )
 
+        # Legend and titles
         for ii, ax in enumerate(axes[0:q]):
             new_labels = labels[ii::q]
             if secondary_y:
                 handles, _ = ax.right_ax.get_legend_handles_labels()
                 ax.right_ax.legend(handles, new_labels)
+                ax.set_title(f"IN/OUT #{ii+1}")
             else:
                 handles, _ = ax.get_legend_handles_labels()
                 ax.legend(handles, new_labels)
+                ax.set_title(f"OUTPUT #{ii+1}")
 
         # Set y-labels
         for jj, unit in enumerate(y_units):
@@ -556,6 +559,15 @@ class ValidationSession:
             u_labels = list(product([ds_val.name], u_names))
             for ii in range(p):
                 axes[ii].legend([f"{u_labels[ii][0], u_labels[ii][1]}"])
+
+            # Set leftover titles
+            r = p - q
+            if r > 0:
+                for ii in range(r):
+                    axes[q + ii].set_title(f"INPUT #{q+ii+1}")
+            elif r < 0:
+                for ii in range(-r):
+                    axes[p + ii].set_title(f"OUTPUT #{p+ii+1}")
 
             # Set y_labels
             for ii, unit in enumerate(u_units):
@@ -598,10 +610,11 @@ class ValidationSession:
             respectively.
             The figure is automatically resized with a 16:9 aspect ratio.
             The *filename* shall include the path.
+
         Raises
         ------
         KeyError
-            If the simulation list is empty.
+            If the requested simulation list is empty.
         """
         # Check if you have any simulation available
         self._sim_list_validate()
@@ -697,7 +710,7 @@ class ValidationSession:
         Raises
         ------
         KeyError
-            If the simulation is not in the simulation list.
+            If the requested simulation is not in the simulation list.
         """
         self._sim_list_validate()
         return list(self.simulations_results[sim_name].columns)
@@ -723,7 +736,7 @@ class ValidationSession:
         matrix_norm: float | Literal["fro", "nuc"] | None = 2,
     ) -> ValidationSession:
         """
-        Append simulation results..
+        Append simulation results.
 
         The validation metrics are automatically computed.
 
