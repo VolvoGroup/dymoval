@@ -1024,6 +1024,41 @@ class Dataset:
 
         io.savemat(filename, dsdict, oned_as="column", appendmat=True)
 
+    def dump_to_signals(self) -> dict[Signal_type, list[Signal]]:
+        """Dump a *Dataset* object into *Signal* objects.
+
+
+        Warning
+        -------
+        Additional information contained in the *Dataset*, such as *NaNs*
+        intervals, coverage region, etc. are lost.
+
+        """
+
+        signal_list = {}
+        for kind in SIGNAL_KIND:
+            temp_lst = []
+            df = self.dataset[kind]
+            cols = df.columns
+            names = cols.get_level_values("names")
+            signal_units = cols.get_level_values("units")
+            time_unit = df.index.name[1]
+            sampling_period = self.sampling_period
+
+            for ii, val in enumerate(cols):
+                # This is the syntax for defining a dymoval signal
+                temp: dmv.Signal = {
+                    "name": names[ii],
+                    "values": df.loc[:, val].to_numpy(),
+                    "signal_unit": signal_units[ii],
+                    "sampling_period": sampling_period,
+                    "time_unit": time_unit,
+                }
+                temp_lst.append(deepcopy(temp))
+            signal_list[kind] = temp_lst
+
+        return signal_list
+
     def signal_names(self) -> list[tuple[str, str, str]]:
         """Return the list of signal names of the dataset."""
         return list(self.dataset.columns)
