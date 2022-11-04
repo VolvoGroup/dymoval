@@ -7,15 +7,14 @@
 
 ### Build status
 ![pipeline](https://github.com/VolvoGroup/dymoval/actions/workflows/pipeline.yml/badge.svg)
-<!--- [docs](https://github.com/VolvoGroup/dymoval/actions/workflows/docs.yml/badge.svg)--->
 ![coverage badge](./coverage.svg)
 
 ### Tools
 [![Hatch project](https://img.shields.io/badge/build-hatch-4051b5.svg)](https://github.com/pypa/hatch) 
-[![code check - flake8](https://img.shields.io/badge/lint-flake8-green.svg)](https://pypi.org/project/flake8)
+[![code check - flake8](https://img.shields.io/badge/checks-flake8-green.svg)](https://pypi.org/project/flake8)
 [![types - Mypy](https://img.shields.io/badge/types-mypy-orange.svg)](https://github.com/python/mypy) 
-[![test - pytest](https://img.shields.io/badge/test-pytest-brightgreen.svg)](https://github.com/pytest-dev/pytest)
-[![code style - black](https://img.shields.io/badge/format-black-000000.svg)](https://github.com/psf/black) 
+[![test - pytest](https://img.shields.io/badge/tests-pytest-brightgreen.svg)](https://github.com/pytest-dev/pytest)
+[![code style - black](https://img.shields.io/badge/code-style-black-000000.svg)](https://github.com/psf/black) 
 [![docs - sphinx](https://img.shields.io/badge/doc-sphinx-blue.svg)](https://github.com/sphinx-doc/sphinx)
 -----
 
