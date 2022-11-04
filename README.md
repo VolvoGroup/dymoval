@@ -7,7 +7,7 @@
 
 ### Build status
 ![pipeline](https://github.com/VolvoGroup/dymoval/actions/workflows/pipeline.yml/badge.svg)
-![docs](https://github.com/VolvoGroup/dymoval/actions/workflows/docs.yml/badge.svg)
+<!--- [docs](https://github.com/VolvoGroup/dymoval/actions/workflows/docs.yml/badge.svg)--->
 ![coverage badge](./coverage.svg)
 
 ### Tools
@@ -15,8 +15,8 @@
 [![code check - flake8](https://img.shields.io/badge/lint-flake8-green.svg)](https://pypi.org/project/flake8)
 [![types - Mypy](https://img.shields.io/badge/types-mypy-orange.svg)](https://github.com/python/mypy) 
 [![test - pytest](https://img.shields.io/badge/test-pytest-brightgreen.svg)](https://github.com/pytest-dev/pytest)
-[![format - black](https://img.shields.io/badge/format-black-000000.svg)](https://github.com/psf/black) 
-[![doc - sphinx](https://img.shields.io/badge/doc-sphinx-blue.svg)](https://github.com/sphinx-doc/sphinx)
+[![code style - black](https://img.shields.io/badge/format-black-000000.svg)](https://github.com/psf/black) 
+[![docs - sphinx](https://img.shields.io/badge/doc-sphinx-blue.svg)](https://github.com/sphinx-doc/sphinx)
 -----
 
 ## What is it?
