@@ -1002,27 +1002,20 @@ class Dataset:
         Parameters
         ----------
         filename:
-            Target filename. The extension *.mat* is automatically appended.
+            Target filename.
         """
 
-        (t, u, y) = self.dataset_values()
-        u_names = list(self.dataset["INPUT"].columns.get_level_values("names"))
-        y_names = list(self.dataset["OUTPUT"].columns.get_level_values("names"))
+        signal_list = self.dump_to_signals()
 
-        u_dict = {
-            "INPUT": {
-                s: self.dataset["INPUT"].loc[:, s].to_numpy() for s in u_names
-            }
-        }
-        y_dict = {
-            "OUTPUT": {
-                s: self.dataset["OUTPUT"].loc[:, s].to_numpy() for s in y_names
-            }
-        }
-        time = {"TIME": t}
-        dsdict = time | u_dict | y_dict
+        # We start storing the timeline
+        ds_dict = {"TIME": self.dataset.index.to_numpy()}
 
-        io.savemat(filename, dsdict, oned_as="column", appendmat=True)
+        for kind in SIGNAL_KIND:
+            # Yet another issue with mypy and TypedDict. https://github.com/python/mypy/issues/4976
+            dict_tmp = {kind: {s.pop("name"): s for s in signal_list[kind]}}  # type: ignore
+            ds_dict = ds_dict | dict_tmp
+
+        io.savemat(filename, ds_dict, oned_as="column")
 
     def dump_to_signals(self) -> dict[Signal_type, list[Signal]]:
         """Dump a *Dataset* object into *Signal* objects.
@@ -2161,7 +2154,7 @@ def validate_dataframe(
 
     # check if the index is a tuple
     if not isinstance(df.index.name, tuple):
-        raise TypeError("Index name must be ('Time',unit).")
+        raise TypeError("Index name must be a tuple ('Time',unit).")
 
     # Check that each component of the tuple is a string
     available_names, available_units = list(zip(*df.columns))

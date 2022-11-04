@@ -124,6 +124,89 @@ def good_signals(request):  # type: ignore
     )
 
 
+@pytest.fixture(params=dataset_type)
+def good_signals_no_nans(request):  # type: ignore
+
+    fixture_type = request.param
+    # General case (MIMO)
+
+    # %% Signals creation
+    input_signal_names = ["u1", "u2", "u3"]
+    input_sampling_periods = [0.1, 0.1, 0.1]
+    input_signal_values = np.concatenate(
+        [np.random.rand(50), np.random.rand(50), np.random.rand(50)]
+    ).reshape(3, 50)
+
+    input_signal_units = ["m/s", "%", "°C"]
+
+    in_lst = []
+    for ii, val in enumerate(input_signal_names):
+        temp_in: dmv.Signal = {
+            "name": val,
+            "values": input_signal_values[ii],
+            "signal_unit": input_signal_units[ii],
+            "sampling_period": input_sampling_periods[ii],
+            "time_unit": "s",
+        }
+        in_lst.append(deepcopy(temp_in))
+
+    # Output signal
+    output_signal_names = ["y1", "y2", "y3", "y4"]
+    output_sampling_periods = [0.1, 0.1, 0.1, 0.1]
+    output_signal_values = np.concatenate(
+        [
+            np.random.rand(50),
+            np.random.rand(50),
+            np.random.rand(50),
+            np.random.rand(50),
+        ]
+    ).reshape(4, 50)
+
+    output_signal_units = ["m/s", "deg", "°C", "kPa"]
+    out_lst = []
+    for ii, val in enumerate(output_signal_names):
+        # This is the syntax for defining a dymoval signal
+        temp_out: dmv.Signal = {
+            "name": val,
+            "values": output_signal_values[ii],
+            "signal_unit": output_signal_units[ii],
+            "sampling_period": output_sampling_periods[ii],
+            "time_unit": "s",
+        }
+        out_lst.append(deepcopy(temp_out))
+    signal_list = [*in_lst, *out_lst]
+    first_output_idx = len(input_signal_names)
+
+    # %%Adjust based on fixtures
+    if fixture_type == "SISO":
+        # Slice signal list
+        # Pick u1 and y1
+        signal_list = [signal_list[0], signal_list[first_output_idx]]
+        input_signal_names = input_signal_names[0]
+        output_signal_names = output_signal_names[0]
+        input_signal_units = input_signal_units[0]
+        output_signal_units = output_signal_units[0]
+    if fixture_type == "MISO":
+        signal_list = [
+            *signal_list[:first_output_idx],
+            signal_list[first_output_idx],
+        ]
+        output_signal_names = output_signal_names[0]
+        output_signal_units = output_signal_units[0]
+    if fixture_type == "SIMO":
+        signal_list = [signal_list[0], *signal_list[first_output_idx:]]
+        input_signal_names = input_signal_names[0]
+        input_signal_units = input_signal_units[0]
+    return (
+        signal_list,
+        input_signal_names,
+        output_signal_names,
+        input_signal_units,
+        output_signal_units,
+        fixture_type,
+    )
+
+
 # ============================================
 # Good DataFrame
 # ============================================

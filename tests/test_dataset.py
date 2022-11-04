@@ -372,6 +372,83 @@ class Test_Dataset_nominal:
         with pytest.raises(KeyError):
             ds.remove_signals("potato")
 
+    def test_dump_to_signals(
+        self, good_signals_no_nans: list[Signal], tmp_path: str
+    ) -> None:
+
+        # You should just get a plot.
+        (
+            signal_list,
+            u_names,
+            y_names,
+            u_units,
+            y_units,
+            fixture,
+        ) = good_signals_no_nans
+
+        # Expected values
+        expected_inputs = [s for s in signal_list if s["name"] in u_names]
+        expected_outputs = [s for s in signal_list if s["name"] in y_names]
+
+        # Actual value
+        ds = dmv.dataset.Dataset(
+            "my_dataset",
+            signal_list,
+            u_names,
+            y_names,
+            overlap=True,
+            full_time_interval=True,
+            verbosity=1,
+        )
+
+        # Act
+        dumped_inputs = ds.dump_to_signals()["INPUT"]
+        dumped_outputs = ds.dump_to_signals()["OUTPUT"]
+
+        # Assert input
+        for ii, val in enumerate(expected_inputs):
+            assert expected_inputs[ii]["name"] == dumped_inputs[ii]["name"]
+            assert np.allclose(
+                expected_inputs[ii]["values"],
+                dumped_inputs[ii]["values"],
+                atol=ATOL,
+            )
+            assert (
+                expected_inputs[ii]["signal_unit"]
+                == dumped_inputs[ii]["signal_unit"]
+            )
+            assert np.isclose(
+                expected_inputs[ii]["sampling_period"],
+                dumped_inputs[ii]["sampling_period"],
+                atol=ATOL,
+            )
+            assert (
+                expected_inputs[ii]["time_unit"]
+                == dumped_inputs[ii]["time_unit"]
+            )
+
+        # Assert output
+        for ii, val in enumerate(expected_outputs):
+            assert expected_outputs[ii]["name"] == dumped_outputs[ii]["name"]
+            assert np.allclose(
+                expected_outputs[ii]["values"],
+                dumped_outputs[ii]["values"],
+                atol=ATOL,
+            )
+            assert (
+                expected_outputs[ii]["signal_unit"]
+                == dumped_outputs[ii]["signal_unit"]
+            )
+            assert np.isclose(
+                expected_outputs[ii]["sampling_period"],
+                dumped_outputs[ii]["sampling_period"],
+                atol=ATOL,
+            )
+            assert (
+                expected_outputs[ii]["time_unit"]
+                == dumped_outputs[ii]["time_unit"]
+            )
+
     def test_remove_means(self, sine_dataframe: pd.DataFrame) -> None:
         df, u_names, y_names, _, _, fixture = sine_dataframe
 
@@ -1250,6 +1327,10 @@ class Test_validate_dataframe:
             dmv.validate_dataframe(df_test, u_names, y_names)
 
         df_test = df.rename(columns={("u1", "kPa"): ("u1", 9)})
+        with pytest.raises(TypeError):
+            dmv.validate_dataframe(df_test, u_names, y_names)
+
+        df_test.index.name = "potato"
         with pytest.raises(TypeError):
             dmv.validate_dataframe(df_test, u_names, y_names)
 
