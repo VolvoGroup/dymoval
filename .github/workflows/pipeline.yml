@@ -18,7 +18,7 @@ permissions:
   id-token: write
 
 jobs:
-  # Build job
+  # Tests on all platforms
   tests:
     name: Tests
     runs-on: ${{ matrix.os }}
@@ -66,9 +66,8 @@ jobs:
           make clean
           sphinx-apidoc -f -n -o ./docs/source ../src/dymoval/
           make html
-          cd ..
-  push:
-    name: Push
+  docs:
+    name: Docs
     runs-on: ubuntu-latest   
     
     steps:
