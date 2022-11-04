@@ -1,0 +1,25 @@
+name: dymoval 
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pandas
+  - matplotlib
+  - control
+  - scipy
+  - pathlib
+  - numpy
+  - tomli
+  - sphinx
+  - furo
+  - sphinx-toolbox
+  - sphinx-autodoc-typehints
+  - pytest
+  - mypy
+  - black
+  - flake8
+  - coverage
+  - conda-lock
+  - pyfmi
+  - h5py
+prefix: C:\Users\yt75534\Miniconda3\envs\myenv
