@@ -5,27 +5,32 @@ build-backend = "hatchling.build"
 [project]
 # General info
 name = "dymoval"
-version = "0.3.0"
+version = "0.4.0"
 
 # Requirements
 requires-python = ">=3.10"
 
 # Dependencies
 dependencies = [
-"numpy",
-"scipy",
 "pandas",
 "matplotlib",
 "control",
-"typing",
+"scipy",
 "pathlib",
+"numpy",
 "tomli",
+"sphinx",
+"furo",
+"sphinx-toolbox",
+"sphinx-autodoc-typehints",
 "pytest",
-"flake8",
 "mypy",
 "black",
+"flake8",
 "coverage",
-"psutil"
+"conda-lock",
+"pyfmi",
+"h5py",
 ]
 
 # Other metadata
@@ -92,7 +97,7 @@ exclude = [
 # ===================================
 # black
 [tool.black]
-target-version = ['py39']
+target-version = ['py310']
 line-length = 80
 exclude = ["scripts", "docs"]
 
