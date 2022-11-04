@@ -29,8 +29,8 @@ dependencies = [
 "flake8",
 "coverage",
 "conda-lock",
-"pyfmi",
 "h5py",
+"fmpy",
 ]
 
 # Other metadata
