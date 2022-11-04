@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 # General info
 name = "dymoval"
-version = "0.5.0"
+version = "0.5.1"
 
 # Requirements
 requires-python = ">=3.10"
@@ -60,13 +60,6 @@ keywords = [
 [project.optional-dependencies]
 
 build = ["hatch"]
-
-docs = [
-  "sphinx",
-  "furo",
-  "sphinx-toolbox",
-  "sphinx-autodoc-typehints"
-]
 
 
 [project.urls]
