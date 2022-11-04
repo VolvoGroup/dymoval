@@ -1,0 +1,68 @@
+# CI/CD pipeline
+# 1. Install all the dependencies
+# 2. Run all the tests on all the platforms (Win, Ubuntu, MacOS).
+name: Test all platforms
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ["main"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  # Build job
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: Setup Python
+        uses: actions/setup-python@v4.3.0
+        with:
+            python-version: '3.10'
+        
+      - name: Install dependencies
+        run: |
+          python -m pip install .
+      
+      - name: Formatting source code (black)
+        uses: psf/black@stable
+
+      - name: Linting and code style check (flake8)
+        run: |
+          flake8 .
+
+      - name: Static typing check (mypy)
+        run: |
+          mypy .
+
+      - name: Unit-tests (pytest)
+        run: |
+          coverage run -m pytest .
+
+      - name: Build wheel and sdist (hatch)
+        run: |
+          hatch build
+
+      - name: Build docs (sphinx)
+        run: |
+          cd docs
+          make clean
+          sphinx-apidoc -f -n -o ./docs/source ../src/dymoval/
+          make html
+          cd ..
+
