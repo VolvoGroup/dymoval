@@ -1,10 +1,7 @@
 # CI/CD pipeline
-# This will
-# 1. Install all the dependencies and dymoval
-# 2. Build the doc
-# 3. Push everything to the remote
-#
-name: Push everything
+# 1. Install all the dependencies
+# 2. Run all the tests on all the platforms (Win, Ubuntu, MacOS).
+name: pipeline 
 
 on:
   # Runs on pushes targeting the default branch
@@ -20,14 +17,58 @@ permissions:
   pages: write
   id-token: write
 
-# Allow one concurrent deployment
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
-
 jobs:
   # Build job
-  build:
+  tests:
+    name: Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: Setup Python
+        uses: actions/setup-python@v4.3.0
+        with:
+            python-version: '3.10'
+        
+      - name: Install dependencies
+        run: |
+          python -m pip install .
+      
+      - name: Formatting source code (black)
+        uses: psf/black@stable
+
+      - name: Linting and code style check (flake8)
+        run: |
+          flake8 .
+
+      - name: Static typing check (mypy)
+        run: |
+          mypy .
+
+      - name: Unit-tests (pytest)
+        run: |
+          coverage run -m pytest .
+
+      - name: Build wheel and sdist (hatch)
+        run: |
+          python -m pip install .[build]
+          hatch build
+
+      - name: Build docs (sphinx)
+        run: |
+          cd docs
+          make clean
+          sphinx-apidoc -f -n -o ./docs/source ../src/dymoval/
+          make html
+          cd ..
+  push:
+    name: Push
     runs-on: ubuntu-latest   
     
     steps:
@@ -42,8 +83,7 @@ jobs:
 
       - name: Build docs (sphinx)
         run: |
-          python -m pip install -e .
-          python -m pip install .[docs]
+          python -m pip install .
           cd docs
           make clean
           sphinx-apidoc -f -n -o ./docs/source ../src/dymoval/
@@ -98,7 +138,3 @@ jobs:
           github_token: ${{ secrets.github_token }}
           branch: ${{ github.ref }}
         
-  
-          
-        
-         
