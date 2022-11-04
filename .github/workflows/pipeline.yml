@@ -1,5 +1,4 @@
 # CI/CD pipeline
-
 name: CI pipeline
 
 on:
