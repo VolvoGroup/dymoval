@@ -66,6 +66,11 @@ jobs:
           make html
           cd ..
           
+jobs:
+  # Build job
+  build:
+    runs-on: ubuntu-latest   
+          
           #jobs:
   # Buil final doc and push
   #build:
