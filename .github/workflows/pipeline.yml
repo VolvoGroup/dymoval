@@ -66,10 +66,10 @@ jobs:
           make html
           cd ..
           
-jobs:
+          #jobs:
   # Buil final doc and push
-  build:
-    runs-on: ubuntu-latest 
+  #build:
+  # runs-on: ubuntu-latest 
     
       #     steps:
       #       - name: Checkout
