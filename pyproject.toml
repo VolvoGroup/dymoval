@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 # General info
 name = "dymoval"
-version = "0.4.0"
+version = "0.5.0"
 
 # Requirements
 requires-python = ">=3.10"
@@ -36,6 +36,7 @@ dependencies = [
 # Other metadata
 authors = [
   { name="Ubaldo Tiberi", email="ubaldo.tiberi@volvo.com" },
+  { name="Ubaldo Tiberi", email="ubaldo.tiberi@gmail.com" },
 ]
 description = "Dymoval is a Python package for validating models and analyzing datasets."
 readme = "README.md"
@@ -127,7 +128,7 @@ module = [
 [tool.pytest.ini_options]
 norecursedirs = ["scripts"] # Exclude folders
 markers = [
-    "plots: marks SLOW plot tests (deselect with '-m \"not plot\"')",
+    "plots: marks SLOW plot tests (deselect with '-m \"not plots\"')",
     "open_tutorial: marks the open_tutorial (which opens VSCode all the times)"
 
 ]
