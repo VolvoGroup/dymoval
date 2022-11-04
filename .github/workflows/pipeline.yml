@@ -1,7 +1,6 @@
 # CI/CD pipeline
 # 1. Install all the dependencies
 # 2. Run all the tests on all the platforms (Win, Ubuntu, MacOS).
-# It won't push
 name: CI pipeline
 
 on:
