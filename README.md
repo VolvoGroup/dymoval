@@ -46,7 +46,7 @@ Although it is a very helpful in engineering, its usage may come handy in other 
 
 - Models unit-tests
 - Validation metrics:
-	- R-square fit (%)
+	- R-square
 	- Residuals auto-correlation
 	- Input-Residuals cross-correlation 
 - Coverage region
@@ -56,14 +56,37 @@ Although it is a very helpful in engineering, its usage may come handy in other 
 
 
 ## Installation
+#### pip
+    pip install dymoval
+
+#### conda
+Download the `environment.yml` file from [here](https://github.com/VolvoGroup/dymoval/blob/main/environment.yml) and run 
+
+    conda env update --name env_name --file environment.yml
+    pip install dymoval
+
+where `env_name` is the environment name where you want to install *dymoval*.
+If not provided, *dymoval* will be installed in a new environment called *dymoval*.
+
+Perhaps in the future we may have a `conda` package. 
 
 
-The tool is still under development and therefore there are no release available yet.
-However, if you want to give it a shot, you can just clone this repo and run
+#### From repo
+Clone this repo and run
 
 	cd /path/to/where/you/cloned/this/repo
-	pip install -e .
+	conda env update --name env_name --file environment.yml
+    conda actiate env_name
+	pip install .
 
+or 
+
+	cd /path/to/where/you/cloned/this/repo
+	pip install .
+
+
+**_NOTE:_** Given that *dymoval* depends on a number of scientific packages, and given that it is well-known that `conda` manages them better than `pip`,
+it is suggested to first install all the dependencies with `conda` and then to install *dymoval* with `pip`.
 
 ## Getting started
 
