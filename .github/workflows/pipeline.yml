@@ -17,8 +17,8 @@ permissions:
 
 jobs:
   # Tests on all platforms
-  tests:
-    name: Tests
+  pip_tests:
+    name: Tests with pip
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -57,8 +57,8 @@ jobs:
           python -m pip install .[build]
           hatch build
 
-  mamba:
-    name: mamba
+  mamba_tests:
+    name: Tests with mamba
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v2
