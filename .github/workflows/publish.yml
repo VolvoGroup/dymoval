@@ -28,14 +28,12 @@ jobs:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
   conda_publish:
-    name: Conda skeleton publish
-    runs-on: ubuntu-latest
-    steps:
-      - name: Publish conda package from PyPI package
-        uses: actions/conda-skeleton-publish@v1
-        with:
-          pypi_package: "dymoval"
-          python_version: "3.10"
-          upload_channel: "conda-forge"
-          access_token: ${{ secrets.ANACONDA_TOKEN }}
-          stable: true
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v2
+        - name: Publish Loop Conda
+          uses: Loop3D/conda-publish-action@1.0
+          with:
+            subdir: "conda"
+            anacondatoken: ${{ secrets.ANACONDA_TOKEN }}
+            platforms: "win osx linux"
