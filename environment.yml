@@ -20,6 +20,4 @@ dependencies:
   - flake8
   - coverage
   - conda-lock
-  - pyfmi
   - h5py
-prefix: C:\Users\yt75534\Miniconda3\envs\myenv
