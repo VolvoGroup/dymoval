@@ -28,8 +28,8 @@ jobs:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
   conda_publish:
-   runs-on: ubuntu-latest
     name: Conda skeleton publish
+    runs-on: ubuntu-latest
     steps:
       - name: Publish conda package from PyPI package
         uses: actions/conda-skeleton-publish@v1
