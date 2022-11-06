@@ -1,0 +1,59 @@
+{% set name = "Dymoval" %}
+{% set version = "0.5.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dymoval-{{ version }}.tar.gz
+  sha256: 83274af68ac01ed70c227d6920367060d96b60825b072a4938ebf3f0df1de2f5
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.10
+    - pip
+  run:
+    - python >=3.10
+    - black
+    - conda-lock
+    - control
+    - coverage
+    - flake8
+    - fmpy
+    - furo
+    - h5py
+    - matplotlib-base
+    - mypy
+    - numpy
+    - pandas
+    - pathlib
+    - pytest
+    - scipy
+    - sphinx
+    - sphinx-autodoc-typehints
+    - sphinx-toolbox
+    - tomli
+
+test:
+  imports:
+    - Dymoval
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://pypi.org/project/dymoval/
+  summary: Dymoval is a Python package for validating models and analyzing datasets.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - ubaldot
