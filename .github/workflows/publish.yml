@@ -1,6 +1,6 @@
 # Publish on PyPI and conda-forge
 
-name: Publish package
+name: Publish
 
 on:
   release:
@@ -33,7 +33,7 @@ jobs:
     name: Conda skeleton publish
     steps:
       - name: Publish conda package from PyPI package
-        uses: actions/conda-skeleton-publish@v1
+        uses: actions/conda-skeleton-publish@v2
         with:
           pypi_package: "dymoval"
           python_version: "3.10"
