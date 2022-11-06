@@ -79,11 +79,25 @@ jobs:
       - shell: bash -l {0}
         run: |
           conda info
-          conda list
-          conda config --show-sources
-          conda config --show
-          printenv | sort     
           
+      - name: Formatting source code (black)
+        uses: psf/black@stable
+
+      - name: Linting and code style check (flake8)
+        run: |
+          flake8 .
+      - name: Static typing check (mypy)
+        run: |
+          mypy .
+      - name: Unit-tests (pytest)
+        run: |
+          coverage run -m pytest .
+      - name: Build docs (sphinx)
+        run: |
+          cd docs
+          make clean
+          sphinx-apidoc -f -n -o ./docs/source ../src/dymoval/
+          make html
   docs:
     # Build doc and push to gh-pages
     name: Docs
