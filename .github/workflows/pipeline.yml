@@ -42,6 +42,7 @@ jobs:
           python -m pip install .
           
       - name: Run tests (flake8, mypy, pytest, sphinx)
+        run: |
           flake8 .
           mypy .
           coverage run -m pytest .
