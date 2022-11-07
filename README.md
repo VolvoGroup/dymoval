@@ -56,22 +56,25 @@ Although it is a very helpful in engineering, its usage may come handy in other 
 
 
 ## Installation
-#### pip
+By running 
+
     pip install dymoval
 
-#### conda
-Download the `environment.yml` file from [here](https://github.com/VolvoGroup/dymoval/blob/main/environment.yml) and run 
+everything should workd, but there are few things to keep in mind.
+Given that `conda` handles scientific packages better than `pip`, and given that many *dymoval* dependencies are scientific packages, it is suggested to install all the dependencies through `conda` and then to install *dymoval* through `pip`.
+
+To do that, download the `environment.yml` file from [here](https://github.com/VolvoGroup/dymoval/blob/main/environment.yml) and run 
 
     conda env update --name env_name --file environment.yml
     pip install dymoval
 
 where `env_name` is the environment name where you want to install *dymoval*.
-If not provided, *dymoval* will be installed in a new environment called *dymoval*.
+If not provided, *dymoval* will be installed in a new environment called `dymoval`.
 
-Perhaps in the future we may have a `conda` package. 
+Unfortunately, it is not possible (yet?) to easily build `conda` packages when the project is handled thorugh a `pyproject.toml` file, and therefore the *dymoval* package, which uses a `pyproject.toml` file, is only available through `pip`.
 
 
-#### From repo
+#### From this repo
 Clone this repo and run
 
 	cd /path/to/where/you/cloned/this/repo
@@ -85,9 +88,6 @@ or
 	pip install .
 
 
-**_NOTE:_** Given that *dymoval* depends on a number of scientific packages, and given that it is well-known that `conda` manages them better than `pip`,
-it is suggested to first install all the dependencies with `conda` and then to install *dymoval* with `pip`.
-
 ## Getting started
 
 If you are already familiar with model validation, then the best way to learn dymoval is to run the tutorial scripts that you can open with
@@ -96,7 +96,6 @@ If you are already familiar with model validation, then the best way to learn dy
 	dmv.open_tutorial()
 
 
-**UPDATE** The tutorial won't work in its current status. You can take a look at the [documentation](https://volvogroup.github.io/dymoval/) in the meantime.
 
 
 Note

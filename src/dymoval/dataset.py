@@ -1199,10 +1199,10 @@ class Dataset:
         if not sorted(u_units) == sorted(y_units):
             for jj, unit in enumerate(y_units):
                 if overlap:
-                    axes[jj].right_ax.set_ylabel("({unit})")
+                    axes[jj].right_ax.set_ylabel(f"({unit})")
                     axes[jj].right_ax.grid(None, axis="y")
                 else:
-                    axes[p + jj].set_ylabel("({unit})")
+                    axes[p + jj].set_ylabel(f"({unit})")
 
         # Set xlabels
         xlabel = f"{df.index.name[0]} ({df.index.name[1]})"  # Time (s)
@@ -1826,7 +1826,7 @@ class Dataset:
                 fc = u_fc[ii]
                 u_filt = df_temp[("INPUT", u)].to_numpy()
                 y_filt = np.zeros(N)
-                y_filt[0]
+                y_filt[0] = u_filt[0]
                 for kk in range(0, N - 1):
                     y_filt[kk + 1] = (1.0 - fc / fs) * y_filt[kk] + (
                         fc / fs
@@ -1843,7 +1843,7 @@ class Dataset:
                 # Low-pass filter implementatiom
                 u_filt = df_temp[("OUTPUT", y)].to_numpy()
                 y_filt = np.zeros(N)
-                y_filt[0]
+                y_filt[0] = u_filt[0]
                 for kk in range(0, N - 1):
                     y_filt[kk + 1] = (1.0 - fc / fs) * y_filt[kk] + (
                         fc / fs
@@ -2238,9 +2238,8 @@ def plot_signals(
         )
         ax[ii].grid()
         ax[ii].legend()
+        ax[ii].set_xlabel(f"Time ({s['time_unit']})")
 
-    for ii in range(ncols):
-        ax[nrows - 1 :: nrows][ii].set_xlabel("Time")
     plt.suptitle("Raw signals.")
 
     return fig, ax
