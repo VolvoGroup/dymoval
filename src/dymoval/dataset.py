@@ -221,10 +221,10 @@ class Dataset:
         self, df: pd.DataFrame
     ) -> tuple[pd.Series, pd.DataFrame, pd.Series, pd.DataFrame]:
 
-        u_mean = df["INPUT"].mean(axis=0)
-        u_cov = df["INPUT"].cov()
-        y_mean = df["OUTPUT"].mean(axis=0)
-        y_cov = df["OUTPUT"].cov()
+        u_mean = df["INPUT"].mean(axis=0).round(NUM_DECIMALS)
+        u_cov = df["INPUT"].cov().round(NUM_DECIMALS)
+        y_mean = df["OUTPUT"].mean(axis=0).round(NUM_DECIMALS)
+        y_cov = df["OUTPUT"].cov().round(NUM_DECIMALS)
 
         return u_mean, u_cov, y_mean, y_cov
 
@@ -2345,16 +2345,12 @@ def compare_datasets(
         # INPUT
         p_max = max([len(df["INPUT"].columns) for df in dfs])
         nrows, ncols = factorize(p_max)
-        fig_cov_in, ax_cov_in = plt.subplots(
-            nrows, ncols, sharex=True, squeeze=False
-        )
+        fig_cov_in, ax_cov_in = plt.subplots(nrows, ncols, squeeze=False)
 
         # OUTPUT
         q_max = max([len(df["OUTPUT"].columns) for df in dfs])
         nrows, ncols = factorize(q_max)
-        fig_cov_out, ax_cov_out = plt.subplots(
-            nrows, ncols, sharex=True, squeeze=False
-        )
+        fig_cov_out, ax_cov_out = plt.subplots(nrows, ncols, squeeze=False)
 
         # Actual plot
         cmap = plt.get_cmap(COLORMAP)  # noqa
@@ -2373,6 +2369,9 @@ def compare_datasets(
 
         fig_cov_in.suptitle("Dataset comparison")
         fig_cov_out.suptitle("Dataset comparison")
+
+        fig_cov_in.tight_layout()
+        fig_cov_out.tight_layout()
 
     # ========================================
     # frequency comparison
