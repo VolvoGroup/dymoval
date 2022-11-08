@@ -584,6 +584,7 @@ class Dataset:
         # In case user passes a DataFrame we need to compute the sampling period
         # as it is not explicitly passed.
         Ts = df_ext.index[1] - df_ext.index[0]
+        df_ext = df_ext.round(NUM_DECIMALS)
 
         return df_ext, Ts, NaN_intervals, excluded_signals, dataset_coverage
 
@@ -2332,6 +2333,7 @@ def compare_datasets(
         ds_names = [ds.name for ds in datasets]
         _adjust_legend(ds_names, axes_time)
         fig_time.suptitle("Dataset comparison")
+        fig_time.tight_layout()
 
     # ========================================
     # coverage comparison
@@ -2420,6 +2422,7 @@ def compare_datasets(
         ds_names = [ds.name for ds in datasets]
         _adjust_legend(ds_names, axes_freq)
         fig_freq.suptitle("Dataset comparison")
+        fig_freq.tight_layout()
 
 
 # def analyze_inout_dataset(df):
