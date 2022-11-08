@@ -71,6 +71,7 @@ To do that, download the `environment.yml` file from [here](https://github.com/V
 where `env_name` is the environment name where you want to install *dymoval*.
 If not provided, *dymoval* will be installed in a new environment called `dymoval`.
 
+### Why not conda install dymoval?
 Unfortunately, it is not possible (yet?) to easily build `conda` packages when the project is handled thorugh a `pyproject.toml` file, and therefore the *dymoval* package, which uses a `pyproject.toml` file, is only available through `pip`.
 
 
