@@ -3,9 +3,9 @@
 name: Publish
 
 on:
-  push:
-  #release:
-  #  types: [published]
+  #push:
+  release:
+    types: [published]
 
 jobs:
   pypi_publish:
