@@ -748,7 +748,7 @@ class Test_Dataset_nominal:
         assert np.allclose(u_expected, u_actual, atol=ATOL)
         assert np.allclose(y_expected, y_actual, atol=ATOL)
 
-    def test_signal_names(self, sine_dataframe: pd.DataFrame) -> None:
+    def test_signal_list(self, sine_dataframe: pd.DataFrame) -> None:
         df, u_names, y_names, u_units, y_units, fixture = sine_dataframe
 
         # Instantiate dataset
@@ -784,7 +784,7 @@ class Test_Dataset_nominal:
             ],
         }
 
-        actual = ds.signal_names()
+        actual = ds.signal_list()
         assert expected[fixture] == actual
 
     def test_lowpass_filter(
@@ -803,34 +803,33 @@ class Test_Dataset_nominal:
         fc_u = 1
         fc_y = 1.5
 
-        # Computed from Matlab based on the fixture.
         u_expected = np.array(
             [
-                0,
-                0.2000,
-                0.5754,
-                0.7841,
-                0.7448,
-                0.7580,
-                0.9857,
-                1.2125,
-                1.2481,
-                1.2195,
+                2.0,
+                2.0,
+                2.1949,
+                2.2467,
+                2.065,
+                1.9386,
+                2.0398,
+                2.1678,
+                2.1193,
+                2.004,
             ]
         )
 
         y_expected = np.array(
             [
-                0,
-                0.3000,
-                0.7165,
-                0.9599,
-                1.0829,
-                1.0056,
-                1.2429,
-                1.3964,
-                1.6907,
-                1.5223,
+                2.0,
+                2.0,
+                2.1615,
+                2.1881,
+                2.1269,
+                1.893,
+                1.9972,
+                2.0376,
+                2.2357,
+                1.9855,
             ]
         )
 

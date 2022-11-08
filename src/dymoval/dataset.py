@@ -182,7 +182,8 @@ class Dataset:
         self.coverage: pd.DataFrame = deepcopy(
             dataset_coverage
         )  # Docstring below,
-        """Coverage statistics in terms of mean value and variance"""
+        """Coverage statistics. Mean (vector) and covariance (matrix) of
+        both input and output signals."""
         self.information_level: float = 0.0  #: *Not implemented yet!*
         self._nan_intervals: Any = deepcopy(nan_intervals)
         self.excluded_signals: list[str] = excluded_signals
@@ -221,10 +222,10 @@ class Dataset:
         self, df: pd.DataFrame
     ) -> tuple[pd.Series, pd.DataFrame, pd.Series, pd.DataFrame]:
 
-        u_mean = df["INPUT"].mean(axis=0)
-        u_cov = df["INPUT"].cov()
-        y_mean = df["OUTPUT"].mean(axis=0)
-        y_cov = df["OUTPUT"].cov()
+        u_mean = df["INPUT"].mean(axis=0).round(NUM_DECIMALS)
+        u_cov = df["INPUT"].cov().round(NUM_DECIMALS)
+        y_mean = df["OUTPUT"].mean(axis=0).round(NUM_DECIMALS)
+        y_cov = df["OUTPUT"].cov().round(NUM_DECIMALS)
 
         return u_mean, u_cov, y_mean, y_cov
 
@@ -305,7 +306,7 @@ class Dataset:
             nrows, ncols = factorize(n)  # noqa
 
             # Actual plot
-            _, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
+            fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
             axes = axes.T.flat
             df_ext["INPUT"].droplevel(level="units", axis=1).plot(
                 subplots=True,
@@ -341,7 +342,7 @@ class Dataset:
             )
             for ii in range(ncols):
                 axes[nrows - 1 :: nrows][ii].set_xlabel(xlabel)
-            plt.suptitle(
+            fig.suptitle(
                 "Sampling time "
                 f"= {np.round(df_ext.index[1]-df_ext.index[0],NUM_DECIMALS)}.\n"
                 "Select the dataset time interval by resizing "
@@ -583,6 +584,7 @@ class Dataset:
         # In case user passes a DataFrame we need to compute the sampling period
         # as it is not explicitly passed.
         Ts = df_ext.index[1] - df_ext.index[0]
+        df_ext = df_ext.round(NUM_DECIMALS)
 
         return df_ext, Ts, NaN_intervals, excluded_signals, dataset_coverage
 
@@ -709,7 +711,7 @@ class Dataset:
         if signals_not_found:
             raise KeyError(
                 f"Signal(s) {signals_not_found} not found in the dataset. "
-                "Use 'signal_names()' to get the list of all available signals. "
+                "Use 'signal_list()' to get the list of all available signals. "
             )
 
         # ...then select if signals are passed.
@@ -919,7 +921,7 @@ class Dataset:
             raise Warning(f"Signals {excluded_signals} cannot be added.")
 
         # Check if the signal name(s) already exist in the current Dataset
-        _, signal_names, _ = zip(*self.signal_names())
+        _, signal_names, _ = zip(*self.signal_list())
         name_found = [
             s["name"] for s in signals_ok if s["name"] in signal_names
         ]
@@ -956,6 +958,7 @@ class Dataset:
             NaN_intervals
         )  # Join two dictionaries through update()
 
+        ds.dataset = ds.dataset.round(NUM_DECIMALS)
         return ds
 
     def dataset_values(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -1042,7 +1045,7 @@ class Dataset:
                 # This is the syntax for defining a dymoval signal
                 temp: dmv.Signal = {
                     "name": names[ii],
-                    "values": df.loc[:, val].to_numpy(),
+                    "values": df.loc[:, val].to_numpy().round(NUM_DECIMALS),
                     "signal_unit": signal_units[ii],
                     "sampling_period": sampling_period,
                     "time_unit": time_unit,
@@ -1052,7 +1055,7 @@ class Dataset:
 
         return signal_list
 
-    def signal_names(self) -> list[tuple[str, str, str]]:
+    def signal_list(self) -> list[tuple[str, str, str]]:
         """Return the list of signal names of the dataset."""
         return list(self.dataset.columns)
 
@@ -1199,10 +1202,10 @@ class Dataset:
         if not sorted(u_units) == sorted(y_units):
             for jj, unit in enumerate(y_units):
                 if overlap:
-                    axes[jj].right_ax.set_ylabel("({unit})")
+                    axes[jj].right_ax.set_ylabel(f"({unit})")
                     axes[jj].right_ax.grid(None, axis="y")
                 else:
-                    axes[p + jj].set_ylabel("({unit})")
+                    axes[p + jj].set_ylabel(f"({unit})")
 
         # Set xlabels
         xlabel = f"{df.index.name[0]} ({df.index.name[1]})"  # Time (s)
@@ -1422,7 +1425,7 @@ class Dataset:
             f"Frequency ({time2freq_units[df_temp.index.name[1]]})"
         )
 
-        return df_freq
+        return df_freq.round(NUM_DECIMALS)
 
     def plot_spectrum(
         self,
@@ -1824,14 +1827,15 @@ class Dataset:
             for ii, u in enumerate(u_names):
                 # Low-pass filter implementatiom
                 fc = u_fc[ii]
-                u_filt = df_temp[("INPUT", u)].to_numpy()
+                u_filt = df_temp.loc[:, ("INPUT", u, u_units[ii])].to_numpy()
                 y_filt = np.zeros(N)
-                y_filt[0]
+                y_filt[0] = u_filt[0]
                 for kk in range(0, N - 1):
                     y_filt[kk + 1] = (1.0 - fc / fs) * y_filt[kk] + (
                         fc / fs
                     ) * u_filt[kk]
-                df_temp.loc[:, ("INPUT", u)] = y_filt
+                df_temp.loc[:, ("INPUT", u, u_units[ii])] = y_filt
+
         # OUTPUT
         # List of all the requested input cutoff frequencies
         if y_list:
@@ -1841,16 +1845,16 @@ class Dataset:
             for ii, y in enumerate(y_names):
                 fc = y_fc[ii]  # cutoff frequency
                 # Low-pass filter implementatiom
-                u_filt = df_temp[("OUTPUT", y)].to_numpy()
+                u_filt = df_temp.loc[:, ("OUTPUT", y, y_units[ii])].to_numpy()
                 y_filt = np.zeros(N)
-                y_filt[0]
+                y_filt[0] = u_filt[0]
                 for kk in range(0, N - 1):
                     y_filt[kk + 1] = (1.0 - fc / fs) * y_filt[kk] + (
                         fc / fs
                     ) * u_filt[kk]
-                df_temp.loc[:, ("OUTPUT", y)] = y_filt
+                df_temp.loc[:, ("OUTPUT", y, y_units[ii])] = y_filt
         # Round value
-        df_temp = np.round(self.dataset, NUM_DECIMALS)  # noqa
+        ds_temp.dataset = df_temp.round(NUM_DECIMALS)  # noqa
 
         return ds_temp
 
@@ -1877,6 +1881,7 @@ class Dataset:
         # Safe copy
         ds_temp = deepcopy(self)
         ds_temp.dataset = ds_temp.dataset.interpolate(**kwargs)
+        ds_temp.dataset = ds_temp.dataset.routed(NUM_DECIMALS)
 
         return ds_temp
 
@@ -1928,7 +1933,7 @@ class Dataset:
 
         ds = deepcopy(self)
 
-        available_signals = [s[1] for s in self.signal_names()]
+        available_signals = [s[1] for s in self.signal_list()]
         signals_not_found = [s for s in signals if s not in available_signals]
         if signals_not_found:
             raise KeyError(
@@ -2238,10 +2243,11 @@ def plot_signals(
         )
         ax[ii].grid()
         ax[ii].legend()
+        ax[ii].set_xlabel(f"Time ({s['time_unit']})")
+        ax[ii].set_ylabel(f"({s['signal_unit']})")
 
-    for ii in range(ncols):
-        ax[nrows - 1 :: nrows][ii].set_xlabel("Time")
-    plt.suptitle("Raw signals.")
+    fig.suptitle("Raw signals.")
+    fig.tight_layout()
 
     return fig, ax
 
@@ -2332,6 +2338,7 @@ def compare_datasets(
         ds_names = [ds.name for ds in datasets]
         _adjust_legend(ds_names, axes_time)
         fig_time.suptitle("Dataset comparison")
+        fig_time.tight_layout()
 
     # ========================================
     # coverage comparison
@@ -2346,16 +2353,12 @@ def compare_datasets(
         # INPUT
         p_max = max([len(df["INPUT"].columns) for df in dfs])
         nrows, ncols = factorize(p_max)
-        fig_cov_in, ax_cov_in = plt.subplots(
-            nrows, ncols, sharex=True, squeeze=False
-        )
+        fig_cov_in, ax_cov_in = plt.subplots(nrows, ncols, squeeze=False)
 
         # OUTPUT
         q_max = max([len(df["OUTPUT"].columns) for df in dfs])
         nrows, ncols = factorize(q_max)
-        fig_cov_out, ax_cov_out = plt.subplots(
-            nrows, ncols, sharex=True, squeeze=False
-        )
+        fig_cov_out, ax_cov_out = plt.subplots(nrows, ncols, squeeze=False)
 
         # Actual plot
         cmap = plt.get_cmap(COLORMAP)  # noqa
@@ -2374,6 +2377,9 @@ def compare_datasets(
 
         fig_cov_in.suptitle("Dataset comparison")
         fig_cov_out.suptitle("Dataset comparison")
+
+        fig_cov_in.tight_layout()
+        fig_cov_out.tight_layout()
 
     # ========================================
     # frequency comparison
@@ -2421,6 +2427,7 @@ def compare_datasets(
         ds_names = [ds.name for ds in datasets]
         _adjust_legend(ds_names, axes_freq)
         fig_freq.suptitle("Dataset comparison")
+        fig_freq.tight_layout()
 
 
 # def analyze_inout_dataset(df):
