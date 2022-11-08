@@ -90,18 +90,16 @@ or
 
 ## Getting started
 
-If you are already familiar with model validation, then the best way to learn dymoval is to run the tutorial scripts that you can open with
+If you are already familiar with model validation, then the best way to get started with dymoval is to run the tutorial scripts that you can open with
 
 	import dymoval as dmv
 	dmv.open_tutorial()
 
+For more info on model validation you can check the [docs](https://volvogroup.github.io/dymoval/). 
 
 
-
-Note
-----
-
-The tutorial is stored in a Jupyter notebook, so you need an opener for that kind of files.
+> **Note**
+> The tutorial is stored in a Jupyter notebook, so you need an opener for that kind of files.
 
 ## License
 Dymoval is licensed under [BSD 3](https://github.com/VolvoGroup/dymoval/blob/main/LICENSE) license.
