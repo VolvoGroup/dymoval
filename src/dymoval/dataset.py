@@ -182,7 +182,8 @@ class Dataset:
         self.coverage: pd.DataFrame = deepcopy(
             dataset_coverage
         )  # Docstring below,
-        """Coverage statistics in terms of mean value and variance"""
+        """Coverage statistics. Mean (vector) and covariance (matrix) of
+        both input and output signals."""
         self.information_level: float = 0.0  #: *Not implemented yet!*
         self._nan_intervals: Any = deepcopy(nan_intervals)
         self.excluded_signals: list[str] = excluded_signals
@@ -709,7 +710,7 @@ class Dataset:
         if signals_not_found:
             raise KeyError(
                 f"Signal(s) {signals_not_found} not found in the dataset. "
-                "Use 'signal_names()' to get the list of all available signals. "
+                "Use 'signal_list()' to get the list of all available signals. "
             )
 
         # ...then select if signals are passed.
@@ -919,7 +920,7 @@ class Dataset:
             raise Warning(f"Signals {excluded_signals} cannot be added.")
 
         # Check if the signal name(s) already exist in the current Dataset
-        _, signal_names, _ = zip(*self.signal_names())
+        _, signal_names, _ = zip(*self.signal_list())
         name_found = [
             s["name"] for s in signals_ok if s["name"] in signal_names
         ]
@@ -1052,7 +1053,7 @@ class Dataset:
 
         return signal_list
 
-    def signal_names(self) -> list[tuple[str, str, str]]:
+    def signal_list(self) -> list[tuple[str, str, str]]:
         """Return the list of signal names of the dataset."""
         return list(self.dataset.columns)
 
@@ -1824,7 +1825,7 @@ class Dataset:
             for ii, u in enumerate(u_names):
                 # Low-pass filter implementatiom
                 fc = u_fc[ii]
-                u_filt = df_temp[("INPUT", u)].to_numpy()
+                u_filt = df_temp.loc[:, ("INPUT", u)].to_numpy()
                 y_filt = np.zeros(N)
                 y_filt[0] = u_filt[0]
                 for kk in range(0, N - 1):
@@ -1841,7 +1842,7 @@ class Dataset:
             for ii, y in enumerate(y_names):
                 fc = y_fc[ii]  # cutoff frequency
                 # Low-pass filter implementatiom
-                u_filt = df_temp[("OUTPUT", y)].to_numpy()
+                u_filt = df_temp.loc[:, ("OUTPUT", y)].to_numpy()
                 y_filt = np.zeros(N)
                 y_filt[0] = u_filt[0]
                 for kk in range(0, N - 1):
@@ -1928,7 +1929,7 @@ class Dataset:
 
         ds = deepcopy(self)
 
-        available_signals = [s[1] for s in self.signal_names()]
+        available_signals = [s[1] for s in self.signal_list()]
         signals_not_found = [s for s in signals if s not in available_signals]
         if signals_not_found:
             raise KeyError(
