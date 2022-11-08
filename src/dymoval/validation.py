@@ -664,7 +664,8 @@ class ValidationSession:
                     #  )
                     ax1[ii, jj].set_title(rf"r_eps{ii}eps_{jj}")
                     ax1[ii, jj].legend()
-        plt.suptitle("Residuals auto-correlation")
+        fig1.suptitle("Residuals auto-correlation")
+        fig1.tight_layout()
 
         # ===============================================================
         # Plot input-residuals cross-correlation
@@ -685,7 +686,8 @@ class ValidationSession:
                     # ax2[ii, jj].set_title(rf"$\hat r_{{u_{ii}\epsilon_{jj}}}$")
                     ax2[ii, jj].set_title(rf"r_u{ii}eps{jj}")
                     ax2[ii, jj].legend()
-        plt.suptitle("Input-residuals cross-correlation")
+        fig2.suptitle("Input-residuals cross-correlation")
+        fig2.tight_layout()
 
         if save_as is not None:
             ax1 = ax1.flat

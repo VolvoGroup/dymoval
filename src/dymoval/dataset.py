@@ -306,7 +306,7 @@ class Dataset:
             nrows, ncols = factorize(n)  # noqa
 
             # Actual plot
-            _, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
+            fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
             axes = axes.T.flat
             df_ext["INPUT"].droplevel(level="units", axis=1).plot(
                 subplots=True,
@@ -342,7 +342,7 @@ class Dataset:
             )
             for ii in range(ncols):
                 axes[nrows - 1 :: nrows][ii].set_xlabel(xlabel)
-            plt.suptitle(
+            fig.suptitle(
                 "Sampling time "
                 f"= {np.round(df_ext.index[1]-df_ext.index[0],NUM_DECIMALS)}.\n"
                 "Select the dataset time interval by resizing "
@@ -958,6 +958,7 @@ class Dataset:
             NaN_intervals
         )  # Join two dictionaries through update()
 
+        ds.dataset = ds.dataset.round(NUM_DECIMALS)
         return ds
 
     def dataset_values(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -1044,7 +1045,7 @@ class Dataset:
                 # This is the syntax for defining a dymoval signal
                 temp: dmv.Signal = {
                     "name": names[ii],
-                    "values": df.loc[:, val].to_numpy(),
+                    "values": df.loc[:, val].to_numpy().round(NUM_DECIMALS),
                     "signal_unit": signal_units[ii],
                     "sampling_period": sampling_period,
                     "time_unit": time_unit,
@@ -1424,7 +1425,7 @@ class Dataset:
             f"Frequency ({time2freq_units[df_temp.index.name[1]]})"
         )
 
-        return df_freq
+        return df_freq.round(NUM_DECIMALS)
 
     def plot_spectrum(
         self,
@@ -1826,14 +1827,15 @@ class Dataset:
             for ii, u in enumerate(u_names):
                 # Low-pass filter implementatiom
                 fc = u_fc[ii]
-                u_filt = df_temp.loc[:, ("INPUT", u)].to_numpy()
+                u_filt = df_temp.loc[:, ("INPUT", u, u_units[ii])].to_numpy()
                 y_filt = np.zeros(N)
                 y_filt[0] = u_filt[0]
                 for kk in range(0, N - 1):
                     y_filt[kk + 1] = (1.0 - fc / fs) * y_filt[kk] + (
                         fc / fs
                     ) * u_filt[kk]
-                df_temp.loc[:, ("INPUT", u)] = y_filt
+                df_temp.loc[:, ("INPUT", u, u_units[ii])] = y_filt
+
         # OUTPUT
         # List of all the requested input cutoff frequencies
         if y_list:
@@ -1843,16 +1845,16 @@ class Dataset:
             for ii, y in enumerate(y_names):
                 fc = y_fc[ii]  # cutoff frequency
                 # Low-pass filter implementatiom
-                u_filt = df_temp.loc[:, ("OUTPUT", y)].to_numpy()
+                u_filt = df_temp.loc[:, ("OUTPUT", y, y_units[ii])].to_numpy()
                 y_filt = np.zeros(N)
                 y_filt[0] = u_filt[0]
                 for kk in range(0, N - 1):
                     y_filt[kk + 1] = (1.0 - fc / fs) * y_filt[kk] + (
                         fc / fs
                     ) * u_filt[kk]
-                df_temp.loc[:, ("OUTPUT", y)] = y_filt
+                df_temp.loc[:, ("OUTPUT", y, y_units[ii])] = y_filt
         # Round value
-        df_temp = np.round(self.dataset, NUM_DECIMALS)  # noqa
+        ds_temp.dataset = df_temp.round(NUM_DECIMALS)  # noqa
 
         return ds_temp
 
@@ -1879,6 +1881,7 @@ class Dataset:
         # Safe copy
         ds_temp = deepcopy(self)
         ds_temp.dataset = ds_temp.dataset.interpolate(**kwargs)
+        ds_temp.dataset = ds_temp.dataset.routed(NUM_DECIMALS)
 
         return ds_temp
 
@@ -2241,8 +2244,10 @@ def plot_signals(
         ax[ii].grid()
         ax[ii].legend()
         ax[ii].set_xlabel(f"Time ({s['time_unit']})")
+        ax[ii].set_ylabel(f"({s['signal_unit']})")
 
-    plt.suptitle("Raw signals.")
+    fig.suptitle("Raw signals.")
+    fig.tight_layout()
 
     return fig, ax
 
