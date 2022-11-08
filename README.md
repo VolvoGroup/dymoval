@@ -61,6 +61,7 @@ By running
     pip install dymoval
 
 everything should workd, but there are few things to keep in mind.
+
 Given that `conda` handles scientific packages better than `pip`, and given that many *dymoval* dependencies are scientific packages, it is suggested to install all the dependencies through `conda` and then to install *dymoval* through `pip`.
 
 To do that, download the `environment.yml` file from [here](https://github.com/VolvoGroup/dymoval/blob/main/environment.yml) and run 
@@ -71,11 +72,11 @@ To do that, download the `environment.yml` file from [here](https://github.com/V
 where `env_name` is the environment name where you want to install *dymoval*.
 If not provided, *dymoval* will be installed in a new environment called `dymoval`.
 
-### Why not conda install dymoval?
+#### Why not `conda install dymoval`?
 Unfortunately, it is not possible (yet?) to easily build `conda` packages when the project is handled thorugh a `pyproject.toml` file, and therefore the *dymoval* package, which uses a `pyproject.toml` file, is only available through `pip`.
 
 
-#### From this repo
+#### Installation From this repo
 Clone this repo and run
 
 	cd /path/to/where/you/cloned/this/repo
