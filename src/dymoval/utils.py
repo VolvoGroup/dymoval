@@ -9,6 +9,8 @@ import scipy.signal as signal  # noqa
 from typing import Any
 import sys
 import subprocess
+import shutil
+from pathlib import Path
 
 
 def factorize(n: int) -> tuple[int, int]:
@@ -88,13 +90,27 @@ def save_plot_as(
 
 
 def open_tutorial() -> tuple[Any, Any]:
-    """Open *Dymoval* tutorial."""
+    """Open the *Dymoval* tutorial.
+
+    More precisely, it creates a IPython notebook named
+    dymoval_tutorial.ipynb in your home folder and try to open it.
+
+    If a dymoval_tutorial.ipynb file already exists in your home
+    directory, then it will be overwritten.
+
+    """
+
     site_packages = next(p for p in sys.path if "site-packages" in p)
+    src = site_packages
+    home = str(Path.home())
     if sys.platform == "win32":
         filename = "\\dymoval\\scripts\\tutorial.ipynb"
-        shell_process = subprocess.Popen([site_packages + filename], shell=True)
+        dst = shutil.copyfile(src + filename, home + "\\dymoval_tutorial.ipynb")
+        shell_process = subprocess.Popen(dst, shell=True)
     else:
         filename = "/dymoval/scripts/tutorial.ipynb"
+        dst = shutil.copyfile(src + filename, home + "/dymoval_tutorial.ipynb")
         opener = "open" if sys.platform == "darwin" else "xdg-open"
-        shell_process = subprocess.call([opener, site_packages + filename])
-    return shell_process, site_packages + filename
+        shell_process = subprocess.call([opener, dst])
+
+    return shell_process, dst

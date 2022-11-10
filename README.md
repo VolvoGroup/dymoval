@@ -97,7 +97,18 @@ If you are already familiar with model validation, then the best way to get star
 	import dymoval as dmv
 	dmv.open_tutorial()
 
-For more info on model validation you can check the [docs](https://volvogroup.github.io/dymoval/). 
+
+For more info on what is model validation and what is currently implemented in *dymoval* along with the *dymoval* complete API, you can check the [docs](https://volvogroup.github.io/dymoval/). 
+
+### Interactive plots
+By default, Jupyter notebooks use `inline` plots. 
+If you want to use interactive plots, then install the package `ipympl` through `pip/conda` and add the magic `%matplotlib widget` on top of your notebook.
+
+If you are using `jupyterlab`, then you also need `nodejs` that you can install through `pip/conda`.
+Once done, from the command line, just run
+
+    jupyter labextension install @jupyter-widgets/jupyterlab-manager
+    jupyter lab build
 
 
 > **Note**

@@ -21,5 +21,4 @@ dependencies:
   - coverage
   - conda-lock
   - h5py
-  - fmpy
 

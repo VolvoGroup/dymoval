@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import matplotlib
-from typing import TypedDict
 
 import numpy as np
 import pandas as pd
@@ -12,7 +11,7 @@ from matplotlib import pyplot as plt
 from .config import *  # noqa
 from .utils import *  # noqa
 from .dataset import *  # noqa
-from typing import Literal
+from typing import TypedDict, Literal
 from itertools import product
 
 
@@ -100,7 +99,7 @@ def rsquared(x: np.ndarray, y: np.ndarray) -> float:
     Signals can be MIMO.
 
     Parameters
-    ----------
+    r--------
     x :
         First input signal.
     y :
@@ -304,13 +303,11 @@ class ValidationSession:
         eps = y_values - y_sim_values
 
         # Residuals auto-correlation
-        # R, lags = xcorr(eps, eps)
-        # Ree: XCorrelation = {"values": R, "lags": lags}
+        # xcorr returns a Xcorrelation object
         self.auto_correlation[sim_name] = xcorr(eps, eps)
 
         # Input-residuals cross-correlation
-        # R, lags = xcorr(u_values, eps)
-        # Rue: XCorrelation = {"values": R, "lags": lags}
+        # xcorr returns a Xcorrelation object
         self.cross_correlation[sim_name] = xcorr(u_values, eps)
 
     def _append_validation_results(
@@ -576,6 +573,8 @@ class ValidationSession:
             # Set grid
             for jj in range(q):
                 axes[jj].grid(None, axis="y")
+
+        fig.tight_layout()
 
         # ===============================================================
         # Save and eventually return figures.

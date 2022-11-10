@@ -246,14 +246,18 @@ w2 = 2 * np.pi * f2
 f3 = 4.8
 w3 = 2 * np.pi * f3
 
-u_labels = ["u1", "u2", "u3"]
+u_names = ["u1", "u2", "u3"]
+u_units = ["m", "m/s", "m/s**2"]
+u_labels = list(zip(u_names, u_units))
 u_values = [
     c1 + np.sin(w1 * t) + np.sin(w2 * t),
     c1 + np.sin(w2 * t),
     c1 + np.sin(w3 * t),
 ]
 
-y_labels = ["y1", "y2", "y3", "y4"]
+y_names = ["y1", "y2", "y3", "y4"]
+y_units = ["degC", "rad", "kPa", ""]
+y_labels = list(zip(y_names, y_units))
 y_values = [
     c1 + np.sin(w1 * t) + np.sin(w3 * t),
     c3 + np.sin(w3 * t),
@@ -263,14 +267,15 @@ y_values = [
 
 data = np.vstack((np.asarray(u_values), np.asarray(y_values))).transpose()
 df = pd.DataFrame(index=t, columns=[*u_labels, *y_labels], data=data)
-ds = dmv.Dataset("mydataset", df, u_labels, y_labels)
+df.index.name = ("Time", "s")
+ds = dmv.Dataset("mydataset", df, u_names, y_names)
 ds.plot()
 
-ds.plot_amplitude_spectrum()
-ds.plot_amplitude_spectrum(u_labels="u1", y_labels="y4")
+ds.plot_spectrum(kind="amplitude")
+ds.plot_spectrum("u1", "y4")
 
 
 # Remove means and offset
 u_list = ("u1", 2.0)
 
-ds.remove_offset(u_list=u_list, inplace=True)
+ds.remove_offset(u_list)

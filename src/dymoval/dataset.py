@@ -1881,7 +1881,7 @@ class Dataset:
         # Safe copy
         ds_temp = deepcopy(self)
         ds_temp.dataset = ds_temp.dataset.interpolate(**kwargs)
-        ds_temp.dataset = ds_temp.dataset.routed(NUM_DECIMALS)
+        ds_temp.dataset = ds_temp.dataset.round(NUM_DECIMALS)
 
         return ds_temp
 
@@ -2130,7 +2130,7 @@ def validate_dataframe(
     # Check that you have at least one input and one output
     if not u_names or not y_names:
         raise IndexError(
-            "You need at least one input and one output signal."
+            "You need at least one input and one output signal. "
             "Check 'u_names' and 'y_names'."
         )
 
@@ -2141,7 +2141,7 @@ def validate_dataframe(
         or (set(u_names) & set(y_names))  # Non empty intersection
     ):
         raise ValueError(
-            "Signal names must be unique." "Check 'u_names' and 'y_names'."
+            "Signal names must be unique. Check 'u_names' and 'y_names'."
         )
 
     # ==========================================
