@@ -2,9 +2,9 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="1326.4742"
-   height="679.22681"
-   viewBox="0 0 1326.4742 679.22681"
+   width="1326.4747"
+   height="679.18048"
+   viewBox="0 0 1326.4747 679.18048"
    version="1.1"
    id="svg5"
    inkscape:version="1.2 (dc2aedaf03, 2022-05-15)"
@@ -45,24 +45,24 @@
        inkscape:collect="always"
        id="linearGradient6210">
       <stop
-         style="stop-color:#00f700;stop-opacity:0;"
-         offset="0"
+         style="stop-color:#ffffff;stop-opacity:0;"
+         offset="0.0015674"
          id="stop6208" />
       <stop
-         style="stop-color:#44e246;stop-opacity:0.35294119;"
+         style="stop-color:#a1ff7c;stop-opacity:0.35294116;"
          offset="0.0062696"
          id="stop6946" />
       <stop
-         style="stop-color:#009101;stop-opacity:0.49411765;"
+         style="stop-color:#84ff69;stop-opacity:0.49411765;"
          offset="0.36520377"
          id="stop7674" />
       <stop
-         style="stop-color:#259d25;stop-opacity:0.70980394;"
-         offset="0.61755484"
+         style="stop-color:#77f075;stop-opacity:0.70980394;"
+         offset="0.70532918"
          id="stop6944" />
       <stop
-         style="stop-color:#107f0f;stop-opacity:1;"
-         offset="0.86050159"
+         style="stop-color:#14a711;stop-opacity:1;"
+         offset="0.8573668"
          id="stop6206" />
     </linearGradient>
     <linearGradient
@@ -92,10 +92,10 @@
        style="color-interpolation-filters:sRGB"
        inkscape:label="Drop Shadow"
        id="filter39198"
-       x="-0.05676306"
-       y="-0.081337541"
-       width="1.1796912"
-       height="1.1258045">
+       x="-0.025002142"
+       y="-0.057242237"
+       width="1.1161695"
+       height="1.0776139">
       <feFlood
          flood-opacity="0.498039"
          flood-color="rgb(0,0,0)"
@@ -109,7 +109,7 @@
          id="feComposite39190" />
       <feGaussianBlur
          in="composite1"
-         stdDeviation="7.61905"
+         stdDeviation="3.1635968"
          result="blur"
          id="feGaussianBlur39192" />
       <feOffset
@@ -130,7 +130,7 @@
      inkscape:groupmode="layer"
      id="layer1"
      style="display:inline"
-     transform="translate(-248.811,-192.35495)">
+     transform="translate(-248.81056,-192.3781)">
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:306.667px;line-height:1.25;font-family:'Franklin Gothic Heavy';-inkscape-font-specification:'Franklin Gothic Heavy, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#4e4e4e;fill-opacity:1;stroke:none"
@@ -161,7 +161,7 @@
      inkscape:groupmode="layer"
      id="layer2"
      inkscape:label="Layer 2"
-     transform="translate(-248.811,-192.35495)">
+     transform="translate(-248.81056,-192.3781)">
     <rect
        style="mix-blend-mode:normal;fill:#909090;fill-opacity:0.685152;stroke:#000000;stroke-width:1.78308;stroke-dasharray:none;stroke-opacity:1;filter:url(#filter37916)"
        id="rect18019"
@@ -170,9 +170,9 @@
        x="981.61646"
        y="260.422"
        ry="69.431213"
-       transform="matrix(0.9999699,-0.00775933,0.0081496,0.99996679,-15.568006,-5.1893352)"
-       inkscape:transform-center-x="-7.7970147"
-       inkscape:transform-center-y="64.676674" />
+       transform="matrix(1.0444774,-0.0077588,0.00851233,0.99989865,-57.080453,-5.1527295)"
+       inkscape:transform-center-x="-8.1440952"
+       inkscape:transform-center-y="64.672271" />
     <path
        id="rect2530"
        style="mix-blend-mode:normal;fill:url(#linearGradient6940);fill-opacity:1;stroke:#000000;stroke-width:1.53;stroke-dasharray:none;stroke-opacity:1;filter:url(#filter39198)"
