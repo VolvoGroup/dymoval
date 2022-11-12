@@ -22,7 +22,7 @@ copyright = "2022, U. Tiberi"
 author = "U. Tiberi"
 
 # The full version, including alpha/beta/rc tags
-release = "0.1"
+release = "0.2.0"
 
 
 # -- General configuration ---------------------------------------------------
@@ -58,7 +58,7 @@ exclude_patterns = ["*config.py"]
 # a list of builtin themes.
 #
 html_theme = "furo"
-html_logo = "DymovalLogo.svg"
+html_logo = "DymovalLogoSmall.svg"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
