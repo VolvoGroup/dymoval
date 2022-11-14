@@ -2,9 +2,9 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="1003.6246"
+   width="1113.6144"
    height="205.25519"
-   viewBox="0 0 265.54233 54.307102"
+   viewBox="0 0 294.6438 54.307102"
    version="1.1"
    id="svg5"
    inkscape:version="1.1.2 (b8e25be833, 2022-02-05)"
@@ -35,7 +35,7 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-106.72964,-107.47128)">
+     transform="translate(-79.46563,-107.47128)">
     <rect
        style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.388575;stroke-opacity:1"
        id="rect60715"
@@ -43,7 +43,10 @@
        height="53.91853"
        x="206.62509"
        y="107.66557"
-       ry="5.6385393" />
+       ry="5.6385393"
+       inkscape:export-filename=".\DymovalNutshell.svg"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" />
     <image
        preserveAspectRatio="none"
        inkscape:svg-dpi="96"
@@ -56,29 +59,25 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.76111px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.258359"
-       x="329.62244"
+       x="331.50415"
        y="133.55515"
        id="text69389-7"
        transform="scale(0.97647505,1.0240917)"><tspan
          sodipodi:role="line"
          id="tspan6870"
-         x="329.62244"
+         x="331.50415"
          y="133.55515">Model quality</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.76111px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.258359"
-       x="117.95995"
-       y="111.30228"
+       x="80.679016"
+       y="121.80495"
        id="text69389-7-9"
        transform="scale(0.97647505,1.0240917)"><tspan
          sodipodi:role="line"
-         id="tspan6874"
-         x="117.95995"
-         y="111.30228">   real-world </tspan><tspan
-         sodipodi:role="line"
-         id="tspan6876"
-         x="117.95995"
-         y="121.00366">measurements</tspan></text>
+         id="tspan7943"
+         x="80.679016"
+         y="121.80495">real-world measurements</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
        d="m 298.47658,130.21396 h 12.60916 v -5.18373 l 8.07506,9.17777 -8.40824,9.55645 v -5.97427 h -11.97215 z"
@@ -94,16 +93,12 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.76111px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
-       x="106.72964"
+       x="89.768723"
        y="151.40717"
        id="text6852"><tspan
          sodipodi:role="line"
-         id="tspan6858"
-         x="106.72964"
-         y="151.40717">model-generated </tspan><tspan
-         sodipodi:role="line"
-         id="tspan6860"
-         x="106.72964"
-         y="161.10855">         data</tspan></text>
+         id="tspan7945"
+         x="89.768723"
+         y="151.40717">model-generated data</tspan></text>
   </g>
 </svg>
