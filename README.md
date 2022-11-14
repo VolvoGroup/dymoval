@@ -112,7 +112,7 @@ If you are already familiar with model validation, then the best way to get star
 	dmv.open_tutorial()
 
 
-This will create a jupyter notebook in your `home` folder called `dymoval_tutorial.ipynb`.
+This will copy the `dymoval_tutorial.ipynb` jupyter notebook from your installation folder to your `home` folder.
 
 For more info on what is model validation and what is currently implemented in *dymoval* along with the *dymoval* complete API, you can check the [docs](https://volvogroup.github.io/dymoval/). 
 
