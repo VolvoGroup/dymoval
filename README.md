@@ -30,9 +30,6 @@ In response, you will get an evaluation of your model in terms of r-squared fit,
 This means that if you are developing your models in a CI/CD environment, then *Dymoval* can help you in evaluating if to merge or not to merge some pull requests.
 Please note that *Dymoval* functions can be easily included in development pipelines scripts, so the whole CI/CD process can be fully automatized.
 
-<div align="center">
-<img src="https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalNutshell.svg" data-canonical-src="[https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalNutshell.svg](https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalNutshell.svg)" width="800" class="center" />
-</div>
 
 *Dymoval* further provides some essential functions for dealing with dataset analysis and manipulation.  
 
