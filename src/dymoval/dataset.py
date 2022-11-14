@@ -1,7 +1,8 @@
 # The following are only for Spyder, otherwise things are written in
 # the pyproject.toml
 # mypy: show_error_codes
-"""Module containing everything related to datasets.
+
+""" Module containing everything related to datasets.
 Here are defined special datatypes, classes and auxiliary functions to deal with datasets.
 """
 from __future__ import annotations

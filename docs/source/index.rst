@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Dymoval (DYnamic MOdel VALidation)
+Dymoval (Dynamic Model Validation)
 ====================================
 
 What is it?
@@ -32,28 +32,29 @@ It is nor a tool for *System Identification* (but we don't exclude it can happen
 Why dymoval?
 ------------
 
-There plenty amazing packages out there like pandas, *numpy*, *scipy*, etc for analyzing data,
+There plenty amazing packages out there like *pandas*, *numpy*, *scipy*, etc for analyzing data,
 compute statistics, and so on,  
 but they are huge and the plethora of functionalities they offer may be overwhelming.
 
-*Dymoval* has been thought with engineers in mind, and it offers just the essential tools 
-for coping with typical tasks that an engineer needs to carry out by trying to keep as simple as possible API.
+*Dymoval* has been thought with engineers in mind, and it offers just the essentials 
+for coping with typical tasks that an engineer needs to carry out.
 
 Main Features
 -------------
 
+
 Model validation
 ****************
 
-- Models unit-tests
 - Validation metrics:
-	- R-square fit (%)
+	- R-square fit
 	- Residuals auto-correlation
 	- Input-Residuals cross-correlation 
 - Coverage region
-- Works for both SISO and MIMO models
-- Modeling tool independency
-- Easily integrates with CI/CD pipelines. 
+- Enable model unit-tests
+- Work for both SISO and MIMO models
+- Modeling tool independence
+- Easily integrate with CI/CD pipelines.
 
 
 Datasets analysis and manipulation
@@ -64,6 +65,7 @@ Datasets analysis and manipulation
 - Linear filtering
 - Means and offsets removal
 - Re-sampling
+
 
 Index
 -----

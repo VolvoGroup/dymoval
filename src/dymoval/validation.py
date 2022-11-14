@@ -99,7 +99,7 @@ def rsquared(x: np.ndarray, y: np.ndarray) -> float:
     Signals can be MIMO.
 
     Parameters
-    r--------
+    ----------
     x :
         First input signal.
     y :

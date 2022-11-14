@@ -7,8 +7,11 @@ Then, the user can append as many simulation results as he/she want to the same
 and store the results in the 
 :py:attr:`~.ValidationSession.validation_results` attribute.
 
-Note that a :ref:`ValidationSession<ValidationSession>` object is instantiated from a :ref:`Dataset <Dataset>` object and therefore 
-the user can access all the attributes and methods of the :ref:`Dataset` directly from the :ref:`ValidationSession<ValidationSession>` object.
+.. warning::
+   It is **discouraged** to change a :ref:`Dataset <Dataset>` object once it is an attribute of a :ref:`ValidationSession<ValidationSession>` object. 
+   This because the validation results will be jeopardized. 
+   
+   If you want to change Dataset, then consider to create a new :ref:`ValidationSession<ValidationSession>` object.
 
 
 .. _ValidationSession:
@@ -40,7 +43,7 @@ ValidationSession class
    ValidationSession.drop_simulation
    ValidationSession.plot_simulations
    ValidationSession.plot_residuals
-   ValidationSession.get_simulations_name
-   ValidationSession.get_simulation_signals_list
+   ValidationSession.simulations_names
+   ValidationSession.simulation_signals_list
    ValidationSession.clear
 

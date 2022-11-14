@@ -22,7 +22,7 @@ A traditional software development workflow consists in pushing your software ch
 where there is some source automation server (like Jenkins or GitLab) that automatically assess if your changes 
 can be integrated in the codebase or not.
 
-Very often, the process of developing models goes along the same line: you typically have a *Version Control System- (VCS) 
+Very often, the process of developing models goes along the same line: you typically have a *Version Control System (VCS)* 
 to track your model changes...
 
 ... but there are no automated mechanisms that test your model.

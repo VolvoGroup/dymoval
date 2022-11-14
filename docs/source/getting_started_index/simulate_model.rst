@@ -1,25 +1,28 @@
 Simulate your model
 ===================
 
-Model validation requires model output data and therefore you have to simulate your model.
+Model validation requires simulated data and therefore you have to simulate your model.
+
 How? Well, you shall feed it with the input signals contained in the :ref:`Dataset <Dataset>` object that you prepared.
 
 To extract the input signals from your :ref:`Dataset <Dataset>` object you can 
-use the method :py:meth:`~dymoval.dataset.get_dataset_values` and then you can use them to feed your model 
+use the method :py:meth:`~dymoval.dataset.dataset_values` and then you can use them to feed your model 
 as long as you are working in a Python environment.
 
-TODO: Otherwise, you can export your :ref:`Dataset <Dataset>` object in the format you want and import it into your modeling tool. 
+Otherwise, you can export your :ref:`Dataset <Dataset>` object in the format you want and import it into your modeling tool.
+To facilitate with this task, *Dymoval* allows you to dump :ref:`Dataset <Dataset>` objects into :ref:`Signal <Signal>` objects through the method :py:meth:`~dymoval.dataset.dump_to_signals` but then, you will have to manually export in an appropriate format depending on your modeling tool. 
 
 .. note::
-    Given the popularity of Matlab, *Dymoval* has a builtin function that exports datasets signals directly in *.mat* format. 
+    Given the popularity of Matlab, *Dymoval* has a builtin function that exports Signals directly in *.mat* format. 
 
 Once you have simulated your model then you are now ready to validate your model, and guess what? 
 *Dymoval* is here for that!
+
 Go to the next Section to discover more. 
 
 .. note::
     Exporting/importing signals from/to Python to/from your modeling tool may be fairly annoying. 
-    For this reason, we recommend to compile your model into an FMU and use the package *pyfmu*
+    For this reason, we recommend to compile your model into an FMU and use the packages like *pyfmu* or *fmpy* 
     to simulate your model directly from a Python environment, so you have everything in one place.
 
     Independently of your modeling tool (Simulink, Dymola, GT-Power, etc), you most likely 

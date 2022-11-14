@@ -7,13 +7,13 @@ For example, financial institutes use different logging systems than aerospace i
 Due to that, it is impossible to establish a dataset format that fits every domain.
 Therefore, we need need to find a solution. 
 
-*Dymoval* defines a :ref:`signal` with 
+*Dymoval* defines a :ref:`Signal<signal>` object type with 
 a simple structure and should be able to represent any signal independently of its nature. 
 
 As a first step to use *Dymoval*, each logged signal shall be cast into a *Dymoval* :ref:`Signal <signal>`. 
-Once done, a list of such :ref:`Signals<signal>` can be used to create a *Dymoval* :ref:`object <Dataset>`.
+Once done, a list of such :ref:`Signals<signal>` can be used to create a :ref:`Dataset<Dataset>` object.
 
-However, when dealing with log-data, several problems may arise. Just to cite a few:
+However, when dealing with datasets, several problems may arise: 
 
 - not all the logged signals are sampled with the same sampling period, 
 - data loggers are run continuously and for long time and this
@@ -22,12 +22,9 @@ However, when dealing with log-data, several problems may arise. Just to cite a 
   by other problems such as noisy measurements, missing data and so on,
 - ...
 
-*Dymoval* provides few functions for dealing with both :ref:`Signals<signal>` and  :ref:`Dataset <Dataset>` object.
+just to cite a few. 
+*Dymoval* provides a number of functions for dealing with :ref:`Dataset <Dataset>` object.
 Such functions include re-sampling, plot, frequency analysis, filtering and so on. 
 
-Once you have created a :ref:`Dataset <Dataset>` object, then you are ready to simulate your model.  
+Once you have created and adjusted a :ref:`Dataset <Dataset>` object, then you are ready to simulate your model.  
 
-.. note::
-    If the signals in your log-data are sampled with the same sampling period,
-    then you can import them directly in a pandas DataFrame with a specific structure without resorting to dymoval signals.
-    See :ref:`Dataset` for more details.   

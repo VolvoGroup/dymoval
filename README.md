@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo.svg" data-canonical-src="[https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo.svg](https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalLogo.svg)" width="800" class="center" />
+<img src="https://github.com/VolvoGroup/dymoval/blob/main/docs/source/figures/DymovalLogo.svg" data-canonical-src="[https://github.com/VolvoGroup/dymoval/blob/main/docs/source/figures/DymovalLogo.svg](https://github.com/VolvoGroup/dymoval/blob/main/docs/source/figures/DymovalLogo.svg)" width="800" class="center" />
 
 
 </div>
@@ -30,7 +30,7 @@ In response, you will get a model quality evaluation in terms of r-squared fit, 
 <div align="center" >
 	<br>
 	<br>
-<img src="https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalNutshell.svg" data-canonical-src="[https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalNutshell.svg](https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalNutshell.svg)" width="600" class="center"  />
+<img src="https://github.com/VolvoGroup/dymoval/blob/main/docs/source/figures/DymovalNutshell.svg" data-canonical-src="[https://github.com/VolvoGroup/dymoval/blob/main/docs/source/figures/DymovalNutshell.svg](https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalNutshell.svg)" width="600" class="center"  />
 	<br>
 	<br>
 	<br>
@@ -40,11 +40,12 @@ In response, you will get a model quality evaluation in terms of r-squared fit, 
 This means that if you are developing your models in a CI/CD environment, then *Dymoval* can help you in deciding if merging or not the latest model changes.
 In-fact, *Dymoval* functions can also be included in development pipelines scripts, so the whole CI/CD process can be fully automatized.
 
-It does not matter if your model is a Deep Neural Network, an ODE or something more complex, nor it is important if you use Modelica or Simulink or any other tool as modeling tool. You can still use *Dymoval*. 
+It does not matter if your model is a Deep Neural Network, an ODE or something more complex, nor it is important if you use Modelica or Simulink or whatever as modeling tool. 
+You can still use *Dymoval*. 
 
 *Dymoval* finally provides you with some essential functions for dealing with dataset analysis and manipulation.  
 
-Although the tool has been thought with engineers in mind, no one prevents you to use it in any other application domain. 
+Although the tool has been thought with engineers in mind, no one prevents you to use it in other application domains. 
 
 
 
@@ -57,10 +58,10 @@ Although the tool has been thought with engineers in mind, no one prevents you t
 	- Residuals auto-correlation
 	- Input-Residuals cross-correlation 
 - Coverage region
-- Enables model unit-tests
-- Works for both SISO and MIMO models
-- Modeling tool independency
-- Easily integrates with CI/CD pipelines.
+- Enable model unit-tests
+- Work for both SISO and MIMO models
+- Modeling tool independence
+- Easily integrate with CI/CD pipelines.
 
  **Datasets analysis and manipulation**
 - Time and frequency analysis 
@@ -74,7 +75,7 @@ By running
 
     pip install dymoval
 
-everything should workd, but there are few things to keep in mind.
+everything should work, but there are few things to keep in mind.
 
 Typically `conda` handles scientific packages better than `pip`, and given that many *dymoval* dependencies are scientific packages, it is suggested to install all the dependencies through `conda` and then to install *dymoval* through `pip`.
 
@@ -87,7 +88,7 @@ where `env_name` is the environment name where you want to install *dymoval*.
 If not provided, *dymoval* will be installed in a new environment called `dymoval`.
 
 #### Why not `conda install dymoval`?
-Unfortunately, it is not possible (yet?) to easily build `conda` packages when the project is handled thorugh a `pyproject.toml` file, and therefore the *dymoval* package, which uses a `pyproject.toml` file, is only available through `pip`.
+Unfortunately, it is not possible (yet?) to easily build `conda` packages when the project is handled through a `pyproject.toml` file, and therefore the *dymoval* package, which uses a `pyproject.toml` file, is only available through `pip`.
 
 
 #### Installation From this repo

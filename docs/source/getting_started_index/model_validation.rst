@@ -1,6 +1,11 @@
 What is model validation?
 =========================
 
+
+.. note::
+   If you are already familiar with the concept of model validation you can skip this Section.
+
+
 Imagine that you are developing a super product or process. At some point, you need to test test it.
 Then, based on the test outcome, you continue your development in a certain direction. 
 Then, at some point you test again... 
@@ -17,6 +22,7 @@ A solution to alleviate such pain would be to run your tests in a *virtual envir
 of your *target environment*. 
 If the tests of your work-product in the virtual environment show good performance, 
 then you *should* get the same performance when you perform the same tests in the target environment.
+
 Well, you *should* because the previous statement is true if, and only if, your virtual environment adequately 
 represents the target environment and if it behaves similarly.
 
@@ -24,9 +30,9 @@ represents the target environment and if it behaves similarly.
 i.e. it checks the similarity between your *virtual* and *target* environments through 
 some validation metrics. 
 
-More precisely, a typical validation process consists in the following steps:
+A typical validation process consists in the following steps:
 
-#. Design a set of experiments to be carried out on the target environment.
+#. Design a set of experiments to be carried out on the target environment (aka *DoE*).
    The set of experiments consists in defining the set of stimuli (*input*) to be given to the target environment,  
 
 #. Run the experiments of point 1. on the target environment and log its response. 
@@ -39,56 +45,60 @@ More precisely, a typical validation process consists in the following steps:
 #. Evaluate how "close" are the simulation results of point 3. and the logged response of point 2. 
    with respect to some validation metrics. 
 
-ADD FIGURE.
+.. figure:: ../figures/ModelValidation.svg
+   :scale: 50 %
+
+   The model validation process.  In this picture the validation method only returns a pass/fail value but in general it returns the evaluation of some model quality metrics.  
 
 If the results of step 4. are good, then you can safely keep in developing and test in the virtual environment. 
 Most likely things will work in the target environment as well - but it is good practice to verify that every once in a while.
+
 Keep in mind that *"all models are wrong, but some are useful."* ;-).
 
 
-However, it is worth noting that your model is valid only within the region covered by the dataset. 
+However, it is worth noting that your model is valid only within the **region covered** by the dataset. 
 If you plan to use your model with data outside the dataset coverage region, then you have no guarantees that
-things will work in target environment as they work in the virtual environment.
+things will work in target environment as they worked in the virtual environment.
 
-
-
-Let's make an example showing how the steps 1-4 can be applied through a simple real-world example. 
 
    **Example**
+   Let's make an example showing how the steps 1-4 can be applied through a simple real-world example. 
 
    Assume that you are developing some cool autonomous driving algorithm that shall be deployed in a car, 
    which represent your *target environment*.
 
-   Assume that you already developed the model of a car where its **input** signals are
+   Assume that you developed the model of a car where its **input** signals are:
 
    #. *accelerator pedal position*, 
    #. *steering wheel position* and 
    #. *road profile*, 
    
-   whereas its *output* signals are 
+   whereas its **output** signals are:
 
    #. *longitudinal speed* and 
-   #. *lateral speed*,
+   #. *lateral speed*.
    
-   of the vehicle. 
    Next, you want to validate your model. 
 
-   Steps 1-4 are carried out in the following way
+   Steps 1-4 are carried out in the following way:
 
    #. Establish a driving route with sufficiently road slope variation. You decide to take a ride on that path by adopting a 
-      nasty driving style that with sudden accelerations and abrupt steering movements.  
+      nasty driving style with sudden accelerations and abrupt steering movements.  
       
-   #. Take a ride with the target vehicle and drive according to plan while logging the input signals (i.e. the *accelerator pedal position*, 
+   #. Take a ride with the target vehicle and drive according to plan. 
+      Log the input signals (i.e. the *accelerator pedal position*, 
       the *steering wheel position* and the *road profile* time-series) along with the output signals (i.e. *longitudinal* and *lateral 
-      speed* time-series) of the vehicle. Such log-data represent your *dataset*. 
+      speed* time-series) of the vehicle. Such logs represent your *dataset*. 
       Note how input and output are separated.
 
-   #. Feed your model with the input signals *logged during your ride* and log your model output 
-      corresponding to the *longitudinal* and *lateral vehicle speed* into a *simulation results* data. 
-      outputs (*longitudinal* and *lateral vehicle speed* time-series) and you evaluate the results with respect to some validation metrics.
+   #. Feed your model with the input signals that you logged during the drive and log your model output 
+      corresponding to the *longitudinal* and *lateral vehicle speed* dynamics. 
+      
+   #. Compare the *longitudinal* and *lateral vehicle speed* time-series logged during the actual drive with the *simulated results* with respect to some validation metrics.
+
 
    You haven' finished yet. 
-   In-fact, when you develop and validate a model, you should ship the coverage region of our model along with the validation results. 
+   In-fact, when you develop and validate a model, you should also consider the coverage region of the model along with the validation results. 
 
    If you logged data only in the *accelerator pedal position* range [0,40] %, the *steering angle* 
    in the range [-2,2]° and the *road profile was flat* for all the time, then you have to ship such an information
@@ -99,8 +109,8 @@ In-fact, the challenge relies in the design of good models.
 
 Nevertheless, although the design of good models is an art that cannot be completely automated, 
 we can at least validate them automatically and here is where *Dymoval* comes into play. 
-In-fact, *Dymoval* wil not help you in developing any model at all, it will just tell you 
-if your modes are good or not. 
+In-fact, *Dymoval* will not help you in developing any model at all, it will just tell you 
+if your models are good or not *after* you developed them. 
 
 .. note::
    A small caution on the nomenclature used: 

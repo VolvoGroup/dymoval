@@ -12,7 +12,8 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../../src'))
+
+sys.path.insert(0, os.path.abspath("../../src"))
 
 
 # -- Project information -----------------------------------------------------
@@ -22,7 +23,7 @@ copyright = "2022, U. Tiberi"
 author = "U. Tiberi"
 
 # The full version, including alpha/beta/rc tags
-release = "0.2.0"
+release = "0.5.0"
 
 
 # -- General configuration ---------------------------------------------------
@@ -58,7 +59,7 @@ exclude_patterns = ["*config.py"]
 # a list of builtin themes.
 #
 html_theme = "furo"
-html_logo = "DymovalLogo_Layer 2_Small.svg"
+html_logo = "./figures/DymovalLogo_Layer 2_Small.svg"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
