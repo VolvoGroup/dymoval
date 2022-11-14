@@ -31,7 +31,7 @@ In response, you will get an evaluation of your model in terms of r-squared fit,
 <div align="center" >
 	<br>
 	<br>
-<img src="https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalNutshell.svg" data-canonical-src="[https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalNutshell.svg](https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalNutshell.svg)" width="800" class="center"  />
+<img src="https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalNutshell.svg" data-canonical-src="[https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalNutshell.svg](https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalNutshell.svg)" width="600" class="center"  />
 	<br>
 	<br>
 	<br>
