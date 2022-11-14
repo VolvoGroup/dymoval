@@ -20,9 +20,9 @@
 
 ## What is it?
 
-**Dymoval**  (**Dy**namic **Mo**del **Val**idation) is a Python package that evaluates how "good" are your models.
+**Dymoval**  (**Dy**namic **Mo**del **Val**idation) is a Python package to evaluate how "good" are your models.
 
-All you need to do is to feed it with both real-world measurements and model-generated data. 
+All you need to do is to feed *Dymoval* with both real-world measurements and model-generated data. 
 
 In response, you will get a model quality evaluation in terms of r-squared fit, residuals norms and coverage region.
 
@@ -37,8 +37,8 @@ In response, you will get a model quality evaluation in terms of r-squared fit, 
 </div>
 
 
-If you are developing your models in a CI/CD environment, then *Dymoval* can help you in deciding if merging or not the latest model changes.
-*Dymoval* functions can also be included in development pipelines scripts, so the whole CI/CD process can be fully automatized.
+This means that if you are developing your models in a CI/CD environment, then *Dymoval* can help you in deciding if merging or not the latest model changes.
+In-fact, *Dymoval* functions can also be included in development pipelines scripts, so the whole CI/CD process can be fully automatized.
 
 It does not matter if your model is a Deep Neural Network, an ODE or something more complex, nor it is important if you use Modelica or Simulink or any other tool as modeling tool. You can still use *Dymoval*. 
 
@@ -53,11 +53,11 @@ Although the tool has been thought with engineers in mind, no one prevents you t
 **Model validation**
 
 - Validation metrics:
-	- R-square
+	- R-square fit
 	- Residuals auto-correlation
 	- Input-Residuals cross-correlation 
 - Coverage region
-- Models unit-tests
+- Enables model unit-tests
 - Works for both SISO and MIMO models
 - Modeling tool independency
 - Easily integrates with CI/CD pipelines.
