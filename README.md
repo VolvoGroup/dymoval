@@ -27,6 +27,17 @@
 All you need to do is to feed the tool with both real-world measurements and model-generated data. 
 In response, you will get an evaluation of your model in terms of r-squared fit, residuals norms and coverage region.
 
+
+<div align="center" >
+	<br>
+	<br>
+<img src="https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalNutshell.svg" data-canonical-src="[https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalNutshell.svg](https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalNutshell.svg)" width="800" class="center"  />
+	<br>
+	<br>
+	<br>
+</div>
+
+
 This means that if you are developing your models in a CI/CD environment, then *Dymoval* can help you in evaluating if to merge or not to merge some pull requests.
 Please note that *Dymoval* functions can be easily included in development pipelines scripts, so the whole CI/CD process can be fully automatized.
 
