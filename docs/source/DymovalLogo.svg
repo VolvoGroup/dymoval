@@ -31,12 +31,12 @@
      inkscape:showpageshadow="2"
      inkscape:deskcolor="#d1d1d1"
      inkscape:zoom="0.38540582"
-     inkscape:cx="765.42694"
-     inkscape:cy="592.88155"
+     inkscape:cx="675.91091"
+     inkscape:cy="594.17888"
      inkscape:window-width="1920"
-     inkscape:window-height="1001"
-     inkscape:window-x="-9"
-     inkscape:window-y="-9"
+     inkscape:window-height="1017"
+     inkscape:window-x="1912"
+     inkscape:window-y="-8"
      inkscape:window-maximized="1"
      inkscape:current-layer="layer2" />
   <defs
@@ -80,7 +80,7 @@
        style="color-interpolation-filters:sRGB"
        id="filter37916"
        x="-0.10742722"
-       y="-0.089375436"
+       y="-0.089375439"
        width="1.2148544"
        height="1.1787509">
       <feGaussianBlur
@@ -92,9 +92,9 @@
        style="color-interpolation-filters:sRGB"
        inkscape:label="Drop Shadow"
        id="filter39198"
-       x="-0.025002142"
-       y="-0.057242237"
-       width="1.1161695"
+       x="-0.025002143"
+       y="-0.057242236"
+       width="1.1161694"
        height="1.0776139">
       <feFlood
          flood-opacity="0.498039"
@@ -126,6 +126,29 @@
     </filter>
   </defs>
   <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="Layer 2"
+     transform="translate(-248.81056,-192.3781)"
+     style="display:inline">
+    <rect
+       style="mix-blend-mode:normal;fill:#909090;fill-opacity:0.685152;stroke:#000000;stroke-width:1.78308;stroke-dasharray:none;stroke-opacity:1;filter:url(#filter37916)"
+       id="rect18019"
+       width="476.24573"
+       height="572.4364"
+       x="981.61646"
+       y="260.422"
+       ry="69.431213"
+       transform="matrix(1.0444774,-0.0077588,0.00851233,0.99989865,-57.080453,-5.1527295)"
+       inkscape:transform-center-x="-8.1440952"
+       inkscape:transform-center-y="64.672271" />
+    <path
+       id="rect2530"
+       style="mix-blend-mode:normal;fill:url(#linearGradient6940);fill-opacity:1;stroke:#000000;stroke-width:1.53;stroke-dasharray:none;stroke-opacity:1;filter:url(#filter39198)"
+       d="m 1333.117,308.96174 -124.2802,363.03469 0.075,0.11062 h -12.0154 l -100.9476,-204.09832 -35.7391,103.6558 84.692,178.64811 v 2.15775 h 0.946 l 0.1203,0.27432 0.2256,-0.27432 h 117.325 v -0.30088 l 0.2912,-1.03793 133.0743,-393.8148 z"
+       sodipodi:nodetypes="cccccccccccccccc" />
+  </g>
+  <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
@@ -156,27 +179,5 @@
          x="1354.061"
          y="722.06104"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:266.667px;font-family:'Franklin Gothic Heavy';-inkscape-font-specification:'Franklin Gothic Heavy, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">al</tspan></text>
-  </g>
-  <g
-     inkscape:groupmode="layer"
-     id="layer2"
-     inkscape:label="Layer 2"
-     transform="translate(-248.81056,-192.3781)">
-    <rect
-       style="mix-blend-mode:normal;fill:#909090;fill-opacity:0.685152;stroke:#000000;stroke-width:1.78308;stroke-dasharray:none;stroke-opacity:1;filter:url(#filter37916)"
-       id="rect18019"
-       width="476.24573"
-       height="572.4364"
-       x="981.61646"
-       y="260.422"
-       ry="69.431213"
-       transform="matrix(1.0444774,-0.0077588,0.00851233,0.99989865,-57.080453,-5.1527295)"
-       inkscape:transform-center-x="-8.1440952"
-       inkscape:transform-center-y="64.672271" />
-    <path
-       id="rect2530"
-       style="mix-blend-mode:normal;fill:url(#linearGradient6940);fill-opacity:1;stroke:#000000;stroke-width:1.53;stroke-dasharray:none;stroke-opacity:1;filter:url(#filter39198)"
-       d="m 1333.117,308.96174 -124.2802,363.03469 0.075,0.11062 h -12.0154 l -100.9476,-204.09832 -35.7391,103.6558 84.692,178.64811 v 2.15775 h 0.946 l 0.1203,0.27432 0.2256,-0.27432 h 117.325 v -0.30088 l 0.2912,-1.03793 133.0743,-393.8148 z"
-       sodipodi:nodetypes="cccccccccccccccc" />
   </g>
 </svg>
