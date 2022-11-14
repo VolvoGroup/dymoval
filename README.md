@@ -44,7 +44,7 @@ It does not matter if your model is a Deep Neural Network, an ODE or something m
 
 *Dymoval* finally provides you with some essential functions for dealing with dataset analysis and manipulation.  
 
-Although the tool has been thought with engineers in mind, no one prevents you to use it in any other application domains. 
+Although the tool has been thought with engineers in mind, no one prevents you to use it in any other application domain. 
 
 
 
