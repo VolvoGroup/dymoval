@@ -20,12 +20,11 @@
 
 ## What is it?
 
-**Dymoval**  (**Dy**namic **Mo**del **Val**idation) is a Python package for  *validating models* and *analyzing datasets*. 
+**Dymoval**  (**Dy**namic **Mo**del **Val**idation) is a Python package that evaluates how "good" are your models.
 
-*Dymoval* evaluates the goodness of your models, indipendently of the tool you used for developing them.
+All you need to do is to feed it with both real-world measurements and model-generated data. 
 
-All you need to do is to feed the tool with both real-world measurements and model-generated data. 
-In response, you will get an evaluation of your model in terms of r-squared fit, residuals norms and coverage region.
+In response, you will get a model quality evaluation in terms of r-squared fit, residuals norms and coverage region.
 
 
 <div align="center" >
@@ -38,17 +37,30 @@ In response, you will get an evaluation of your model in terms of r-squared fit,
 </div>
 
 
-This means that if you are developing your models in a CI/CD environment, then *Dymoval* can help you in evaluating if to merge or not to merge some pull requests.
-Please note that *Dymoval* functions can be easily included in development pipelines scripts, so the whole CI/CD process can be fully automatized.
+If you are developing your models in a CI/CD environment, then *Dymoval* can help you in deciding if merging or not the latest model changes.
+*Dymoval* functions can also be included in development pipelines scripts, so the whole CI/CD process can be fully automatized.
 
+It does not matter if your model is a Deep Neural Network, an ODE or something more complex, nor it is important if you use Modelica or Simulink or any other tool as modeling tool. You can still use *Dymoval*. 
 
-*Dymoval* further provides some essential functions for dealing with dataset analysis and manipulation.  
+*Dymoval* finally provides you with some essential functions for dealing with dataset analysis and manipulation.  
 
-Although it is a tool thought for engineering tasks, no one prevents you to use it in other application domains as well. 
+Although the tool has been thought with engineers in mind, no one prevents you to use it in any other application domains. 
 
 
 
 ## Main Features
+
+**Model validation**
+
+- Validation metrics:
+	- R-square
+	- Residuals auto-correlation
+	- Input-Residuals cross-correlation 
+- Coverage region
+- Models unit-tests
+- Works for both SISO and MIMO models
+- Modeling tool independency
+- Easily integrates with CI/CD pipelines.
 
  **Datasets analysis and manipulation**
 - Time and frequency analysis 
@@ -56,19 +68,6 @@ Although it is a tool thought for engineering tasks, no one prevents you to use 
 - Linear filtering
 - Means and offsets removal
 - Re-sampling
-
-**Model validation**
-
-- Models unit-tests
-- Validation metrics:
-	- R-square
-	- Residuals auto-correlation
-	- Input-Residuals cross-correlation 
-- Coverage region
-- Works for both SISO and MIMO models
-- Modeling tool independency
-- Easily integrates with CI/CD pipelines.
-
 
 ## Installation
 By running 
