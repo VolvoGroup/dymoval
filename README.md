@@ -66,7 +66,7 @@ By running
 
 everything should workd, but there are few things to keep in mind.
 
-Given that `conda` handles scientific packages better than `pip`, and given that many *dymoval* dependencies are scientific packages, it is suggested to install all the dependencies through `conda` and then to install *dymoval* through `pip`.
+Typically `conda` handles scientific packages better than `pip`, and given that many *dymoval* dependencies are scientific packages, it is suggested to install all the dependencies through `conda` and then to install *dymoval* through `pip`.
 
 To do that, download the `environment.yml` file from [here](https://github.com/VolvoGroup/dymoval/blob/main/environment.yml) and run 
 
