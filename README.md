@@ -20,16 +20,23 @@
 
 ## What is it?
 
-**Dymoval**  (**DY**namic **MO**del **VAL**idation) is a Python package for  *validating models* and *analyzing datasets*. 
+**Dymoval**  (**Dy**namic **Mo**del **Val**idation) is a Python package for  *validating models* and *analyzing datasets*. 
 
-Dymoval validates models against some user-provided dataset regardless of the model format (*DNN, transfer function, ODE,* etc.) and the tool 
-used for developing it (*Simulink, Modelica,* etc.). 
-If your development process is done in a CI/CD environment, *Dymoval*'s functions can be easily included in a development pipeline to test your changes. 
-It can be also used to unit-test your models.
+*Dymoval* evaluates the goodness of your models, indipendently of the tool you used for developing them.
 
-*Dymoval* further provides a number of functions for dataset analysis and manipulation.  
+All you need to do is to feed the tool with both real-world measurements and model-generated data. 
+In response, you will get an evaluation of your model in terms of r-squared fit, residuals norms and coverage region.
 
-Although it is a very helpful in engineering, its usage may come handy in other application domains as well. 
+This means that if you are developing your models in a CI/CD environment, then *Dymoval* can help you in evaluating if to merge or not to merge some pull requests.
+Please note that *Dymoval* functions can be easily included in development pipelines scripts, so the whole CI/CD process can be fully automatized.
+
+<div align="center">
+<img src="https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalNutshell.svg" data-canonical-src="[https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalNutshell.svg](https://github.com/VolvoGroup/dymoval/blob/main/docs/source/DymovalNutshell.svg)" width="800" class="center" />
+</div>
+
+*Dymoval* further provides some essential functions for dealing with dataset analysis and manipulation.  
+
+Although it is a tool thought for engineering tasks, no one prevents you to use it in other application domains as well. 
 
 
 
