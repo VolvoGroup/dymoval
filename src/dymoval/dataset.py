@@ -535,12 +535,23 @@ class Dataset:
         u_names = str2list(u_names)
         y_names = str2list(y_names)
 
-        # TODO: Start here for adding units
+        # Keep only the signals specified by the user and respect the order
+        # This is helpful in case the df is automatically imported e.g.
+        # from a large csv but we only want few signals
+        #
+        # Filter columns
+        u_cols = [u for u in df.columns if u[0] in u_names]
+        y_cols = [y for y in df.columns if y[0] in y_names]
+
+        # Order columns according to passed order
+        u_cols.sort(key=lambda x: u_names.index(x[0]))
+        y_cols.sort(key=lambda x: y_names.index(x[0]))
+        df = df.reindex(columns=u_cols + y_cols)
+
+        # Now we can validae the resulting dataframe
         validate_dataframe(df, u_names, y_names)
 
-        # Add column index level with labels 'INPUT' and 'OUTPUT'
-        # thus creating an extended dataframe
-        # Take only the numerical values without columns
+        # Fix data and index
         data = df.to_numpy()
         index = df.index
 
@@ -2325,6 +2336,9 @@ def compare_datasets(
         dfs = [ds.dataset.droplevel(level="units", axis=1) for ds in datasets]
         fig_time, axes_time, p_max, _ = _arrange_fig_axes(*dfs)
 
+        # Revert axes.ndarray to flatirr
+        # axes_time = axes_time.T.flat
+
         # All the plots made on the same axis
         cmap = plt.get_cmap(COLORMAP)
         for ii, ds in enumerate(datasets):
@@ -2355,6 +2369,7 @@ def compare_datasets(
         p_max = max([len(df["INPUT"].columns) for df in dfs])
         nrows, ncols = factorize(p_max)
         fig_cov_in, ax_cov_in = plt.subplots(nrows, ncols, squeeze=False)
+        ax_cov_in = ax_cov_in.T.flat
 
         # OUTPUT
         q_max = max([len(df["OUTPUT"].columns) for df in dfs])
@@ -2394,6 +2409,7 @@ def compare_datasets(
         # Accumulate all the dataframes at signal_name level
         dfs = [ds.dataset.droplevel(level="units", axis=1) for ds in datasets]
         fig_freq, axes_freq, p_max, _ = _arrange_fig_axes(*dfs)
+        # axes_freq = axes_freq.T.flat
 
         if kind == "amplitude":
             nrows_old: int = axes_freq.shape[0]
@@ -2412,6 +2428,7 @@ def compare_datasets(
             fig_freq, axes_freq = change_axes_layout(
                 fig_freq, axes_freq, nrows, ncols
             )
+            # axes_freq = axes_freq.T.flat
 
         # All datasets plots on the same axes
         cmap = plt.get_cmap(COLORMAP)  # noqa

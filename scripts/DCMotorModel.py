@@ -38,4 +38,4 @@ DCMotor_ct = ct.ss(A, B, C, D)
 
 # Discretization
 Ts = 0.01  # s
-DCMotor_dt = ct.sample_system(DCMotor_ct, Ts, method="bilinear")
+DCMotor_dt = ct.sample_system(DCMotor_ct, Ts, method="zoh")
