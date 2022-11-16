@@ -80,6 +80,7 @@ A :ref:`Dataset <Dataset>` object can be instantiated in two ways
    Dataset.remove_means
    Dataset.remove_offset
    Dataset.remove_NaNs
+   Dataset.apply
    Dataset.low_pass_filter
    Dataset.fft
 
@@ -87,6 +88,7 @@ A :ref:`Dataset <Dataset>` object can be instantiated in two ways
 .. autosummary::
 
    Dataset.plot
+   Dataset.plotxy
    Dataset.plot_coverage
    Dataset.plot_spectrum
 

@@ -1008,6 +1008,38 @@ class Test_Dataset_plots:
         assert os.path.exists(filename + "_out.png")
 
     @pytest.mark.plots
+    def test_plotxy(
+        self,
+        good_dataframe: pd.DataFrame,
+        good_signals: list[Signal],
+        tmp_path: str,
+    ) -> None:
+        # You should just get a plot.
+        df, u_names, y_names, u_units, y_units, fixture = good_dataframe
+
+        # Actua value
+        name_ds = "my_dataset"
+        ds = dmv.dataset.Dataset(
+            name_ds,
+            df,
+            u_names,
+            y_names,
+            overlap=True,
+            tin=0.0,
+        )
+
+        # This is only valid if ds does not contain NaN:s, i.e.
+        # it is good_dataframe.
+        _ = ds.plotxy(("u1", "y1"))
+        plt.close("all")
+
+        if fixture == "MIMO":
+            _ = ds.plotxy(("u1", "y1"), ("u2", "y2"))
+
+        with pytest.raises(ValueError):
+            _ = ds.plotxy(("potato", "u1"))
+
+    @pytest.mark.plots
     def test_plot_spectrum(
         self,
         good_dataframe: pd.DataFrame,

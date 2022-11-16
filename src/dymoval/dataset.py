@@ -1071,6 +1071,54 @@ class Dataset:
         """Return the list of signal names of the dataset."""
         return list(self.dataset.columns)
 
+    def plotxy(
+        self,
+        # Only positional arguments
+        /,
+        *signal_pairs: tuple[str, str],
+        save_as: str | None = None,
+    ) -> matplotlib.axes.Axes:
+        """You must specify the complete *filename*, including the path."""
+        # df points to self.dataset.
+        df = self.dataset
+
+        # CHECK IF THE NAMES EXISTS
+        available_names = list(df.columns.get_level_values("names"))
+        a, b = zip(*signal_pairs)
+        passed_names = list(a + b)
+        names_not_found = difference_lists_of_str(
+            passed_names, available_names
+        )  # noqa
+        if names_not_found:
+            raise ValueError(f"Signal(s) {names_not_found} not found.")
+
+        # signal_name:signal_unit dict for the axes labels
+        signal_unit = dict(df.droplevel(level="kind", axis=1).columns)
+
+        # Start the plot ritual
+        n = len(signal_pairs)
+        nrows, ncols = factorize(n)  # noqa
+        fig, axes = plt.subplots(nrows, ncols, squeeze=False)
+        # Flatten array for more readable code
+        axes = axes.T.flat
+
+        for ii, val in enumerate(signal_pairs):
+            df.droplevel(level=["kind", "units"], axis=1).plot(
+                x=val[0],
+                y=val[1],
+                ax=axes[ii],
+                legend=None,
+                xlabel=f"{val[0]}, ({ signal_unit[val[0]]})",
+                ylabel=f"{val[1]}, ({ signal_unit[val[1]]})",
+                grid=True,
+            )
+
+        # Eventually save and return figures.
+        if save_as is not None and ax is None:
+            save_plot_as(fig, axes, save_as)  # noqa
+
+        return axes.base
+
     def plot(
         self,
         # Only positional arguments
