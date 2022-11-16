@@ -857,6 +857,118 @@ class Test_Dataset_nominal:
         with pytest.raises(ValueError):
             ds = ds.low_pass_filter(("y1", -0.3))
 
+    def test_apply(self, constant_ones_dataframe: pd.DataFrame) -> None:
+        df, u_names, y_names, _, _, fixture = constant_ones_dataframe
+
+        # Test values, i.e. offset to be removed from the specified signal.
+        # The first value of the tuple indicates the signal name, whereas
+        # the second value indicated the offset to be removed.
+        # OBS! constant_ones_dataframe has 3 input and 3 output.
+
+        # Arrange
+        name_ds = "my_dataset"
+        ds = dmv.dataset.Dataset(
+            name_ds, df, u_names, y_names, full_time_interval=True
+        )
+
+        def plus_one(x: float) -> float:
+            return x + 1
+
+        def plus_five(x: float) -> float:
+            return x + 5
+
+        # from fixture u_units = ["m", "m/s", "bar"]
+        # from fixture y_units = ["deg", "m/s**2", "V"]
+        test_values = {
+            "SISO": [("u1", plus_one, "a")],
+            "SIMO": [
+                ("u1", plus_one, "a"),
+                ("y1", plus_five, "a"),
+                ("y3", plus_five, "c"),
+            ],
+            "MISO": [
+                ("u2", plus_one, "b"),
+                ("u3", plus_five, "a"),
+                ("y1", plus_one, "a"),
+            ],
+            "MIMO": [
+                ("u1", plus_five, "c"),
+                ("u3", plus_one, "m/s"),
+                ("y2", plus_five, "a"),
+                ("y3", plus_five, "b"),
+            ],
+        }
+
+        # Expected dataframe.
+        N = len(df.index)
+        idx = np.linspace(0, df.index[-1], N)
+        if fixture == "SISO":
+            values = np.vstack(
+                (2.0 * np.ones(N), np.ones(N))  # Expected  # Expected
+            )
+            df_expected = pd.DataFrame(
+                index=idx, columns=[u_names, y_names], data=values.T
+            )
+            df_expected.index.name = "Time (s)"
+            expected_units = ["a", "deg"]
+        if fixture == "SIMO":
+            values = np.vstack(
+                (
+                    2.0 * np.ones(N),
+                    6.0 * np.ones(N),
+                    np.ones(N),
+                    6.0 * np.ones(N),
+                )
+            ).transpose()  # Expected
+            df_expected = pd.DataFrame(
+                index=idx, columns=[u_names, *y_names], data=values
+            )
+            df_expected.index.name = "Time (s)"
+            expected_units = ["a", "a", "m/s**2", "c"]
+        if fixture == "MISO":
+            values = np.vstack(
+                (
+                    np.ones(N),
+                    2.0 * np.ones(N),
+                    6.0 * np.ones(N),
+                    2.0 * np.ones(N),
+                )
+            ).transpose()  # Expected
+
+            df_expected = pd.DataFrame(
+                index=idx, columns=[*u_names, y_names], data=values
+            )
+            df_expected.index.name = "Time (s)"
+            expected_units = ["m", "b", "a", "a"]
+        if fixture == "MIMO":
+            values = np.vstack(
+                (
+                    6.0 * np.ones(N),  # u1
+                    np.ones(N),  # u2
+                    2.0 * np.ones(N),  # u3
+                    np.ones(N),  # y1
+                    6.0 * np.ones(N),  # y2
+                    6.0 * np.ones(N),  # y3
+                )
+            ).transpose()  # Expected
+            df_expected = pd.DataFrame(
+                index=idx, columns=[*u_names, *y_names], data=values
+            )
+            df_expected.index.name = "Time (s)"
+            expected_units = ["c", "m/s", "m/s", "deg", "a", "b"]
+
+        # Act.
+        ds_actual = ds.apply(*test_values[fixture])
+        print("actual_units", ds_actual.dataset.columns)
+        actual_units = list(ds_actual.dataset.columns.get_level_values("units"))
+
+        # Assert
+        assert np.allclose(ds_actual.dataset, df_expected, atol=ATOL)
+        assert actual_units == expected_units
+
+        # Assert that the internally stored dataset is not overwritten
+        assert np.allclose(ds.dataset, df, atol=ATOL)
+
 
 class Test_Dataset_raise:
     def test__classify_signals_raise(

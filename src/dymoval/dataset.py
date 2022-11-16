@@ -1068,7 +1068,17 @@ class Dataset:
         return signal_list
 
     def signal_list(self) -> list[tuple[str, str, str]]:
-        """Return the list of signal names of the dataset."""
+        """Plot signal y against signal x.
+
+        It is possible to pass an arbitrary number of tuples of the
+        form *(signal_name_x,signal_name_y).*
+
+
+        Raises
+        ------
+        ValueError:
+            If any passed signal does not exist in the dataset.
+        """
         return list(self.dataset.columns)
 
     def plotxy(
@@ -1082,7 +1092,7 @@ class Dataset:
         # df points to self.dataset.
         df = self.dataset
 
-        # CHECK IF THE NAMES EXISTS
+        # Check if the passed names exist
         available_names = list(df.columns.get_level_values("names"))
         a, b = zip(*signal_pairs)
         passed_names = list(a + b)
@@ -1921,6 +1931,96 @@ class Dataset:
     # def filter(self) -> Dataset:
     #     """To be implemented!"""
     #     print("Not implemented yet!")
+
+    def apply(
+        self,
+        *signal_function: tuple[str, Any, str],
+        **kwargs: Any,
+    ) -> Dataset:
+        """Apply a function to specified signals and change their unit.
+
+
+        Note
+        ----
+        If you need to heavily manipulate your signals, it is suggested
+        to dump the Dataset into Signals, manipulate them,
+        and then create a brand new Dataset.
+
+
+        Warning
+        -------
+        This function may be removed.
+
+
+        Parameters
+        ----------
+        signal_function:
+            Signals where to apply a function.
+            This argument shall have the form *(name, func, new_unit)*
+        **kwargs:
+            Additional keyword arguments to pass as keywords arguments to
+            the underlying pandas DataFrame *apply* method.
+
+
+        Raises
+        ------
+        ValueError:
+            If the passed signal name does not exist in the current Dataset.
+        """
+
+        # Safe copy
+        ds_temp = deepcopy(self)
+        level_names = ds_temp.dataset.columns.names
+
+        # Check if passed signals exist
+        available_names = list(
+            ds_temp.dataset.columns.get_level_values("names")
+        )
+        a, b, c = zip(*signal_function)
+        passed_names = list(a)
+        print(passed_names)
+        names_not_found = difference_lists_of_str(
+            passed_names, available_names
+        )  # noqa
+        if names_not_found:
+            raise ValueError(f"Signal(s) {names_not_found} not found.")
+
+        # signal:function dictionary
+        sig_func = dict(zip(a, b))
+        sig_unit = dict(zip(a, c))
+
+        # Selec the whole columns names based on passed signal names
+        cols_idx = [
+            col for col in ds_temp.dataset.columns if col[1] in passed_names
+        ]
+        sig_cols = dict(zip(a, list(cols_idx)))
+
+        # Start to apply functions
+        for s in passed_names:
+            ds_temp.dataset.loc[:, sig_cols[s]] = (
+                ds_temp.dataset.loc[:, sig_cols[s]]
+                .apply(sig_func[s])
+                .round(NUM_DECIMALS)
+            )
+
+            # Update units.
+            # You must rewrite the whole columns MultiIndex
+            new_col_name = list(sig_cols[s])
+            new_col_name[2] = sig_unit[s]
+            ds_temp.dataset.columns = ds_temp.dataset.columns.to_flat_index()
+            ds_temp.dataset = ds_temp.dataset.rename(
+                columns={sig_cols[s]: tuple(new_col_name)}
+            )
+
+            new_idx = pd.MultiIndex.from_tuples(
+                ds_temp.dataset.columns, names=level_names
+            )
+            ds_temp.dataset.columns = new_idx
+
+        # Update the coverage
+        ds_temp.coverage = self._init_dataset_coverage(ds_temp.dataset)
+
+        return ds_temp
 
     def remove_NaNs(
         self,
