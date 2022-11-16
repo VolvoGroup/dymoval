@@ -159,7 +159,7 @@ ds = ds.remove_NaNs()
 
 # At this point we can visually inspect the resulting Dataset.
 # Note how the areas where the NaN:s have been replaced are shaded.
-ds.plot()
+ax = ds.plot()
 
 # %% We can also inspect the Dataset coverage region
 

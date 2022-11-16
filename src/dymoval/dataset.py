@@ -351,7 +351,7 @@ class Dataset:
             )
 
             # tight layout
-            fig.tight_layout()
+            # fig.tight_layout()
 
             # Shade NaN areas
             # We have to pass NaN_intervals because they are not yet a self attribute
@@ -1227,14 +1227,14 @@ class Dataset:
         plt.suptitle(f"Dataset {self.name}. ")
 
         # Tight layout if no axes are passed
-        if ax is None:
-            fig.tight_layout()
+        # if ax is None:
+        #    fig.tight_layout()
 
         # Eventually save and return figures.
         if save_as is not None and ax is None:
             save_plot_as(fig, axes, save_as)  # noqa
 
-        return axes
+        return axes.base
 
     def plot_coverage(
         self,
@@ -1334,8 +1334,8 @@ class Dataset:
             plt.suptitle("Coverage region (INPUT).")
 
             # Tight figure if no ax is passed (e.g. from compare_datasets())
-            if ax_in is None:
-                fig_in.tight_layout()
+            # if ax_in is None:
+            #    fig_in.tight_layout()
 
         if y_names:
             nrows_out, ncols_out = factorize(q)  # noqa
@@ -1364,8 +1364,8 @@ class Dataset:
             plt.suptitle("Coverage region (OUTPUT).")
 
             # tight figure if no ax is passed (e.g. from compare_datasets())
-            if ax_out is None:
-                fig_out.tight_layout()
+            # if ax_out is None:
+            #    fig_out.tight_layout()
 
         if save_as is not None:
             save_plot_as(fig_in, axes_in, save_as + "_in")  # noqa
@@ -1373,12 +1373,12 @@ class Dataset:
 
         # Return
         if u_names and y_names:
-            return axes_in, axes_out
+            return axes_in.base, axes_out.base
 
         elif u_names and not y_names:
-            return axes_in, None
+            return axes_in.base, None
         else:  # The only option left is not u_names and y_names
-            return None, axes_out
+            return None, axes_out.base
 
     def fft(
         self,
@@ -1665,14 +1665,14 @@ class Dataset:
         plt.suptitle(f"{kind.capitalize()} spectrum.")
 
         # Tight figure if no ax is passed (e.g. from compare_datasets())
-        if ax is None:
-            fig.tight_layout()
+        # if ax is None:
+        #    fig.tight_layout()
 
         # Save and return
         if save_as is not None:
             save_plot_as(fig, axes, save_as)
 
-        return axes
+        return axes.base
 
     def remove_means(
         self,
@@ -2259,9 +2259,9 @@ def plot_signals(
         ax[ii].set_ylabel(f"({s['signal_unit']})")
 
     fig.suptitle("Raw signals.")
-    fig.tight_layout()
+    # fig.tight_layout()
 
-    return fig, ax
+    return fig, ax.base
 
 
 def compare_datasets(
@@ -2287,6 +2287,7 @@ def compare_datasets(
         # or other matplotlib Artist (an Artist is everything you can draw
         # on a figure)
 
+        axes = axes.T.flat
         for ii, ax in enumerate(axes):
             handles, labels = ax.get_legend_handles_labels()
             # print(handles)
@@ -2353,7 +2354,7 @@ def compare_datasets(
         ds_names = [ds.name for ds in datasets]
         _adjust_legend(ds_names, axes_time)
         fig_time.suptitle("Dataset comparison")
-        fig_time.tight_layout()
+        # fig_time.tight_layout()
 
     # ========================================
     # coverage comparison
@@ -2394,8 +2395,8 @@ def compare_datasets(
         fig_cov_in.suptitle("Dataset comparison")
         fig_cov_out.suptitle("Dataset comparison")
 
-        fig_cov_in.tight_layout()
-        fig_cov_out.tight_layout()
+        # fig_cov_in.tight_layout()
+        # fig_cov_out.tight_layout()
 
     # ========================================
     # frequency comparison
@@ -2445,7 +2446,7 @@ def compare_datasets(
         ds_names = [ds.name for ds in datasets]
         _adjust_legend(ds_names, axes_freq)
         fig_freq.suptitle("Dataset comparison")
-        fig_freq.tight_layout()
+        # fig_freq.tight_layout()
 
 
 # def analyze_inout_dataset(df):

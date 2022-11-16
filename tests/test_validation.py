@@ -384,22 +384,18 @@ class Test_Plots:
         # =============================
         # plot simulations
         # =============================
-        fig, _ = vs.plot_simulations()
-        fig.clf()
+        _ = vs.plot_simulations()
         plt.close("all")
 
-        fig, _ = vs.plot_simulations(dataset="both")
-        fig.clf()
+        _ = vs.plot_simulations(dataset="both")
         plt.close("all")
 
         # Test plot - filtered
-        fig, _ = vs.plot_simulations("Model 2", dataset="out")
-        fig.clf()
+        _ = vs.plot_simulations("Model 2", dataset="out")
         plt.close("all")
 
         # Test plot - all the options
-        fig, _ = vs.plot_simulations(["Model 1", "Model 2"], dataset="in")
-        fig.clf()
+        _ = vs.plot_simulations(["Model 1", "Model 2"], dataset="in")
         plt.close("all")
 
         # =============================
@@ -407,8 +403,7 @@ class Test_Plots:
         # =============================
         tmp_path_str = str(tmp_path)
         filename = tmp_path_str + "/potato"
-        fig, _ = vs.plot_simulations(save_as=filename)
-        # fig.clf()
+        _ = vs.plot_simulations(save_as=filename)
         plt.close("all")
         assert os.path.exists(filename + ".png")
         # =============================
@@ -416,13 +411,13 @@ class Test_Plots:
         # =============================
         # Test plot - filtered wrong
         with pytest.raises(KeyError):
-            fig, _ = vs.plot_simulations("potato")
+            _ = vs.plot_simulations("potato")
         # Test plot - filtered wrong
         vs = vs.clear()
         with pytest.raises(KeyError):
-            fig, _ = vs.plot_simulations()
+            _ = vs.plot_simulations()
         with pytest.raises(KeyError):
-            fig, _ = vs.plot_simulations("potato")
+            _ = vs.plot_simulations("potato")
 
         # =============================
         # plot residuals
@@ -430,34 +425,23 @@ class Test_Plots:
         vs = vs.append_simulation(sim1_name, sim1_labels, sim1_values)
         vs = vs.append_simulation(sim2_name, sim2_labels, sim2_values)
 
-        fig1, _, fig2, _ = vs.plot_residuals()
-        fig1.clf()
-        fig2.clf()
+        _, _ = vs.plot_residuals()
         plt.close("all")
 
-        fig1, _, fig2, _ = vs.plot_residuals("Model 1")
-        fig1.clf()
-        fig2.clf()
+        _, _ = vs.plot_residuals("Model 1")
         plt.close("all")
 
-        fig1, _, fig2, _ = vs.plot_residuals(["Model 1", "Model 2"])
-        fig1.clf()
-        fig2.clf()
+        _, _ = vs.plot_residuals(["Model 1", "Model 2"])
         plt.close("all")
 
-        fig1, _, fig2, _ = vs.plot_residuals(["Model 1", "Model 2"])
-        fig1.clf()
-        fig2.clf()
+        _, _ = vs.plot_residuals(["Model 1", "Model 2"])
         plt.close("all")
         # =============================
         # save residuals
         # =============================
         tmp_path_str = str(tmp_path)
         filename = tmp_path_str + "/potato"
-        fig1, _, fig2, _ = vs.plot_residuals(save_as=filename)
-        # fig1, _, fig2, _ = vs.plot_residuals()
-        fig1.clf()
-        fig2.clf()
+        _, _ = vs.plot_residuals(save_as=filename)
         plt.close("all")
         # TODO: remove comments
         assert os.path.exists(filename + "_eps_eps.png")
@@ -467,12 +451,12 @@ class Test_Plots:
         # plot residuals raises
         # =============================
         with pytest.raises(KeyError):
-            fig, _, fig2, _ = vs.plot_residuals("potato")
+            _, _ = vs.plot_residuals("potato")
 
         # Empty simulation list
         vs = vs.clear()
         with pytest.raises(KeyError):
-            fig, _, fig2, _ = vs.plot_residuals()
+            _, _ = vs.plot_residuals()
 
 
 class Test_xcorr:

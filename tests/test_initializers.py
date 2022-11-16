@@ -215,6 +215,51 @@ class TestInitializerFromDataframe:
         # assert sampling period
         assert np.isclose(ds.sampling_period, sampling_period, atol=ATOL)
 
+    def test_large_dataframe(self, good_dataframe: pd.DataFrame) -> None:
+        # Nominal data
+        (
+            df_expected,
+            expected_input_names,
+            expected_output_names,
+            expected_input_units,
+            expected_output_units,
+            fixture,
+        ) = good_dataframe
+
+        print("df_expected cols = ", df_expected.columns)
+
+        # We only test MIMO case as it seems the most relevant
+        if fixture == "MIMO":
+            # Arrange
+            u_names_test = ["u3", "u1"]
+            y_names_test = "y2"
+
+            cols = [
+                ("u3", "m/s"),
+                ("u1", "kPa"),
+                ("y2", "m/s**2"),
+            ]
+            expected_vals = df_expected.loc[:, cols].to_numpy()
+
+            expected_cols = [
+                ("INPUT", "u3", "m/s"),
+                ("INPUT", "u1", "kPa"),
+                ("OUTPUT", "y2", "m/s**2"),
+            ]
+
+            # Act
+            ds = dmv.dataset.Dataset(
+                "potato",
+                df_expected,
+                u_names_test,
+                y_names_test,
+                full_time_interval=True,
+            )
+
+            # Assert if df has been filtered and ordered according to user needs
+            assert list(ds.dataset.columns) == expected_cols
+            assert np.allclose(expected_vals, ds.dataset.to_numpy(), atol=ATOL)
+
     @pytest.mark.parametrize(
         # Each test is ((tin,tout),(tin_expected,tout_expected))
         "test_input, expected",

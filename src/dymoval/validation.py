@@ -386,7 +386,7 @@ class ValidationSession:
         *,
         dataset: Literal["in", "out", "both"] | None = None,
         save_as: str | None = None,
-    ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
+    ) -> matplotlib.axes.Axes:
         """Plot the stored simulation results.
 
         Possible values of the parameters describing the plot aesthetics,
@@ -574,7 +574,7 @@ class ValidationSession:
             for jj in range(q):
                 axes[jj].grid(None, axis="y")
 
-        fig.tight_layout()
+        # fig.tight_layout()
 
         # ===============================================================
         # Save and eventually return figures.
@@ -582,19 +582,14 @@ class ValidationSession:
         if save_as is not None:
             save_plot_as(fig, axes, save_as)  # noqa
 
-        return fig, axes
+        return axes
 
     def plot_residuals(
         self,
         list_sims: str | list[str] | None = None,
         *,
         save_as: str | None = None,
-    ) -> tuple[
-        matplotlib.figure.Figure,
-        matplotlib.axes.Axes,
-        matplotlib.figure.Figure,
-        matplotlib.axes.Axes,
-    ]:
+    ) -> tuple[matplotlib.axes.Axes, matplotlib.axes.Axes]:
         """Plot the residuals.
 
         Parameters
@@ -664,7 +659,7 @@ class ValidationSession:
                     ax1[ii, jj].set_title(rf"r_eps{ii}eps_{jj}")
                     ax1[ii, jj].legend()
         fig1.suptitle("Residuals auto-correlation")
-        fig1.tight_layout()
+        # fig1.tight_layout()
 
         # ===============================================================
         # Plot input-residuals cross-correlation
@@ -686,7 +681,7 @@ class ValidationSession:
                     ax2[ii, jj].set_title(rf"r_u{ii}eps{jj}")
                     ax2[ii, jj].legend()
         fig2.suptitle("Input-residuals cross-correlation")
-        fig2.tight_layout()
+        # fig2.tight_layout()
 
         if save_as is not None:
             ax1 = ax1.flat
@@ -697,7 +692,7 @@ class ValidationSession:
             # fig2.set_size_inches(q * width, p * height)
             save_plot_as(fig2, ax2, save_as + "_u_eps")  # noqa
 
-        return fig1, ax1, fig2, ax2
+        return ax1, ax2
 
     def simulation_signals_list(self, sim_name: str | list[str]) -> list[str]:
         """
