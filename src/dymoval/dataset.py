@@ -1294,6 +1294,165 @@ class Dataset:
 
         return axes.base
 
+    def plot_pairs(
+        self,
+        # Only positional arguments
+        /,
+        *signal_pairs: tuple[str, str],
+        # Key-word arguments
+        line_color_fg: str = "b",
+        linestyle_fg: str = "-",
+        alpha_fg: float = 1.0,
+        line_color_bg: str = "g",
+        linestyle_bg: str = "-",
+        alpha_bg: float = 1.0,
+        ax: matplotlib.axes.Axes | None = None,
+        p_max: int = 0,
+        save_as: str | None = None,
+    ) -> matplotlib.axes.Axes:
+        """Plot the Dataset.
+
+        Possible values for the parameters describing the line used in the plot
+        (e.g. *line_color_input* , *alpha_output*. etc).
+        are the same for the corresponding plot function in matplotlib.
+
+        Parameters
+        ----------
+        *signals:
+            Signals to be plotted.
+        overlap:
+            If true *True* overlaps the input and the output signals plots
+            pairwise.
+            The units of the outputs are displayed on the secondary y-axis.
+        line_color_input:
+            Line color for the input signals.
+        linestyle_input:
+            Line style for the input signals.
+        alpha_input:
+            Alpha channel value for the input signals.
+        line_color_output:
+            Line color for the output signals.
+        linestyle_output:
+            Line style for the output signals.
+        alpha_output:
+            Alpha channel value for the output signals.
+        ax:
+            Matplotlib Axes where to place the plot.
+        p_max:
+            Maximum number of inputs. It is a parameters used internally so
+            it can be left alone.
+        save_as:
+            Save the figure with a specified name.
+            The figure is automatically resized to try to keep a 16:9 aspect ratio.
+            You must specify the complete *filename*, including the path.
+        """
+        # df points to self.dataset.
+        df = self.dataset
+
+        # Separate signals
+        signals_fg, signals_bg = list(zip(*signal_pairs))
+
+        # Arguments validation
+        (
+            u_names_fg,
+            y_names_fg,
+            u_units_fg,
+            y_units_fg,
+            u_names_idx_fg,
+            y_names_idx_fg,
+        ) = self._classify_signals(*signals_fg)
+
+        # Arguments validation
+        (
+            u_names_bg,
+            y_names_bg,
+            u_units_bg,
+            y_units_bg,
+            u_names_idx_bg,
+            y_names_idx_bg,
+        ) = self._classify_signals(*signals_bg)
+
+        # Adjust the figure
+        n = len(signal_pairs)
+        nrows, ncols = factorize(n)  # noqa
+        fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
+        # Flatten array for more readable code
+        axes = axes.T.flat
+
+        # You need this if in case you want to plot one single signal
+        if u_names_fg or y_names_fg:
+            df.droplevel(level=["kind", "units"], axis=1).loc[
+                :, signals_fg
+            ].plot(
+                subplots=True,
+                grid=True,
+                color=line_color_fg,
+                linestyle=linestyle_fg,
+                alpha=alpha_fg,
+                # title=u_titles,
+                ax=axes,
+            )
+
+            #    self._shade_nans(
+            #        self._nan_intervals,
+            #        axes,
+            #        u_names_fg + y_names_fg,
+            #        color=line_color_fg,
+            #    )
+
+        if u_names_bg or y_names_bg:
+            df.droplevel(level=["kind", "units"], axis=1).loc[
+                :, signals_bg
+            ].plot(
+                subplots=True,
+                grid=True,
+                color=line_color_bg,
+                linestyle=linestyle_bg,
+                alpha=alpha_fg,
+                secondary_y=True,
+                # title=y_titles,
+                # legend=y_names,
+                ax=axes,
+            )
+
+            #    self._shade_nans(
+            #        self._nan_intervals,
+            #        axes,
+            #        u_names_bg + y_names_bg,
+            #        color=line_color_bg,
+            #    )
+
+        # Set ylabels
+        # input
+        #      for ii, unit in enumerate(u_units):
+        #          axes[ii].set_ylabel(f"({unit})")
+
+        #      # Output
+        #      if not sorted(u_units) == sorted(y_units):
+        #          for jj, unit in enumerate(y_units):
+        #              if overlap:
+        #                  axes[jj].right_ax.set_ylabel(f"({unit})")
+        #                  axes[jj].right_ax.grid(None, axis="y")
+        #              else:
+        #                  axes[p + jj].set_ylabel(f"({unit})")
+
+        #      # Set xlabels
+        #      xlabel = f"{df.index.name[0]} ({df.index.name[1]})"  # Time (s)
+        #      # Set xlabels only on the last row
+        #      for ii in range(ncols):
+        #          axes[nrows - 1 :: nrows][ii].set_xlabel(xlabel)
+        #      plt.suptitle(f"Dataset {self.name}. ")
+
+        #      # Tight layout if no axes are passed
+        #      # if ax is None:
+        #      #    fig.tight_layout()
+
+        #      # Eventually save and return figures.
+        #      if save_as is not None and ax is None:
+        #          save_plot_as(fig, axes, save_as)  # noqa
+
+        return axes.base
+
     def plot_coverage(
         self,
         *signals: str,
