@@ -1306,32 +1306,22 @@ class Dataset:
         p_max: int = 0,
         save_as: str | None = None,
     ) -> matplotlib.axes.Axes:
-        """Plot the Dataset.
+        """Plot overlapped signals in pairs.
 
-        Possible values for the parameters describing the line used in the plot
-        (e.g. *line_color_input* , *alpha_output*. etc).
-        are the same for the corresponding plot function in matplotlib.
+
+        Warning
+        -------
+        Areas with *NaNs* values will not be shaded!
+
 
         Parameters
         ----------
-        *signals:
-            Signals to be plotted.
-        overlap:
-            If true *True* overlaps the input and the output signals plots
-            pairwise.
-            The units of the outputs are displayed on the secondary y-axis.
+        *signal_pairs:
+            Signal *S1* is plotted on signal *S2* in the tuple *(S1,S2)*
         line_color_input:
             Line color for the input signals.
-        linestyle_input:
-            Line style for the input signals.
-        alpha_input:
-            Alpha channel value for the input signals.
         line_color_output:
             Line color for the output signals.
-        linestyle_output:
-            Line style for the output signals.
-        alpha_output:
-            Alpha channel value for the output signals.
         ax:
             Matplotlib Axes where to place the plot.
         p_max:
@@ -1342,6 +1332,7 @@ class Dataset:
             The figure is automatically resized to try to keep a 16:9 aspect ratio.
             You must specify the complete *filename*, including the path.
         """
+        # TODO: shade_nans. You may need to rewrite the actual shade_nans function.
         # df points to self.dataset.
         df = self.dataset
 
@@ -1426,7 +1417,7 @@ class Dataset:
             #        color=line_color_bg,
             #    )
 
-        # Set linestyle_bg
+        # Set linestyle_bg: if both fg and bg has the same color dash the fg
         linestyle_bg = [
             "solid" if val[0] != val[1] else "dashed"
             for val in zip(line_color_fg, line_color_bg)
@@ -1464,15 +1455,15 @@ class Dataset:
         # Set xlabels only on the last row
         for ii in range(ncols):
             axes[nrows - 1 :: nrows][ii].set_xlabel(xlabel)
-        #      plt.suptitle(f"Dataset {self.name}. ")
+        plt.suptitle(f"Dataset {self.name}. ")
 
         #      # Tight layout if no axes are passed
         #      # if ax is None:
         #      #    fig.tight_layout()
 
-        #      # Eventually save and return figures.
-        #      if save_as is not None and ax is None:
-        #          save_plot_as(fig, axes, save_as)  # noqa
+        # Eventually save and return figures.
+        if save_as is not None and ax is None:
+            save_plot_as(fig, axes, save_as)  # noqa
 
         return axes.base
 
