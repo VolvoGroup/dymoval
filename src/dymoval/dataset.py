@@ -1300,12 +1300,8 @@ class Dataset:
         /,
         *signal_pairs: tuple[str, str],
         # Key-word arguments
-        line_color_fg: str = "b",
-        linestyle_fg: str = "-",
-        alpha_fg: float = 1.0,
-        line_color_bg: str = "g",
-        linestyle_bg: str = "-",
-        alpha_bg: float = 1.0,
+        line_color_input: str = "b",
+        line_color_output: str = "g",
         ax: matplotlib.axes.Axes | None = None,
         p_max: int = 0,
         save_as: str | None = None,
@@ -1372,12 +1368,26 @@ class Dataset:
             y_names_idx_bg,
         ) = self._classify_signals(*signals_bg)
 
+        # Line styles and colors handlings
+        # Foreground
+        line_color_fg = [
+            line_color_input if s in u_names_fg else line_color_output
+            for s in signals_fg
+        ]
+        line_color_bg = [
+            line_color_input if s in u_names_bg else line_color_output
+            for s in signals_bg
+        ]
+
         # Adjust the figure
         n = len(signal_pairs)
         nrows, ncols = factorize(n)  # noqa
         fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
+        print(type(axes))
         # Flatten array for more readable code
+        # axes = axes.T.flat[:n]
         axes = axes.T.flat
+        # print(len(axes))
 
         # You need this if in case you want to plot one single signal
         if u_names_fg or y_names_fg:
@@ -1387,10 +1397,7 @@ class Dataset:
                 subplots=True,
                 grid=True,
                 color=line_color_fg,
-                linestyle=linestyle_fg,
-                alpha=alpha_fg,
-                # title=u_titles,
-                ax=axes,
+                ax=axes[:n],
             )
 
             #    self._shade_nans(
@@ -1400,6 +1407,7 @@ class Dataset:
             #        color=line_color_fg,
             #    )
 
+        # In case foreground and background have the same color, the background is dashed
         if u_names_bg or y_names_bg:
             df.droplevel(level=["kind", "units"], axis=1).loc[
                 :, signals_bg
@@ -1407,12 +1415,8 @@ class Dataset:
                 subplots=True,
                 grid=True,
                 color=line_color_bg,
-                linestyle=linestyle_bg,
-                alpha=alpha_fg,
                 secondary_y=True,
-                # title=y_titles,
-                # legend=y_names,
-                ax=axes,
+                ax=axes[:n],
             )
 
             #    self._shade_nans(
@@ -1421,6 +1425,25 @@ class Dataset:
             #        u_names_bg + y_names_bg,
             #        color=line_color_bg,
             #    )
+
+        # Set linestyle_bg
+        linestyle_bg = [
+            "solid" if val[0] != val[1] else "dashed"
+            for val in zip(line_color_fg, line_color_bg)
+        ]
+        for ii, ax in enumerate(axes[:n]):
+            lines = ax.get_lines()
+            # lines_bg = lines[1]
+            lines[0].set_linestyle(linestyle_bg[ii])
+
+        # Set units
+        units_fg = u_units_fg + y_units_fg
+        for ii, unit in enumerate(units_fg):
+            axes[ii].set_ylabel(f"({unit})")
+
+        units_bg = u_units_bg + y_units_bg
+        for ii, unit in enumerate(units_bg):
+            axes[ii].right_ax.set_ylabel(f"({unit})")
 
         # Set ylabels
         # input
@@ -1437,10 +1460,10 @@ class Dataset:
         #                  axes[p + jj].set_ylabel(f"({unit})")
 
         #      # Set xlabels
-        #      xlabel = f"{df.index.name[0]} ({df.index.name[1]})"  # Time (s)
-        #      # Set xlabels only on the last row
-        #      for ii in range(ncols):
-        #          axes[nrows - 1 :: nrows][ii].set_xlabel(xlabel)
+        xlabel = f"{df.index.name[0]} ({df.index.name[1]})"  # Time (s)
+        # Set xlabels only on the last row
+        for ii in range(ncols):
+            axes[nrows - 1 :: nrows][ii].set_xlabel(xlabel)
         #      plt.suptitle(f"Dataset {self.name}. ")
 
         #      # Tight layout if no axes are passed
