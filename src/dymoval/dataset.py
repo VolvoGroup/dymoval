@@ -1133,7 +1133,7 @@ class Dataset:
         self,
         # Only positional arguments
         /,
-        *signals: str,
+        *signals: str | tuple[str, str],
         # Key-word arguments
         overlap: bool = False,
         line_color_input: str = "b",
