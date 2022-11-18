@@ -11,6 +11,7 @@ import matplotlib
 import numpy as np
 import pandas as pd
 import matplotlib.gridspec as gridspec
+import itertools
 from matplotlib import pyplot as plt
 from scipy import io, fft
 from .config import *  # noqa
@@ -698,9 +699,7 @@ class Dataset:
     def _classify_signals(
         self,
         *signals: str,
-    ) -> tuple[
-        list[str], list[str], list[str], list[str], list[int], list[int]
-    ]:
+    ) -> tuple[dict[str, str], dict[str, str], list[int], list[int]]:
         # You pass a list of signal names and the function recognizes who is input
         # and who is output
         # Is no argument is passed, then it takes the whole for u_names and y_names
@@ -710,11 +709,12 @@ class Dataset:
 
         # Separate in from out.
         # By default take everything
+        # MAYBE REMOVED!
         u_names = list(df["INPUT"].columns.get_level_values("names"))
         y_names = list(df["OUTPUT"].columns.get_level_values("names"))
 
-        u_units = list(df["INPUT"].columns.get_level_values("units"))
-        y_units = list(df["OUTPUT"].columns.get_level_values("units"))
+        # u_units = list(df["INPUT"].columns.get_level_values("units"))
+        # y_units = list(df["OUTPUT"].columns.get_level_values("units"))
 
         # Small check. Not very pythonic but still...
         signals_not_found = difference_lists_of_str(
@@ -726,7 +726,7 @@ class Dataset:
                 "Use 'signal_list()' to get the list of all available signals. "
             )
 
-        # ...then select if signals are passed.
+        # If the signals are passed, then classify in IN and OUT.
         if signals:
             u_names = [
                 s
@@ -757,7 +757,9 @@ class Dataset:
             df["OUTPUT"].iloc[:, y_names_idx].columns.get_level_values("units")
         )
 
-        return u_names, y_names, u_units, y_units, u_names_idx, y_names_idx
+        u_dict = dict(zip(u_names, u_units))
+        y_dict = dict(zip(y_names, y_units))
+        return u_dict, y_dict, u_names_idx, y_names_idx
 
     def _validate_name_value_tuples(
         self,
@@ -779,6 +781,12 @@ class Dataset:
         u_names, y_names, u_units, y_units, _, _ = self._classify_signals(
             *signals
         )
+
+        u_names = list(u_dict.keys())
+        u_units = list(u_dict.values())
+
+        y_names = list(y_dict.keys())
+        y_units = list(y_dict.values())
 
         u_list = [(s[0], s[1]) for s in signals_values if s[0] in u_names]
         y_list = [(s[0], s[1]) for s in signals_values if s[0] in y_names]
@@ -1133,7 +1141,7 @@ class Dataset:
         self,
         # Only positional arguments
         /,
-        *signals: str | tuple[str, str],
+        *signals: str | tuple[str, str] | None,
         # Key-word arguments
         overlap: bool = False,
         line_color_input: str = "b",
@@ -1182,117 +1190,164 @@ class Dataset:
             The figure is automatically resized to try to keep a 16:9 aspect ratio.
             You must specify the complete *filename*, including the path.
         """
+
+        def list_to_structured_list_of_tuple(
+            tpl: tuple[Any], lst: list[str]
+        ) -> list[tuple[Any]]:
+            # Convert a plain list to a list of tuple of a given structure, i.e.
+            # Given tpl = [("a0","a1"),("b0",),("b1","a1","b0"),("a0","a1"),("b0",)]
+            # and lst = ["u0", "u1", "u2", "u3", "u4", "u5", "u6", "u7" , "u8"]
+            # it returns [("u0", "u1"), ("u2",), ("u3", "u4", "u5"), ("u6", "u7") , ("u8",)]
+            it = iter(lst)
+            return [tuple(itertools.islice(it, len(t))) for t in tpl]
+
+        # ====================================
+        #   Actual function starts here
+        # ====================================
         # df points to self.dataset.
         df = self.dataset
 
+        # Convert passed tuple to list
+        if not signals:
+            u_names = list(df["INPUT"].columns.get_level_values("names"))
+            y_names = list(df["OUTPUT"].columns.get_level_values("names"))
+            if overlap:
+                # TO DO: Fill with none otherwise this becomes cut!
+                signals = list(zip(u_names, y_names))
+            else:
+                signals = u_names + y_names
+        else:
+            signals = [s for s in signals]
+
+        # Make all tuples like [('u0', 'u1'), ('y0',), ('u1', 'y1', 'u0')]
+        for ii, s in enumerate(signals):
+            if isinstance(s, str):
+                signals[ii] = (s,)
+
+        # Tuples gone, i.e. signals_lst_plain = ['u0', 'u1', 'y0', 'u1', 'y1', 'u0']
+        signals_lst_plain = [item for t in signals for item in t]
+
         # Arguments validation
         (
-            u_names,
-            y_names,
-            u_units,
-            y_units,
+            u_dict,
+            y_dict,
             u_names_idx,
             y_names_idx,
-        ) = self._classify_signals(*signals)
+        ) = self._classify_signals(*signals_lst_plain)
 
-        # Input-output length and indices
-        p = len(u_names)
-        q = len(y_names)
+        # Parameters to pass to the plot method
+        # All the lists are plain (i.e. no list of tuples)
+        colors = [
+            line_color_input if s in u_names else line_color_output
+            for s in signals_lst_plain
+        ]
+        units = [
+            u_units[ii] if s in u_names else y_units[ii]
+            for ii, s in enumerate(signals_lst_plain)
+        ]
 
-        # get some plot parameters based on user preferences
-        n, range_in, range_out, u_titles, y_titles = self._get_plot_params(
-            p, q, u_names_idx, y_names_idx, overlap
-        )
+        colors_tpl = list_to_structured_list_of_tuple(signals, colors)
+        units_tpl = list_to_structured_list_of_tuple(signals, units)
+        print(colors_tpl)
+        print(units_tpl)
+        # # Input-output length and indices
+        # p = len(u_names)
+        # q = len(y_names)
 
-        # Find nrwos and ncols for having a nice plot
-        # having p-rows and q-columns won't make a nice plot,
-        # think to the SISO case for example
-        nrows, ncols = factorize(n)  # noqa
+        # # get some plot parameters based on user preferences
+        # n, range_in, range_out, u_titles, y_titles = self._get_plot_params(
+        #     p, q, u_names_idx, y_names_idx, overlap
+        # )
 
-        if overlap:
-            secondary_y = True
-        else:
-            secondary_y = False
+        # # Find nrwos and ncols for having a nice plot
+        # # having p-rows and q-columns won't make a nice plot,
+        # # think to the SISO case for example
+        # nrows, ncols = factorize(n)  # noqa
 
-        # Overwrite axes if you want the plot to be on the figure instantiated by the caller.
-        if ax is None:  # Create new figure and axes
-            fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        else:  # Otherwise use what is passed
-            axes = np.asarray(ax)
-            range_out = np.arange(p_max, p_max + q)
+        # if overlap:
+        #     secondary_y = True
+        # else:
+        #     secondary_y = False
 
-        # Flatten array for more readable code
-        axes = axes.T.flat
+        # # Overwrite axes if you want the plot to be on the figure instantiated by the caller.
+        # if ax is None:  # Create new figure and axes
+        #     fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
+        # else:  # Otherwise use what is passed
+        #     axes = np.asarray(ax)
+        #     range_out = np.arange(p_max, p_max + q)
 
-        # You need this if in case you want to plot one single signal
-        if u_names:
-            df["INPUT"].droplevel(level="units", axis=1).loc[:, u_names].plot(
-                subplots=True,
-                grid=True,
-                color=line_color_input,
-                linestyle=linestyle_input,
-                alpha=alpha_input,
-                title=u_titles,
-                ax=axes[range_in],
-            )
+        # # Flatten array for more readable code
+        # axes = axes.T.flat
 
-            self._shade_nans(
-                self._nan_intervals,
-                axes[range_in],
-                u_names,
-                color=line_color_input,
-            )
+        # # You need this if in case you want to plot one single signal
+        # if u_names:
+        #     df["INPUT"].droplevel(level="units", axis=1).loc[:, u_names].plot(
+        #         subplots=True,
+        #         grid=True,
+        #         color=line_color_input,
+        #         linestyle=linestyle_input,
+        #         alpha=alpha_input,
+        #         title=u_titles,
+        #         ax=axes[range_in],
+        #     )
 
-        if y_names:
-            df["OUTPUT"].droplevel(level="units", axis=1).loc[:, y_names].plot(
-                subplots=True,
-                grid=True,
-                color=line_color_output,
-                linestyle=linestyle_output,
-                alpha=alpha_output,
-                secondary_y=secondary_y,
-                title=y_titles,
-                legend=y_names,
-                ax=axes[range_out],
-            )
+        #     self._shade_nans(
+        #         self._nan_intervals,
+        #         axes[range_in],
+        #         u_names,
+        #         color=line_color_input,
+        #     )
 
-            self._shade_nans(
-                self._nan_intervals,
-                axes[range_out],
-                y_names,
-                color=line_color_output,
-            )
+        # if y_names:
+        #     df["OUTPUT"].droplevel(level="units", axis=1).loc[:, y_names].plot(
+        #         subplots=True,
+        #         grid=True,
+        #         color=line_color_output,
+        #         linestyle=linestyle_output,
+        #         alpha=alpha_output,
+        #         secondary_y=secondary_y,
+        #         title=y_titles,
+        #         legend=y_names,
+        #         ax=axes[range_out],
+        #     )
 
-        # Set ylabels
-        # input
-        for ii, unit in enumerate(u_units):
-            axes[ii].set_ylabel(f"({unit})")
+        #     self._shade_nans(
+        #         self._nan_intervals,
+        #         axes[range_out],
+        #         y_names,
+        #         color=line_color_output,
+        #     )
 
-        # Output
-        if not sorted(u_units) == sorted(y_units):
-            for jj, unit in enumerate(y_units):
-                if overlap:
-                    axes[jj].right_ax.set_ylabel(f"({unit})")
-                    axes[jj].right_ax.grid(None, axis="y")
-                else:
-                    axes[p + jj].set_ylabel(f"({unit})")
+        # # Set ylabels
+        # # input
+        # for ii, unit in enumerate(u_units):
+        #     axes[ii].set_ylabel(f"({unit})")
 
-        # Set xlabels
-        xlabel = f"{df.index.name[0]} ({df.index.name[1]})"  # Time (s)
-        # Set xlabels only on the last row
-        for ii in range(ncols):
-            axes[nrows - 1 :: nrows][ii].set_xlabel(xlabel)
-        plt.suptitle(f"Dataset {self.name}. ")
+        # # Output
+        # if not sorted(u_units) == sorted(y_units):
+        #     for jj, unit in enumerate(y_units):
+        #         if overlap:
+        #             axes[jj].right_ax.set_ylabel(f"({unit})")
+        #             axes[jj].right_ax.grid(None, axis="y")
+        #         else:
+        #             axes[p + jj].set_ylabel(f"({unit})")
 
-        # Tight layout if no axes are passed
-        # if ax is None:
-        #    fig.tight_layout()
+        # # Set xlabels
+        # xlabel = f"{df.index.name[0]} ({df.index.name[1]})"  # Time (s)
+        # # Set xlabels only on the last row
+        # for ii in range(ncols):
+        #     axes[nrows - 1 :: nrows][ii].set_xlabel(xlabel)
+        # plt.suptitle(f"Dataset {self.name}. ")
 
-        # Eventually save and return figures.
-        if save_as is not None and ax is None:
-            save_plot_as(fig, axes, save_as)  # noqa
+        # # Tight layout if no axes are passed
+        # # if ax is None:
+        # #    fig.tight_layout()
 
-        return axes.base
+        # # Eventually save and return figures.
+        # if save_as is not None and ax is None:
+        #     save_plot_as(fig, axes, save_as)  # noqa
+
+        # return axes.base
 
     def plot_pairs(
         self,
