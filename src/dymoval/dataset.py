@@ -136,7 +136,8 @@ class Dataset:
 
         # Initialization by Signals
         if all(isinstance(x, dict) for x in signal_list):
-            attr_sign = self._new_dataset_from_signals(
+            self._new_dataset_from_signals(
+                name,
                 signal_list,
                 u_names,
                 y_names,
@@ -147,17 +148,12 @@ class Dataset:
                 overlap,
                 verbosity,
             )
-            (
-                df,
-                Ts,
-                nan_intervals,
-                excluded_signals,
-                dataset_coverage,
-            ) = attr_sign
 
         # Initialization by pandas DataFrame
+        # All the class attributes are initialized inside this function
         elif isinstance(signal_list, pd.DataFrame):
-            attr_df = self._new_dataset_from_dataframe(
+            self._new_dataset_from_dataframe(
+                name,
                 signal_list,
                 u_names,
                 y_names,
@@ -167,32 +163,10 @@ class Dataset:
                 overlap,
                 verbosity,
             )
-            df, Ts, nan_intervals, excluded_signals, dataset_coverage = attr_df
         else:
             raise TypeError(
                 "Input must be a Signal list or a pandas DataFrame type.",
             )
-
-        # ================================================
-        # Class attributes
-        # ================================================
-        # NOTE: You have to use the #: to add a doc description
-        # in class attributes (see sphinx.ext.autodoc)
-
-        self.name: str = name  #: Dataset name.
-        self.dataset: pd.DataFrame = deepcopy(df)  #: Actual dataset.
-        self.coverage: pd.DataFrame = deepcopy(
-            dataset_coverage
-        )  # Docstring below,
-        """Coverage statistics. Mean (vector) and covariance (matrix) of
-        both input and output signals."""
-        self.information_level: float = 0.0  #: *Not implemented yet!*
-        self._nan_intervals: Any = deepcopy(nan_intervals)
-        self.excluded_signals: list[str] = excluded_signals
-        """Signals that could not be re-sampled."""
-        self.sampling_period = np.round(
-            Ts, NUM_DECIMALS
-        )  #: Dataset sampling period.
 
     def __str__(self) -> str:
         return f"Dymoval dataset called '{self.name}'."
@@ -202,13 +176,13 @@ class Dataset:
     # ==============================================
     def _shade_nans(
         self,
-        NaN_intervals: dict[str, list[np.ndarray]],
         axes: matplotlib.axes.Axes,
-        signal_names: list[str],
+        signal_names: list[str | tuple[str, str]],  # Tupla
         secondary_y: bool = False,
         color: str = "k",
     ) -> None:
 
+        NaN_intervals = self._nan_intervals
         for ii, ax in enumerate(axes):
             signal_name = signal_names[ii]
             for idx, val in enumerate(NaN_intervals[signal_name]):
@@ -239,10 +213,7 @@ class Dataset:
         # are NaN.
         # It requires a dataset with extended columns (MultiIndex))
         df = df_ext.droplevel(level=["kind", "units"], axis=1)
-
-        # We cannot use self.sampling_period because this function is also used
-        # for instantiating objects of class Dataset.
-        sampling_period = df.index[1] - df.index[0]
+        sampling_period = self.sampling_period
 
         NaN_index = {}
         NaN_intervals = {}
@@ -257,13 +228,12 @@ class Dataset:
     def _init_dataset_time_interval(
         self,
         df_ext: pd.DataFrame,
-        NaN_intervals: dict[str, list[np.ndarray]],
         tin: float | None = None,
         tout: float | None = None,
         overlap: bool = False,
         full_time_interval: bool = False,
         verbosity: int = 0,
-    ) -> tuple[pd.DataFrame, dict[str, list[np.ndarray]]]:
+    ) -> pd.DataFrame:
         # We have to trim the signals to have a meaningful dataset
         # This can be done both graphically or by passing tin and tout
         # if the user knows them before hand.
@@ -271,7 +241,6 @@ class Dataset:
 
         def _graph_selection(
             df_ext: pd.DataFrame,
-            NaN_intervals: dict[str, list[np.ndarray]],
             overlap: bool,
         ) -> tuple[float, float]:  # pragma: no cover
             # Select the time interval graphically
@@ -357,14 +326,12 @@ class Dataset:
             # Shade NaN areas
             # We have to pass NaN_intervals because they are not yet a self attribute
             self._shade_nans(
-                NaN_intervals,
                 axes[0:p],
                 list(df_ext["INPUT"].droplevel(level="units", axis=1).columns),
                 color="b",
             )
 
             self._shade_nans(
-                NaN_intervals,
                 axes[range_out],
                 list(df_ext["OUTPUT"].droplevel(level="units", axis=1).columns),
                 color="g",
@@ -411,7 +378,6 @@ class Dataset:
 
         def _trim_dataset(
             df_ext: pd.DataFrame,
-            NaN_intervals: dict[str, list[np.ndarray]],
             tin: float | None = None,
             tout: float | None = None,
         ) -> tuple[pd.DataFrame, dict[str, list[np.ndarray]]]:
@@ -421,6 +387,8 @@ class Dataset:
             df_ext = df_ext.loc[tin:tout, :]  # type:ignore
             # Trim NaN_intevals
             # TODO: code repetition
+            # Create a reference to self._nan_intervals
+            NaN_intervals = self._nan_intervals
             for signal_name in NaN_intervals.keys():
                 # In the following, nan_chunks are time-interval.
                 # Note! For a given signal, you may have many nan_chunks.
@@ -433,12 +401,11 @@ class Dataset:
                         nan_chunk <= tout
                     ]
 
-            return df_ext, NaN_intervals
+            return df_ext
 
         def _shift_dataset_tin_to_zero(
             df_ext: pd.DataFrame,
-            NaN_intervals: dict[str, list[np.ndarray]],
-        ) -> tuple[pd.DataFrame, dict[str, list[np.ndarray]]]:
+        ) -> pd.DataFrame:
             # ===================================================================
             # Shift tin to zero.
             # ===================================================================
@@ -450,6 +417,8 @@ class Dataset:
             )
 
             # Shift also the NaN_intervals to tin = 0.0.
+            # Create a reference to self._nan_intervals
+            NaN_intervals = self._nan_intervals
             for k in NaN_intervals.keys():
                 for idx, nan_chunk in enumerate(NaN_intervals[k]):
                     nan_chunk_translated = nan_chunk - tin
@@ -463,7 +432,7 @@ class Dataset:
             # Adjust the DataFrame accordingly
             df_ext = df_ext.round(decimals=NUM_DECIMALS)  # noqa
 
-            return df_ext, NaN_intervals
+            return df_ext
 
         # =============================================
         # Time interval selection.
@@ -479,29 +448,27 @@ class Dataset:
             tin_sel = np.round(df_ext.index[0], NUM_DECIMALS)
             tout_sel = np.round(df_ext.index[-1], NUM_DECIMALS)
         else:  # pragma: no cover
-            tin_sel, tout_sel = _graph_selection(df_ext, NaN_intervals, overlap)
+            tin_sel, tout_sel = _graph_selection(df_ext, overlap)
 
         if verbosity != 0:
             print("\ntin = ", tin_sel, "tout =", tout_sel)
 
         # Once (tin,tout) have been identified, trim the dataset
-        df_ext, NaN_intervals = _trim_dataset(
+        df_ext = _trim_dataset(
             df_ext,
-            NaN_intervals,
             tin_sel,
             tout_sel,
         )
 
         # ... and shift it such that tin = 0.0
-        df_ext, NaN_intervals = _shift_dataset_tin_to_zero(
-            df_ext, NaN_intervals
-        )
+        df_ext = _shift_dataset_tin_to_zero(df_ext)
 
-        return df_ext, NaN_intervals
+        return df_ext
 
     def _new_dataset_from_dataframe(
         self,
         df: pd.DataFrame,
+        name: str,
         u_names: str | list[str],
         y_names: str | list[str],
         tin: float | None = None,
@@ -509,18 +476,36 @@ class Dataset:
         full_time_interval: bool = False,
         overlap: bool = False,
         verbosity: int = 0,
-    ) -> tuple[
-        pd.DataFrame,
-        float,
-        dict[str, list[np.ndarray]],
-        list[str],
-        tuple[pd.Series, pd.DataFrame, pd.Series, pd.DataFrame],
-    ]:
+        _excluded_signals: list[str] = [],
+    ) -> None:
 
         # ==============================================================
-        # This is the Dataset initializer when the signals are arranged
-        # in a pandas DataFrame
+        # All the class attributes are defined and initialized here
+        #
+        # self.name
+        # self.dataset
+        # self.coverage
+        # self.information_level
+        # self._nan_intervals
+        # self.excluded_signals
+        # self.sampling_period
+        #
         # ==============================================================
+        # NOTE: You have to use the #: to add a doc description
+        # in class attributes (see sphinx.ext.autodoc)
+
+        # Set the name first
+        self.name: str = name  #: Dataset name.
+        self.information_level: float = 0.0  #: *Not implemented yet!*
+        self.sampling_period: float = np.round(
+            df.index[1] - df.index[0], NUM_DECIMALS
+        )  #: Dataset sampling period.
+
+        # Excluded signals are either passed by _new_dataset_from_signals
+        # or is empty if a dataframe is passed by the user (all the signals
+        # in this case shall be sampled with the same sampling period).
+        self.excluded_signals: list[str] = _excluded_signals
+        """Signals that could not be re-sampled."""
 
         # Arguments validation
         if tin is None and tout is not None:
@@ -572,13 +557,12 @@ class Dataset:
             u_multicolumns + y_multicolumns, name=levels_name
         )
 
-        # Initialize NaN intervals
-        NaN_intervals = self._find_nan_intervals(df_ext)
+        # Initialize NaN intervals, full time interval
+        self._nan_intervals: Any = self._find_nan_intervals(df_ext)
 
-        # Initialize dataset time interval
-        df_ext, NaN_intervals = self._init_dataset_time_interval(
+        # Initialize dataset time interval, trim all the attributes
+        df_ext = self._init_dataset_time_interval(
             df_ext,
-            NaN_intervals,
             tin,
             tout,
             overlap,
@@ -587,22 +571,20 @@ class Dataset:
         )
 
         # Initialize coverage region
-        dataset_coverage = self._init_dataset_coverage(df_ext)
-
-        # The DataFrame has been built with signals sampled with the same period,
-        # therefore there are no excluded signals due to re-sampling
-        excluded_signals: list[str] = []
+        self.coverage: pd.DataFrame = self._init_dataset_coverage(
+            df_ext
+        )  # Docstring below,
+        """Coverage statistics. Mean (vector) and covariance (matrix) of
+        both input and output signals."""
 
         # Initialize sampling_period
-        # In case user passes a DataFrame we need to compute the sampling period
-        # as it is not explicitly passed.
-        Ts = df_ext.index[1] - df_ext.index[0]
-        df_ext = df_ext.round(NUM_DECIMALS)
-
-        return df_ext, Ts, NaN_intervals, excluded_signals, dataset_coverage
+        self.dataset: pd.DataFrame = df_ext.round(
+            NUM_DECIMALS
+        )  #: Actual dataset.
 
     def _new_dataset_from_signals(
         self,
+        name: str,
         signal_list: list[Signal],
         u_names: str | list[str],
         y_names: str | list[str],
@@ -612,13 +594,10 @@ class Dataset:
         full_time_interval: bool = False,
         overlap: bool = False,
         verbosity: int = 0,
-    ) -> tuple[
-        pd.DataFrame,
-        float,
-        dict[str, list[np.ndarray]],
-        list[str],
-        tuple[pd.Series, pd.DataFrame, pd.Series, pd.DataFrame],
-    ]:
+    ) -> None:
+
+        # Do not initialize any class attribute here!
+        # All attributes are initialized in the _new_dataset_from_dataframe method
 
         # If the user pass a string, we need to convert into list
         u_names = str2list(u_names)
@@ -677,14 +656,9 @@ class Dataset:
         validate_dataframe(df, u_names=u_names, y_names=y_names)
 
         # Call the initializer from DataFrame to get a Dataset object.
-        (
+        self._new_dataset_from_dataframe(
             df,
-            _,
-            nan_intervals,
-            _,
-            dataset_coverage,
-        ) = self._new_dataset_from_dataframe(
-            df,
+            name,
             u_names,
             y_names,
             tin,
@@ -692,9 +666,8 @@ class Dataset:
             full_time_interval,
             overlap,
             verbosity,
+            excluded_signals=excluded_signals,
         )
-
-        return df, Ts, nan_intervals, excluded_signals, dataset_coverage
 
     def _classify_signals(
         self,
@@ -1144,41 +1117,59 @@ class Dataset:
         *signals: str | tuple[str, str] | None,
         # Key-word arguments
         overlap: bool = False,
-        line_color_input: str = "b",
-        linestyle_input: str = "-",
-        alpha_input: float = 1.0,
-        line_color_output: str = "g",
-        linestyle_output: str = "-",
-        alpha_output: float = 1.0,
+        line_color_input: str = "blue",
+        linestyle_fg: str = "-",
+        alpha_fg: float = 1.0,
+        line_color_output: str = "green",
+        linestyle_bg: str = "--",
+        alpha_bg: float = 1.0,
         ax: matplotlib.axes.Axes | None = None,
         p_max: int = 0,
         save_as: str | None = None,
     ) -> matplotlib.axes.Axes:
         """Plot the Dataset.
 
+        For each signal pair passed as a *tuple*, the signals will be placed in
+        the same subplot.
+        Signals passed as a string will be plotted in a separate subplot.
+
+        For example, if *ds* is a :py:class:`Dataset <dymoval.dataset.Dataset>`
+        with signals *s1, s2, ... sn*, then
+        *ds.plot(("s1","s2"), "s3", "s4")* will plot *s1* and *s2* on the same subplot
+        and it will plot *s3* and "s4" on separate subplots, thus displaying the
+        total of 3 subplots.
+
+        It is possible to overlap at most two signals (this to avoid adding too many
+        y-axes).
+
         Possible values for the parameters describing the line used in the plot
         (e.g. *line_color_input* , *alpha_output*. etc).
         are the same for the corresponding plot function in matplotlib.
+
+        TODO TIGHT FIGURE HANDLING
 
         Parameters
         ----------
         *signals:
             Signals to be plotted.
         overlap:
-            If true *True* overlaps the input and the output signals plots
+            If *True* overlap input the output signals plots
             pairwise.
+            Eventual passed *signals will be discarded.
             The units of the outputs are displayed on the secondary y-axis.
         line_color_input:
-            Line color for the input signals.
-        linestyle_input:
-            Line style for the input signals.
-        alpha_input:
-            Alpha channel value for the input signals.
+            Line color of the input signals.
+        linestyle_fg:
+            Line style of the signals passed as strings or line style of the first
+            element if two signals are passed as a tuple.
+        alpha_fg:
+            Alpha channel value of the signals passed as strings or line style
+            of the first element if two signals are passed as a tuple.
         line_color_output:
-            Line color for the output signals.
-        linestyle_output:
-            Line style for the output signals.
-        alpha_output:
+            Line color of the output signals.
+        linestyle_bg:
+            Line style of the second output signals.
+        alpha_bg:
             Alpha channel value for the output signals.
         ax:
             Matplotlib Axes where to place the plot.
@@ -1198,22 +1189,32 @@ class Dataset:
             # Given tpl = [("a0","a1"),("b0",),("b1","a1","b0"),("a0","a1"),("b0",)]
             # and lst = ["u0", "u1", "u2", "u3", "u4", "u5", "u6", "u7" , "u8"]
             # it returns [("u0", "u1"), ("u2",), ("u3", "u4", "u5"), ("u6", "u7") , ("u8",)]
-            it = iter(lst)
-            return [tuple(itertools.islice(it, len(t))) for t in tpl]
+            R = []
+            idx = 0
+            for ii in [len(jj) for jj in tpl]:
+                R.append(tuple(lst[idx : idx + ii]))
+                idx += ii
+            return R
+            # it = iter(lst)
+            # return [tuple(itertools.islice(it, len(t))) for t in tpl]
 
         # ====================================
-        #   Actual function starts here
+        #   Actual plot function starts here
         # ====================================
         # df points to self.dataset.
         df = self.dataset
 
         # Convert passed tuple to list
         if not signals:
+            # If nothing has passed, use the whole
             u_names = list(df["INPUT"].columns.get_level_values("names"))
             y_names = list(df["OUTPUT"].columns.get_level_values("names"))
             if overlap:
-                # TO DO: Fill with none otherwise this becomes cut!
-                signals = list(zip(u_names, y_names))
+                # OBS! zip cuts the longest list
+                p = len(u_names) - len(y_names)
+                leftovers = u_names[p + 1 :] if p > 0 else y_names[p + 1 :]
+                print(u_names, y_names, leftovers)
+                signals = list(zip(u_names, y_names)) + leftovers
             else:
                 signals = u_names + y_names
         else:
@@ -1224,7 +1225,7 @@ class Dataset:
             if isinstance(s, str):
                 signals[ii] = (s,)
 
-        # Tuples gone, i.e. signals_lst_plain = ['u0', 'u1', 'y0', 'u1', 'y1', 'u0']
+        # signals_lst_plain, e.g. ['u0', 'u1', 'y0', 'u1', 'y1', 'u0']
         signals_lst_plain = [item for t in signals for item in t]
 
         # Arguments validation
@@ -1235,287 +1236,97 @@ class Dataset:
             y_names_idx,
         ) = self._classify_signals(*signals_lst_plain)
 
-        # Parameters to pass to the plot method
+        # ===================================================
+        # Fix the parameters to pass to the plot method
+        # ===================================================
+
         # All the lists are plain (i.e. no list of tuples)
+        # colors
         colors = [
-            line_color_input if s in u_names else line_color_output
+            line_color_input if s in u_dict.keys() else line_color_output
             for s in signals_lst_plain
         ]
-        units = [
-            u_units[ii] if s in u_names else y_units[ii]
-            for ii, s in enumerate(signals_lst_plain)
-        ]
-
         colors_tpl = list_to_structured_list_of_tuple(signals, colors)
+
+        # units
+        s_dict = deepcopy(u_dict)
+        s_dict.update(y_dict)
+        units = [s_dict[s] for s in signals_lst_plain]
         units_tpl = list_to_structured_list_of_tuple(signals, units)
-        print(colors_tpl)
-        print(units_tpl)
-        # # Input-output length and indices
-        # p = len(u_names)
-        # q = len(y_names)
 
-        # # get some plot parameters based on user preferences
-        # n, range_in, range_out, u_titles, y_titles = self._get_plot_params(
-        #     p, q, u_names_idx, y_names_idx, overlap
-        # )
+        # Linestyles
+        linestyles_tpl = []
+        for val in colors_tpl:
+            if len(val) == 2:
+                if val[0] == val[1]:
+                    linestyles_tpl.append((linestyle_fg, linestyle_bg))
+                else:
+                    linestyles_tpl.append((linestyle_fg, linestyle_fg))
+            else:
+                linestyles_tpl.append((linestyle_fg,))
 
-        # # Find nrwos and ncols for having a nice plot
-        # # having p-rows and q-columns won't make a nice plot,
-        # # think to the SISO case for example
-        # nrows, ncols = factorize(n)  # noqa
-
-        # if overlap:
-        #     secondary_y = True
-        # else:
-        #     secondary_y = False
-
-        # # Overwrite axes if you want the plot to be on the figure instantiated by the caller.
-        # if ax is None:  # Create new figure and axes
-        #     fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        # else:  # Otherwise use what is passed
-        #     axes = np.asarray(ax)
-        #     range_out = np.arange(p_max, p_max + q)
-
-        # # Flatten array for more readable code
-        # axes = axes.T.flat
-
-        # # You need this if in case you want to plot one single signal
-        # if u_names:
-        #     df["INPUT"].droplevel(level="units", axis=1).loc[:, u_names].plot(
-        #         subplots=True,
-        #         grid=True,
-        #         color=line_color_input,
-        #         linestyle=linestyle_input,
-        #         alpha=alpha_input,
-        #         title=u_titles,
-        #         ax=axes[range_in],
-        #     )
-
-        #     self._shade_nans(
-        #         self._nan_intervals,
-        #         axes[range_in],
-        #         u_names,
-        #         color=line_color_input,
-        #     )
-
-        # if y_names:
-        #     df["OUTPUT"].droplevel(level="units", axis=1).loc[:, y_names].plot(
-        #         subplots=True,
-        #         grid=True,
-        #         color=line_color_output,
-        #         linestyle=linestyle_output,
-        #         alpha=alpha_output,
-        #         secondary_y=secondary_y,
-        #         title=y_titles,
-        #         legend=y_names,
-        #         ax=axes[range_out],
-        #     )
-
-        #     self._shade_nans(
-        #         self._nan_intervals,
-        #         axes[range_out],
-        #         y_names,
-        #         color=line_color_output,
-        #     )
-
-        # # Set ylabels
-        # # input
-        # for ii, unit in enumerate(u_units):
-        #     axes[ii].set_ylabel(f"({unit})")
-
-        # # Output
-        # if not sorted(u_units) == sorted(y_units):
-        #     for jj, unit in enumerate(y_units):
-        #         if overlap:
-        #             axes[jj].right_ax.set_ylabel(f"({unit})")
-        #             axes[jj].right_ax.grid(None, axis="y")
-        #         else:
-        #             axes[p + jj].set_ylabel(f"({unit})")
-
-        # # Set xlabels
-        # xlabel = f"{df.index.name[0]} ({df.index.name[1]})"  # Time (s)
-        # # Set xlabels only on the last row
-        # for ii in range(ncols):
-        #     axes[nrows - 1 :: nrows][ii].set_xlabel(xlabel)
-        # plt.suptitle(f"Dataset {self.name}. ")
-
-        # # Tight layout if no axes are passed
-        # # if ax is None:
-        # #    fig.tight_layout()
-
-        # # Eventually save and return figures.
-        # if save_as is not None and ax is None:
-        #     save_plot_as(fig, axes, save_as)  # noqa
-
-        # return axes.base
-
-    def plot_pairs(
-        self,
-        # Only positional arguments
-        /,
-        *signal_pairs: tuple[str, str],
-        # Key-word arguments
-        line_color_input: str = "b",
-        line_color_output: str = "g",
-        ax: matplotlib.axes.Axes | None = None,
-        p_max: int = 0,
-        save_as: str | None = None,
-    ) -> matplotlib.axes.Axes:
-        """Plot overlapped signals in pairs.
-
-
-        Warning
-        -------
-        Areas with *NaNs* values will not be shaded!
-
-
-        Parameters
-        ----------
-        *signal_pairs:
-            Signal *S1* is plotted on signal *S2* in the tuple *(S1,S2)*
-        line_color_input:
-            Line color for the input signals.
-        line_color_output:
-            Line color for the output signals.
-        ax:
-            Matplotlib Axes where to place the plot.
-        p_max:
-            Maximum number of inputs. It is a parameters used internally so
-            it can be left alone.
-        save_as:
-            Save the figure with a specified name.
-            The figure is automatically resized to try to keep a 16:9 aspect ratio.
-            You must specify the complete *filename*, including the path.
-        """
-        # TODO: shade_nans. You may need to rewrite the actual shade_nans function.
-        # df points to self.dataset.
-        df = self.dataset
-
-        # Separate signals
-        signals_fg, signals_bg = list(zip(*signal_pairs))
-
-        # Arguments validation
-        (
-            u_names_fg,
-            y_names_fg,
-            u_units_fg,
-            y_units_fg,
-            u_names_idx_fg,
-            y_names_idx_fg,
-        ) = self._classify_signals(*signals_fg)
-
-        # Arguments validation
-        (
-            u_names_bg,
-            y_names_bg,
-            u_units_bg,
-            y_units_bg,
-            u_names_idx_bg,
-            y_names_idx_bg,
-        ) = self._classify_signals(*signals_bg)
-
-        # Line styles and colors handlings
-        # Foreground
-        line_color_fg = [
-            line_color_input if s in u_names_fg else line_color_output
-            for s in signals_fg
-        ]
-        line_color_bg = [
-            line_color_input if s in u_names_bg else line_color_output
-            for s in signals_bg
-        ]
-
-        # Adjust the figure
-        n = len(signal_pairs)
+        # Figure and axes
+        n = len(signals)
         nrows, ncols = factorize(n)  # noqa
-        fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        print(type(axes))
-        # Flatten array for more readable code
-        # axes = axes.T.flat[:n]
+        if ax is None:  # Create new figure and axes
+            fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
+        else:  # Otherwise use what is passed
+            axes = np.asarray(ax)
         axes = axes.T.flat
-        # print(len(axes))
 
-        # You need this if in case you want to plot one single signal
-        if u_names_fg or y_names_fg:
-            df.droplevel(level=["kind", "units"], axis=1).loc[
-                :, signals_fg
-            ].plot(
-                subplots=True,
-                grid=True,
-                color=line_color_fg,
-                ax=axes[:n],
-            )
-
-            #    self._shade_nans(
-            #        self._nan_intervals,
-            #        axes,
-            #        u_names_fg + y_names_fg,
-            #        color=line_color_fg,
-            #    )
-
-        # In case foreground and background have the same color, the background is dashed
-        if u_names_bg or y_names_bg:
-            df.droplevel(level=["kind", "units"], axis=1).loc[
-                :, signals_bg
-            ].plot(
-                subplots=True,
-                grid=True,
-                color=line_color_bg,
-                secondary_y=True,
-                ax=axes[:n],
-            )
-
-            #    self._shade_nans(
-            #        self._nan_intervals,
-            #        axes,
-            #        u_names_bg + y_names_bg,
-            #        color=line_color_bg,
-            #    )
-
-        # Set linestyle_bg: if both fg and bg has the same color dash the fg
-        linestyle_bg = [
-            "solid" if val[0] != val[1] else "dashed"
-            for val in zip(line_color_fg, line_color_bg)
-        ]
-        for ii, ax in enumerate(axes[:n]):
-            lines = ax.get_lines()
-            # lines_bg = lines[1]
-            lines[0].set_linestyle(linestyle_bg[ii])
-
-        # Set units
-        units_fg = u_units_fg + y_units_fg
-        for ii, unit in enumerate(units_fg):
-            axes[ii].set_ylabel(f"({unit})")
-
-        units_bg = u_units_bg + y_units_bg
-        for ii, unit in enumerate(units_bg):
-            axes[ii].right_ax.set_ylabel(f"({unit})")
-
-        # Set ylabels
-        # input
-        #      for ii, unit in enumerate(u_units):
-        #          axes[ii].set_ylabel(f"({unit})")
-
-        #      # Output
-        #      if not sorted(u_units) == sorted(y_units):
-        #          for jj, unit in enumerate(y_units):
-        #              if overlap:
-        #                  axes[jj].right_ax.set_ylabel(f"({unit})")
-        #                  axes[jj].right_ax.grid(None, axis="y")
-        #              else:
-        #                  axes[p + jj].set_ylabel(f"({unit})")
-
-        #      # Set xlabels
+        # Set xlabels
         xlabel = f"{df.index.name[0]} ({df.index.name[1]})"  # Time (s)
         # Set xlabels only on the last row
         for ii in range(ncols):
             axes[nrows - 1 :: nrows][ii].set_xlabel(xlabel)
-        plt.suptitle(f"Dataset {self.name}. ")
 
-        #      # Tight layout if no axes are passed
-        #      # if ax is None:
-        #      #    fig.tight_layout()
+        # Title
+        plt.suptitle(
+            f"Dataset {self.name}. \n {line_color_input} lines are inputs and {line_color_output} lines are outputs."
+        )
 
+        for ii, s in enumerate(signals):
+            print(s[0])
+            df.droplevel(level=["kind", "units"], axis=1).loc[:, s[0]].plot(
+                subplots=True,
+                grid=True,
+                legend=True,
+                color=colors_tpl[ii][0],
+                linestyle=linestyles_tpl[ii][0],
+                alpha=alpha_fg,
+                ylabel=units_tpl[ii][0],
+                ax=axes[ii],
+            )
+
+            # In case the user wants to overlap plot
+            # If the overlapped plots have the same units, no point to use a
+            # secondary_y
+            if len(s) == 2:
+                if units_tpl[ii][0] == units_tpl[ii][1]:
+                    ylabel = None
+                    secondary_y = False
+                else:
+                    ylabel = units_tpl[ii][1]
+                    secondary_y = True
+
+                # Now you can plot
+                df.droplevel(level=["kind", "units"], axis=1).loc[:, s[1]].plot(
+                    subplots=True,
+                    grid=True,
+                    legend=True,
+                    color=colors_tpl[ii][1],
+                    linestyle=linestyles_tpl[ii][1],
+                    alpha=alpha_bg,
+                    secondary_y=secondary_y,
+                    ylabel=ylabel,
+                    ax=axes[ii],
+                )
+
+        self._shade_nans(
+            axes,
+            list(df["INPUT"].droplevel(level="units", axis=1).columns),
+            color="b",
+        )
         # Eventually save and return figures.
         if save_as is not None and ax is None:
             save_plot_as(fig, axes, save_as)  # noqa
@@ -2828,3 +2639,4 @@ def compare_datasets(
 # def analyze_inout_dataset(df):
 # -	Remove trends. Cannot do.
 # -	(Resample). One line of code with pandas
+#
