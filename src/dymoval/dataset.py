@@ -347,10 +347,12 @@ class Dataset:
         ds = deepcopy(self)
         # Check if info on (tin,tout) is passed
         if tin is None and tout is not None:
-            tin = df.index[0]
+            tin_sel = ds.dataset.index[0]
+            tout_sel = tout
         # If only tin is passed, then set tout to the last time sample.
         elif tin is not None and tout is None:
-            tout = df.index[-1]
+            tin_sel = tin
+            tout_sel = ds.dataset.index[-1]
         elif tin is not None and tout is not None:
             tin_sel = np.round(tin, NUM_DECIMALS)
             tout_sel = np.round(tout, NUM_DECIMALS)
@@ -491,6 +493,8 @@ class Dataset:
             p = len(u_names) - len(y_names)
             leftovers = u_names[p + 1 :] if p > 0 else y_names[p + 1 :]
             signals = list(zip(u_names, y_names)) + leftovers
+        else:
+            signals = []
 
         # Trim dataset and all the attributes
         tmp = self.trim(
