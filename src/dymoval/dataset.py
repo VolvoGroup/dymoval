@@ -261,79 +261,104 @@ class Dataset:
             # This is pretty much identical to the method plot() but we have
             # to use it because the class attributes are not set yet.
 
-            # Number of inputs and outputs
-            p = len(df_ext["INPUT"].columns)
-            q = len(df_ext["OUTPUT"].columns)
+            u_names = list(df_ext["INPUT"].columns.get_level_values("names"))
+            y_names = list(df_ext["OUTPUT"].columns.get_level_values("names"))
 
             u_units = list(df_ext["INPUT"].columns.get_level_values("units"))
             y_units = list(df_ext["OUTPUT"].columns.get_level_values("units"))
 
-            if overlap:
-                n = max(p, q)
-                range_out = np.arange(0, q)
-                secondary_y = True
-            else:
-                n = p + q
-                range_out = np.arange(p, p + q)
-                secondary_y = False
-            nrows, ncols = factorize(n)  # noqa
+            u_dict = dict(zip(u_names, u_units))
+            y_dict = dict(zip(y_names, y_units))
 
-            # Actual plot
+            if overlap:
+                # OBS! zip cuts the longest list
+                p = len(u_names) - len(y_names)
+                leftovers = u_names[p + 1 :] if p > 0 else y_names[p + 1 :]
+                signals = list(zip(u_names, y_names)) + leftovers
+            # Convert passed tuple to list
+            else:
+                signals = u_names + y_names
+
+            # Make all tuples like [('u0', 'u1'), ('y0',), ('u1', 'y1', 'u0')]
+            for ii, s in enumerate(signals):
+                if isinstance(s, str):
+                    signals[ii] = (s,)
+
+            # signals_lst_plain, e.g. ['u0', 'u1', 'y0', 'u1', 'y1', 'u0']
+            signals_lst_plain = [item for t in signals for item in t]
+
+            # ===================================================
+            # Fix the parameters to pass to the plot method
+            # ===================================================
+            # units
+            s_dict = deepcopy(u_dict)
+            s_dict.update(y_dict)
+            units = [s_dict[s] for s in signals_lst_plain]
+            units_tpl = _list_to_structured_list_of_tuple(signals, units)
+
+            colors = [
+                "b" if s in u_dict.keys() else "g" for s in signals_lst_plain
+            ]
+            colors_tpl = _list_to_structured_list_of_tuple(signals, colors)
+
+            # Figure and axes
+            n = len(signals)
+            nrows, ncols = factorize(n)  # noqa
             fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
             axes = axes.T.flat
-            df_ext["INPUT"].droplevel(level="units", axis=1).plot(
-                subplots=True,
-                grid=True,
-                color="b",
-                ylabel=u_units,
-                ax=axes[0:p],
-            )
-            df_ext["OUTPUT"].droplevel(level="units", axis=1).plot(
-                subplots=True,
-                grid=True,
-                ylabel=y_units,
-                color="g",
-                secondary_y=secondary_y,
-                ax=axes[range_out],
-            )
 
-            # Set ylabels
-            for ii, unit in enumerate(u_units):
-                axes[ii].set_ylabel("(" + unit + ")")
+            # for ax in axes[n:]:
+            #     ax.remove()
 
-            if not sorted(u_units) == sorted(y_units):
-                for jj, unit in enumerate(y_units):
-                    if overlap:
-                        axes[jj].right_ax.set_ylabel("(" + unit + ")")
-                        axes[jj].right_ax.grid(None, axis="y")
-                    else:
-                        axes[p + jj].set_ylabel("(" + unit + ")")
-
-            # Set xlabel
-            xlabel = (
-                f"{df_ext.index.name[0]} ({df_ext.index.name[1]})"  # Time (s)
-            )
-            for ii in range(ncols):
-                axes[nrows - 1 :: nrows][ii].set_xlabel(xlabel)
             fig.suptitle(
                 "Sampling time "
-                f"= {np.round(df_ext.index[1]-df_ext.index[0],NUM_DECIMALS)}.\n"
+                f"= {np.round(df_ext.index[1]-df_ext.index[0],NUM_DECIMALS)} {df_ext.index.name[1]}.\n"
                 "Select the dataset time interval by resizing "
                 "the picture."
             )
 
+            for ii, s in enumerate(signals):
+                df_ext.droplevel(level=["kind", "units"], axis=1).loc[
+                    :, s[0]
+                ].plot(
+                    subplots=True,
+                    grid=True,
+                    legend=True,
+                    color=colors_tpl[ii][0],
+                    ylabel=units_tpl[ii][0],
+                    ax=axes[ii],
+                )
+
+                # In case the user wants to overlap plots...
+                # If the overlapped plots have the same units, then there is
+                # no point in using a secondary_y
+                if len(s) == 2:
+                    if units_tpl[ii][0] == units_tpl[ii][1]:
+                        ylabel = None
+                        secondary_y = False
+                    else:
+                        ylabel = units_tpl[ii][1]
+                        secondary_y = True
+
+                    # Now you can plot
+                    df_ext.droplevel(level=["kind", "units"], axis=1).loc[
+                        :, s[1]
+                    ].plot(
+                        subplots=True,
+                        grid=True,
+                        legend=True,
+                        color=colors_tpl[ii][1],
+                        secondary_y=secondary_y,
+                        ylabel=ylabel,
+                        ax=axes[ii],
+                    )
+
+            self._shade_nans(
+                axes,
+            )
+
             # tight layout
             # fig.tight_layout()
-
-            # Shade NaN areas
-            # We have to pass NaN_intervals because they are not yet a self attribute
-            self._shade_nans(
-                axes[0:p],
-            )
-
-            self._shade_nans(
-                axes[range_out],
-            )
 
             # Figure closure handler
             # It can be better done perhaps.
@@ -1180,22 +1205,6 @@ class Dataset:
             You must specify the complete *filename*, including the path.
         """
 
-        def list_to_structured_list_of_tuple(
-            tpl: tuple[Any], lst: list[str]
-        ) -> list[tuple[Any]]:
-            # Convert a plain list to a list of tuple of a given structure, i.e.
-            # Given tpl = [("a0","a1"),("b0",),("b1","a1","b0"),("a0","a1"),("b0",)]
-            # and lst = ["u0", "u1", "u2", "u3", "u4", "u5", "u6", "u7" , "u8"]
-            # it returns [("u0", "u1"), ("u2",), ("u3", "u4", "u5"), ("u6", "u7") , ("u8",)]
-            R = []
-            idx = 0
-            for ii in [len(jj) for jj in tpl]:
-                R.append(tuple(lst[idx : idx + ii]))
-                idx += ii
-            return R
-            # it = iter(lst)
-            # return [tuple(itertools.islice(it, len(t))) for t in tpl]
-
         # ====================================
         #   Actual plot function starts here
         # ====================================
@@ -1243,13 +1252,13 @@ class Dataset:
             line_color_input if s in u_dict.keys() else line_color_output
             for s in signals_lst_plain
         ]
-        colors_tpl = list_to_structured_list_of_tuple(signals, colors)
+        colors_tpl = _list_to_structured_list_of_tuple(signals, colors)
 
         # units
         s_dict = deepcopy(u_dict)
         s_dict.update(y_dict)
         units = [s_dict[s] for s in signals_lst_plain]
-        units_tpl = list_to_structured_list_of_tuple(signals, units)
+        units_tpl = _list_to_structured_list_of_tuple(signals, units)
 
         # Linestyles
         linestyles_tpl = []
@@ -2171,6 +2180,25 @@ class Dataset:
 # ====================================================
 # Useful functions
 # ====================================================
+
+
+def _list_to_structured_list_of_tuple(
+    tpl: tuple[Any], lst: list[str]
+) -> list[tuple[Any]]:
+    # Convert a plain list to a list of tuple of a given structure, i.e.
+    # Given tpl = [("a0","a1"),("b0",),("b1","a1","b0"),("a0","a1"),("b0",)]
+    # and lst = ["u0", "u1", "u2", "u3", "u4", "u5", "u6", "u7" , "u8"]
+    # it returns [("u0", "u1"), ("u2",), ("u3", "u4", "u5"), ("u6", "u7") , ("u8",)]
+    R = []
+    idx = 0
+    for ii in [len(jj) for jj in tpl]:
+        R.append(tuple(lst[idx : idx + ii]))
+        idx += ii
+    return R
+    # it = iter(lst)
+    # return [tuple(itertools.islice(it, len(t))) for t in tpl]
+
+
 def change_axes_layout(
     fig: matplotlib.axes.Figure,
     axes: matplotlib.axes.Axes,
