@@ -174,24 +174,26 @@ class Dataset:
     # ==============================================
     #   Class methods
     # ==============================================
+
     def _shade_nans(
         self,
         axes: matplotlib.axes.Axes,
-        signal_names: list[str | tuple[str, str]],  # Tupla
-        secondary_y: bool = False,
-        color: str = "k",
     ) -> None:
 
+        # Reference to NaN intervals
         NaN_intervals = self._nan_intervals
-        for ii, ax in enumerate(axes):
-            signal_name = signal_names[ii]
-            for idx, val in enumerate(NaN_intervals[signal_name]):
-                if not val.size == 0:
-                    if secondary_y:
-                        ax.right_ax.axvspan(
-                            min(val), max(val), color=color, alpha=0.2
-                        )
-                    else:
+
+        # Unify left and right axes in a unique list
+        axes_all = axes[0].get_shared_x_axes().get_siblings(axes[0])
+
+        for ii, ax in enumerate(axes_all):
+            lines, signal_names = ax.get_legend_handles_labels()
+            for line, signal in zip(lines, signal_names):
+                color = line.get_color()
+                # Every signal may have a disjoint union of NaN intervals
+                for _, val in enumerate(NaN_intervals[signal]):
+                    # Shade only if there is a non-empty interval
+                    if not val.size == 0:
                         ax.axvspan(min(val), max(val), color=color, alpha=0.2)
 
     def _init_dataset_coverage(
@@ -327,14 +329,10 @@ class Dataset:
             # We have to pass NaN_intervals because they are not yet a self attribute
             self._shade_nans(
                 axes[0:p],
-                list(df_ext["INPUT"].droplevel(level="units", axis=1).columns),
-                color="b",
             )
 
             self._shade_nans(
                 axes[range_out],
-                list(df_ext["OUTPUT"].droplevel(level="units", axis=1).columns),
-                color="g",
             )
 
             # Figure closure handler
@@ -666,7 +664,7 @@ class Dataset:
             full_time_interval,
             overlap,
             verbosity,
-            excluded_signals=excluded_signals,
+            _excluded_signals=excluded_signals,
         )
 
     def _classify_signals(
@@ -1204,21 +1202,20 @@ class Dataset:
         # df points to self.dataset.
         df = self.dataset
 
+        # All possible names
+        u_names = list(df["INPUT"].columns.get_level_values("names"))
+        y_names = list(df["OUTPUT"].columns.get_level_values("names"))
+
+        if overlap:
+            # OBS! zip cuts the longest list
+            p = len(u_names) - len(y_names)
+            leftovers = u_names[p + 1 :] if p > 0 else y_names[p + 1 :]
+            signals = list(zip(u_names, y_names)) + leftovers
         # Convert passed tuple to list
-        if not signals:
-            # If nothing has passed, use the whole
-            u_names = list(df["INPUT"].columns.get_level_values("names"))
-            y_names = list(df["OUTPUT"].columns.get_level_values("names"))
-            if overlap:
-                # OBS! zip cuts the longest list
-                p = len(u_names) - len(y_names)
-                leftovers = u_names[p + 1 :] if p > 0 else y_names[p + 1 :]
-                print(u_names, y_names, leftovers)
-                signals = list(zip(u_names, y_names)) + leftovers
-            else:
-                signals = u_names + y_names
-        else:
+        elif signals:
             signals = [s for s in signals]
+        else:
+            signals = u_names + y_names
 
         # Make all tuples like [('u0', 'u1'), ('y0',), ('u1', 'y1', 'u0')]
         for ii, s in enumerate(signals):
@@ -1274,19 +1271,18 @@ class Dataset:
             axes = np.asarray(ax)
         axes = axes.T.flat
 
-        # Set xlabels
-        xlabel = f"{df.index.name[0]} ({df.index.name[1]})"  # Time (s)
-        # Set xlabels only on the last row
-        for ii in range(ncols):
-            axes[nrows - 1 :: nrows][ii].set_xlabel(xlabel)
+        for ax in axes[n:]:
+            ax.remove()
 
+        for ax in axes:
+            # ax.spines.set(visible=True)
+            ax.tick_params(axis="x")
         # Title
         plt.suptitle(
             f"Dataset {self.name}. \n {line_color_input} lines are inputs and {line_color_output} lines are outputs."
         )
 
         for ii, s in enumerate(signals):
-            print(s[0])
             df.droplevel(level=["kind", "units"], axis=1).loc[:, s[0]].plot(
                 subplots=True,
                 grid=True,
@@ -1298,9 +1294,9 @@ class Dataset:
                 ax=axes[ii],
             )
 
-            # In case the user wants to overlap plot
-            # If the overlapped plots have the same units, no point to use a
-            # secondary_y
+            # In case the user wants to overlap plots...
+            # If the overlapped plots have the same units, then there is
+            # no point in using a secondary_y
             if len(s) == 2:
                 if units_tpl[ii][0] == units_tpl[ii][1]:
                     ylabel = None
@@ -1324,9 +1320,8 @@ class Dataset:
 
         self._shade_nans(
             axes,
-            list(df["INPUT"].droplevel(level="units", axis=1).columns),
-            color="b",
         )
+
         # Eventually save and return figures.
         if save_as is not None and ax is None:
             save_plot_as(fig, axes, save_as)  # noqa
