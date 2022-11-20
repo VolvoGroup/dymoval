@@ -262,10 +262,9 @@ class Dataset:
 
     def trim(
         self,
+        *signals: str | tuple[str, str] | None,
         tin: float | None = None,
         tout: float | None = None,
-        overlap: bool = False,
-        full_time_interval: bool = False,
         verbosity: int = 0,
     ) -> Dataset:
         # We have to trim the signals to have a meaningful dataset
@@ -275,7 +274,7 @@ class Dataset:
 
         def _graph_selection(
             ds: Dataset,
-            overlap: bool,
+            *signals: str | tuple[str, str] | None,
         ) -> tuple[float, float]:  # pragma: no cover
             # Select the time interval graphically
             # OBS! This part cannot be automatically tested because the it require
@@ -288,7 +287,7 @@ class Dataset:
             plt.ion()
 
             # Get axes from the plot and use them to extract tin and tout
-            axes = ds.plot(overlap=overlap)
+            axes = ds.plot(*signals)
             axes = axes.T.flat
 
             # Figure closure handler
@@ -348,14 +347,16 @@ class Dataset:
         ds = deepcopy(self)
 
         # Check if info on (tin,tout) is passed
-        if tin is not None and tout is not None:
+        if tin is None and tout is not None:
+            tin = df.index[0]
+        # If only tin is passed, then set tout to the last time sample.
+        elif tin is not None and tout is None:
+            tout = df.index[-1]
+        elif tin is not None and tout is not None:
             tin_sel = np.round(tin, NUM_DECIMALS)
             tout_sel = np.round(tout, NUM_DECIMALS)
-        elif full_time_interval:
-            tin_sel = np.round(ds.dataset.index[0], NUM_DECIMALS)
-            tout_sel = np.round(ds.dataset.index[-1], NUM_DECIMALS)
         else:  # pragma: no cover
-            tin_sel, tout_sel = _graph_selection(ds, overlap=overlap)
+            tin_sel, tout_sel = _graph_selection(ds, signals)
 
         if verbosity != 0:
             print(
@@ -402,15 +403,11 @@ class Dataset:
         # ==============================================================
 
         # Arguments validation
-        if tin is None and tout is not None:
-            tin = df.index[0]
-        # If only tin is passed, then set tout to the last time sample.
-        if tin is not None and tout is None:
-            tout = df.index[-1]
         if tin and tout and tin > tout:
             raise ValueError(
                 f" Value of tin ( ={tin}) shall be smaller than the value of tout ( ={tout})."
             )
+        # CHECK IF THE NAMES ARE IN THE AVAIL NAMES
 
         # NOTE: You have to use the #: to add a doc description
         # in class attributes (see sphinx.ext.autodoc)
@@ -482,13 +479,26 @@ class Dataset:
         # =============================================
         # Trim the dataset
         # =============================================
+        if full_time_interval:
+            tin = np.round(self.dataset.index[0], NUM_DECIMALS)
+            tout = np.round(self.dataset.index[-1], NUM_DECIMALS)
+
+        # All possible names
+        u_names = list(self.dataset["INPUT"].columns.get_level_values("names"))
+        y_names = list(self.dataset["OUTPUT"].columns.get_level_values("names"))
+
+        if overlap:
+            # OBS! zip cuts the longest list
+            p = len(u_names) - len(y_names)
+            leftovers = u_names[p + 1 :] if p > 0 else y_names[p + 1 :]
+            signals = list(zip(u_names, y_names)) + leftovers
+
         # Trim dataset and all the attributes
         tmp = self.trim(
-            tin,
-            tout,
-            overlap,
-            full_time_interval,
-            verbosity,
+            *signals,
+            tin=tin,
+            tout=tout,
+            verbosity=verbosity,
         )
 
         # Update the current Dataset instance
@@ -730,7 +740,6 @@ class Dataset:
                 or target_sampling_period < 0
             ):
                 raise ValueError("'target_sampling_period' must be positive.")
-        # ==========================================================
 
         # Initialization
         excluded_signals: list[str] = []
@@ -1060,9 +1069,6 @@ class Dataset:
             You must specify the complete *filename*, including the path.
         """
 
-        # ====================================
-        #   Actual plot function starts here
-        # ====================================
         # df points to self.dataset.
         df = self.dataset
 
@@ -1236,10 +1242,8 @@ class Dataset:
         df = self.dataset
 
         (
-            u_names,
-            y_names,
-            u_units,
-            y_units,
+            u_dict,
+            y_dict,
             u_names_idx,
             y_names_idx,
         ) = self._classify_signals(*signals)
@@ -1248,19 +1252,19 @@ class Dataset:
         # This because you don't need to overlap e.g. (u1,y1), (u1,y2), etc
         # The following is the way from Python 3.7 you remove items while
         # preserving the order
-        u_names = list(dict.fromkeys(u_names))
-        u_units = list(dict.fromkeys(u_units))
-        y_names = list(dict.fromkeys(y_names))
-        y_units = list(dict.fromkeys(y_units))
+        u_names = list(u_dict.keys())
+        u_units = list(u_dict.values())
+        y_names = list(y_dict.keys())
+        y_units = list(y_dict.values())
 
         # Input-output length and indices
         p = len(u_names)
         q = len(y_names)
 
         # get some plot parameters based on user preferences
-        _, _, _, u_titles, y_titles = self._get_plot_params(
-            p, q, u_names_idx, y_names_idx, overlap=False
-        )
+        # _, _, _, u_titles, y_titles = self._get_plot_params(
+        #     p, q, u_names_idx, y_names_idx, overlap=False
+        # )
 
         # This if is needed in case the user wants to plot only one signal
         if u_names:
