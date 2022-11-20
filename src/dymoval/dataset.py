@@ -345,7 +345,6 @@ class Dataset:
         # =============================================
 
         ds = deepcopy(self)
-
         # Check if info on (tin,tout) is passed
         if tin is None and tout is not None:
             tin = df.index[0]
@@ -356,7 +355,7 @@ class Dataset:
             tin_sel = np.round(tin, NUM_DECIMALS)
             tout_sel = np.round(tout, NUM_DECIMALS)
         else:  # pragma: no cover
-            tin_sel, tout_sel = _graph_selection(ds, signals)
+            tin_sel, tout_sel = _graph_selection(ds, *signals)
 
         if verbosity != 0:
             print(
