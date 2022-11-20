@@ -260,122 +260,6 @@ class Dataset:
                     nan_chunk_translated >= 0.0
                 ]
 
-    def trim(
-        self,
-        *signals: str | tuple[str, str] | None,
-        tin: float | None = None,
-        tout: float | None = None,
-        verbosity: int = 0,
-    ) -> Dataset:
-        # We have to trim the signals to have a meaningful dataset
-        # This can be done both graphically or by passing tin and tout
-        # if the user knows them before hand or by setting full_time_interval = True.
-        # Once done, the dataset shall be automatically shifted to the point tin = 0.0.
-
-        def _graph_selection(
-            ds: Dataset,
-            *signals: str | tuple[str, str] | None,
-        ) -> tuple[float, float]:  # pragma: no cover
-            # Select the time interval graphically
-            # OBS! This part cannot be automatically tested because the it require
-            # manual action from the user (resize window).
-            # Hence, you must test this manually.
-
-            # The following code is needed because not all IDE:s
-            # have interactive plot set to ON as default.
-            is_interactive = plt.isinteractive()
-            plt.ion()
-
-            # Get axes from the plot and use them to extract tin and tout
-            axes = ds.plot(*signals)
-            axes = axes.T.flat
-
-            # Figure closure handler
-            # It can be better done perhaps.
-            def close_event(event):  # type:ignore
-                time_interval = np.round(
-                    axes[0].get_xlim(), NUM_DECIMALS
-                )  # noqa
-                close_event.tin, close_event.tout = time_interval
-                close_event.tin = max(close_event.tin, 0.0)
-                close_event.tout = max(close_event.tout, 0.0)
-                if is_interactive:
-                    plt.ion()
-                else:
-                    plt.ioff()
-
-            close_event.tin = 0.0  # type:ignore
-            close_event.tout = 0.0  # type:ignore
-            fig = axes[0].get_figure()
-            cid = fig.canvas.mpl_connect("close_event", close_event)
-            fig.canvas.draw()
-            plt.show()
-
-            fig.suptitle(
-                "Sampling time "
-                f"= {np.round(self.dataset.index[1]-self.dataset.index[0],NUM_DECIMALS)} {self.dataset.index.name[1]}.\n"
-                "Select the dataset time interval by resizing "
-                "the picture."
-            )
-
-            # =======================================================
-            # This is needed for Spyder to block the prompt while
-            # the figure is opened.
-            # An alternative better solution is welcome!
-            try:
-                while fig.number in plt.get_fignums():
-                    plt.pause(0.1)
-            except:  # noqa
-                plt.close(fig.number)
-                raise
-            # =======================================================
-
-            fig.canvas.mpl_disconnect(cid)
-            tin_sel = close_event.tin  # type:ignore
-            tout_sel = close_event.tout  # type:ignore
-
-            return np.round(tin_sel, NUM_DECIMALS), np.round(
-                tout_sel, NUM_DECIMALS
-            )
-
-        # =============================================
-        # Trim Dataset main function
-        # The user can either pass the pair (tin,tout) or
-        # he/she can select it graphically if nothing has passed
-        # =============================================
-
-        ds = deepcopy(self)
-        # Check if info on (tin,tout) is passed
-        if tin is None and tout is not None:
-            tin_sel = ds.dataset.index[0]
-            tout_sel = tout
-        # If only tin is passed, then set tout to the last time sample.
-        elif tin is not None and tout is None:
-            tin_sel = tin
-            tout_sel = ds.dataset.index[-1]
-        elif tin is not None and tout is not None:
-            tin_sel = np.round(tin, NUM_DECIMALS)
-            tout_sel = np.round(tout, NUM_DECIMALS)
-        else:  # pragma: no cover
-            tin_sel, tout_sel = _graph_selection(ds, *signals)
-
-        if verbosity != 0:
-            print(
-                f"\n tin = {tin_sel}{ds.dataset.index.name[1]}, tout = {tout_sel}{ds.dataset.index.name[1]}"
-            )
-
-        # Now you can trim the dataset and update all the
-        # other time-related attributes
-        ds.dataset = ds.dataset.loc[tin_sel:tout_sel, :]  # type:ignore
-        ds._nan_intervals = ds._find_nan_intervals()
-        ds.coverage = ds._find_dataset_coverage()
-
-        # ... and shift it such that tin = 0.0
-        ds._shift_dataset_tin_to_zero()
-        ds.dataset = ds.dataset.round(NUM_DECIMALS)
-
-        return ds
-
     def _new_dataset_from_dataframe(
         self,
         name: str,
@@ -842,6 +726,139 @@ class Dataset:
         )  # Join two dictionaries through update()
 
         ds.dataset = ds.dataset.round(NUM_DECIMALS)
+        return ds
+
+    def trim(
+        self,
+        *signals: str | tuple[str, str] | None,
+        tin: float | None = None,
+        tout: float | None = None,
+        verbosity: int = 0,
+    ) -> Dataset:
+        """
+        MISSING DOCSTRUNG!!!!
+
+        Parameters
+        ----------
+        *signals : str | tuple[str, str] | None
+            DESCRIPTION.
+        tin : float | None, optional
+            DESCRIPTION. The default is None.
+        tout : float | None, optional
+            DESCRIPTION. The default is None.
+        verbosity : int, optional
+            DESCRIPTION. The default is 0.
+
+
+
+        """
+        # We have to trim the signals to have a meaningful dataset
+        # This can be done both graphically or by passing tin and tout
+        # if the user knows them before hand or by setting full_time_interval = True.
+        # Once done, the dataset shall be automatically shifted to the point tin = 0.0.
+
+        def _graph_selection(
+            ds: Dataset,
+            *signals: str | tuple[str, str] | None,
+        ) -> tuple[float, float]:  # pragma: no cover
+            # Select the time interval graphically
+            # OBS! This part cannot be automatically tested because the it require
+            # manual action from the user (resize window).
+            # Hence, you must test this manually.
+
+            # The following code is needed because not all IDE:s
+            # have interactive plot set to ON as default.
+            is_interactive = plt.isinteractive()
+            plt.ion()
+
+            # Get axes from the plot and use them to extract tin and tout
+            axes = ds.plot(*signals)
+            axes = axes.T.flat
+
+            # Figure closure handler
+            # It can be better done perhaps.
+            def close_event(event):  # type:ignore
+                time_interval = np.round(
+                    axes[0].get_xlim(), NUM_DECIMALS
+                )  # noqa
+                close_event.tin, close_event.tout = time_interval
+                close_event.tin = max(close_event.tin, 0.0)
+                close_event.tout = max(close_event.tout, 0.0)
+                if is_interactive:
+                    plt.ion()
+                else:
+                    plt.ioff()
+
+            close_event.tin = 0.0  # type:ignore
+            close_event.tout = 0.0  # type:ignore
+            fig = axes[0].get_figure()
+            cid = fig.canvas.mpl_connect("close_event", close_event)
+            fig.canvas.draw()
+            plt.show()
+
+            fig.suptitle(
+                "Sampling time "
+                f"= {np.round(self.dataset.index[1]-self.dataset.index[0],NUM_DECIMALS)} {self.dataset.index.name[1]}.\n"
+                "Select the dataset time interval by resizing "
+                "the picture."
+            )
+
+            # =======================================================
+            # This is needed for Spyder to block the prompt while
+            # the figure is opened.
+            # An alternative better solution is welcome!
+            try:
+                while fig.number in plt.get_fignums():
+                    plt.pause(0.1)
+            except:  # noqa
+                plt.close(fig.number)
+                raise
+            # =======================================================
+
+            fig.canvas.mpl_disconnect(cid)
+            tin_sel = close_event.tin  # type:ignore
+            tout_sel = close_event.tout  # type:ignore
+
+            return np.round(tin_sel, NUM_DECIMALS), np.round(
+                tout_sel, NUM_DECIMALS
+            )
+
+        # =============================================
+        # Trim Dataset main function
+        # The user can either pass the pair (tin,tout) or
+        # he/she can select it graphically if nothing has passed
+        # =============================================
+
+        ds = deepcopy(self)
+        # Check if info on (tin,tout) is passed
+        if tin is None and tout is not None:
+            tin_sel = ds.dataset.index[0]
+            tout_sel = tout
+        # If only tin is passed, then set tout to the last time sample.
+        elif tin is not None and tout is None:
+            tin_sel = tin
+            tout_sel = ds.dataset.index[-1]
+        elif tin is not None and tout is not None:
+            tin_sel = np.round(tin, NUM_DECIMALS)
+            tout_sel = np.round(tout, NUM_DECIMALS)
+        else:  # pragma: no cover
+            tin_sel, tout_sel = _graph_selection(ds, *signals)
+
+        if verbosity != 0:
+            print(
+                f"\n tin = {tin_sel}{ds.dataset.index.name[1]}, tout = {tout_sel}{ds.dataset.index.name[1]}"
+            )
+
+        # Now you can trim the dataset and update all the
+        # other time-related attributes
+        ds.dataset = ds.dataset.loc[tin_sel:tout_sel, :]  # type:ignore
+        ds._nan_intervals = ds._find_nan_intervals()
+        ds.coverage = ds._find_dataset_coverage()
+
+        # ... and shift it such that tin = 0.0
+        ds._shift_dataset_tin_to_zero()
+        ds.dataset = ds.dataset.round(NUM_DECIMALS)
+
         return ds
 
     def dataset_values(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -2046,6 +2063,22 @@ class Dataset:
 def _list_to_structured_list_of_tuple(
     tpl: tuple[Any], lst: list[str]
 ) -> list[tuple[Any]]:
+    """
+    MISSING DOCSTRUNG
+
+    Parameters
+    ----------
+    tpl : tuple[Any]
+        DESCRIPTION.
+    lst : list[str]
+        DESCRIPTION.
+
+    Returns
+    -------
+    list[tuple[Any]]
+        DESCRIPTION.
+
+    """
     # Convert a plain list to a list of tuple of a given structure, i.e.
     # Given tpl = [("a0","a1"),("b0",),("b1","a1","b0"),("a0","a1"),("b0",)]
     # and lst = ["u0", "u1", "u2", "u3", "u4", "u5", "u6", "u7" , "u8"]
