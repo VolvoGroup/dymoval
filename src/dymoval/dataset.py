@@ -307,8 +307,9 @@ class Dataset:
             fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
             axes = axes.T.flat
 
-            # for ax in axes[n:]:
-            #     ax.remove()
+            TODO: HERE
+            for ax in axes[n:]:
+                ax.remove()
 
             fig.suptitle(
                 "Sampling time "
@@ -376,7 +377,7 @@ class Dataset:
 
             close_event.tin = 0.0  # type:ignore
             close_event.tout = 0.0  # type:ignore
-            fig = axes[-1].get_figure()
+            fig = axes[0].get_figure()
             cid = fig.canvas.mpl_connect("close_event", close_event)
             fig.canvas.draw()
             plt.show()
@@ -397,13 +398,15 @@ class Dataset:
             tin_sel = close_event.tin  # type:ignore
             tout_sel = close_event.tout  # type:ignore
 
-            return tin_sel, tout_sel
+            return np.round(tin_sel, NUM_DECIMALS), np.round(
+                tout_sel, NUM_DECIMALS
+            )
 
         def _trim_dataset(
             df_ext: pd.DataFrame,
             tin: float | None = None,
             tout: float | None = None,
-        ) -> tuple[pd.DataFrame, dict[str, list[np.ndarray]]]:
+        ) -> pd.DataFrame:
             # ===================================================================
             # Trim dataset and NaN intervals based on (tin,tout)
             # ===================================================================
@@ -474,7 +477,9 @@ class Dataset:
             tin_sel, tout_sel = _graph_selection(df_ext, overlap)
 
         if verbosity != 0:
-            print("\ntin = ", tin_sel, "tout =", tout_sel)
+            print(
+                f"\n tin = {tin_sel}{df_ext.index.name[1]}, tout = {tout_sel}{df_ext.index.name[1]}"
+            )
 
         # Once (tin,tout) have been identified, trim the dataset
         df_ext = _trim_dataset(
@@ -2021,7 +2026,6 @@ class Dataset:
         )
         a, b, c = zip(*signal_function)
         passed_names = list(a)
-        print(passed_names)
         names_not_found = difference_lists_of_str(
             passed_names, available_names
         )  # noqa
