@@ -490,15 +490,14 @@ class Dataset:
         df = self.dataset
 
         # Separate in from out.
-        # By default take everything
-        # ==============================================
-        # THIS BLODK MAYBE REMOVED! It is an internal function,
-        # so perhaps the various checks have been done already
-        available_signals = list(df.columns.get_level_values("names"))
+        # By default, u_names and y_names are all the possible names.
+        # If the user passes some signals, then the full list is.
+        u_names = list(df["INPUT"].columns.get_level_values("names"))
+        y_names = list(df["OUTPUT"].columns.get_level_values("names"))
 
         # Small check. Not very pythonic but still...
         signals_not_found = difference_lists_of_str(
-            list(signals), available_signals
+            list(signals), u_names + y_names
         )
         if signals_not_found:
             raise KeyError(
@@ -1309,7 +1308,7 @@ class Dataset:
 
             # Set xlabel
             for ii, unit in enumerate(u_units):
-                axes_in[ii].set_title(f"INPUT #{u_names_idx[ii]+1}")
+                # axes_in[ii].set_title(f"INPUT #{u_names_idx[ii]+1}")
                 axes_in[ii].set_xlabel(f"({unit})")
             plt.suptitle("Coverage region (INPUT).")
 
@@ -1339,7 +1338,7 @@ class Dataset:
 
             # Set xlabel, ylabels
             for ii, unit in enumerate(y_units):
-                axes_out[ii].set_title(f"OUTPUT #{y_names_idx[ii]+1}")
+                # axes_out[ii].set_title(f"OUTPUT #{y_names_idx[ii]+1}")
                 axes_out[ii].set_xlabel(f"({unit})")
             plt.suptitle("Coverage region (OUTPUT).")
 
