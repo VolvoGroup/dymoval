@@ -134,7 +134,8 @@ class Dataset:
         verbosity: int = 0,
     ) -> None:
 
-        # Initialization by Signals
+        # Initialization by Signals.
+        # It will call _new_dataset_from_dataframe
         if all(isinstance(x, dict) for x in signal_list):
             self._new_dataset_from_signals(
                 name,
@@ -180,7 +181,7 @@ class Dataset:
         axes: matplotlib.axes.Axes,
     ) -> None:
 
-        # Reference to NaN intervals
+        # Reference to self._nan_intervals
         NaN_intervals = self._nan_intervals
 
         # Unify left and right axes in a unique list
@@ -196,10 +197,11 @@ class Dataset:
                     if not val.size == 0:
                         ax.axvspan(min(val), max(val), color=color, alpha=0.2)
 
-    def _init_dataset_coverage(
-        self, df: pd.DataFrame
+    def _find_dataset_coverage(
+        self,
     ) -> tuple[pd.Series, pd.DataFrame, pd.Series, pd.DataFrame]:
 
+        df = self.dataset
         u_mean = df["INPUT"].mean(axis=0).round(NUM_DECIMALS)
         u_cov = df["INPUT"].cov().round(NUM_DECIMALS)
         y_mean = df["OUTPUT"].mean(axis=0).round(NUM_DECIMALS)
@@ -209,12 +211,11 @@ class Dataset:
 
     def _find_nan_intervals(
         self,
-        df_ext: pd.DataFrame,
     ) -> dict[str, list[np.ndarray]]:
         # Find index intervals (i.e. time intervals) where columns values
         # are NaN.
         # It requires a dataset with extended columns (MultiIndex))
-        df = df_ext.droplevel(level=["kind", "units"], axis=1)
+        df = self.dataset.droplevel(level=["kind", "units"], axis=1)
         sampling_period = self.sampling_period
 
         NaN_index = {}
@@ -227,139 +228,68 @@ class Dataset:
             NaN_intervals[s] = np.split(NaN_index[s], idx + 1)
         return NaN_intervals
 
-    def _init_dataset_time_interval(
+    def _shift_dataset_tin_to_zero(
         self,
-        df_ext: pd.DataFrame,
+    ) -> None:
+        # ===================================================================
+        # Shift tin to zero.
+        # ===================================================================
+        # The values are already set due to the .loc[tin:tout] done elsewhere
+        # You only need to shift the timestamps in all the time-related attributes
+        tin = self.dataset.index[0]
+        timeVectorFromZero = self.dataset.index - tin
+        new_index = pd.Index(
+            np.round(timeVectorFromZero, NUM_DECIMALS),
+            name=self.dataset.index.name,
+        )
+        # Update the index
+        self.dataset.index = new_index
+        self.dataset = self.dataset.round(NUM_DECIMALS)
+
+        # Shift also the NaN_intervals to tin = 0.0.
+        # Create a reference to self._nan_intervals
+        NaN_intervals = self._nan_intervals
+
+        for k in NaN_intervals.keys():
+            for idx, nan_chunk in enumerate(NaN_intervals[k]):
+                nan_chunk_translated = nan_chunk - tin
+                NaN_intervals[k][idx] = np.round(
+                    nan_chunk_translated, NUM_DECIMALS  # noqa
+                )
+                NaN_intervals[k][idx] = nan_chunk_translated[
+                    nan_chunk_translated >= 0.0
+                ]
+
+    def trim(
+        self,
         tin: float | None = None,
         tout: float | None = None,
         overlap: bool = False,
         full_time_interval: bool = False,
         verbosity: int = 0,
-    ) -> pd.DataFrame:
+    ) -> Dataset:
         # We have to trim the signals to have a meaningful dataset
         # This can be done both graphically or by passing tin and tout
-        # if the user knows them before hand.
-        # Once done, the dataset shall be shifted to the point tin = 0.0.
+        # if the user knows them before hand or by setting full_time_interval = True.
+        # Once done, the dataset shall be automatically shifted to the point tin = 0.0.
 
         def _graph_selection(
-            df_ext: pd.DataFrame,
+            ds: Dataset,
             overlap: bool,
         ) -> tuple[float, float]:  # pragma: no cover
             # Select the time interval graphically
             # OBS! This part cannot be automatically tested because the it require
             # manual action from the user (resize window).
-            # Hence, you must test this manually
-            # The keyword to skip the coverage is # pragma: no cover
-            #  ===========================================================
+            # Hence, you must test this manually.
+
             # The following code is needed because not all IDE:s
             # have interactive plot set to ON as default.
-            #
             is_interactive = plt.isinteractive()
             plt.ion()
-            #  ===========================================================
 
-            # This is pretty much identical to the method plot() but we have
-            # to use it because the class attributes are not set yet.
-
-            u_names = list(df_ext["INPUT"].columns.get_level_values("names"))
-            y_names = list(df_ext["OUTPUT"].columns.get_level_values("names"))
-
-            u_units = list(df_ext["INPUT"].columns.get_level_values("units"))
-            y_units = list(df_ext["OUTPUT"].columns.get_level_values("units"))
-
-            u_dict = dict(zip(u_names, u_units))
-            y_dict = dict(zip(y_names, y_units))
-
-            if overlap:
-                # OBS! zip cuts the longest list
-                p = len(u_names) - len(y_names)
-                leftovers = u_names[p + 1 :] if p > 0 else y_names[p + 1 :]
-                signals = list(zip(u_names, y_names)) + leftovers
-            # Convert passed tuple to list
-            else:
-                signals = u_names + y_names
-
-            # Make all tuples like [('u0', 'u1'), ('y0',), ('u1', 'y1', 'u0')]
-            for ii, s in enumerate(signals):
-                if isinstance(s, str):
-                    signals[ii] = (s,)
-
-            # signals_lst_plain, e.g. ['u0', 'u1', 'y0', 'u1', 'y1', 'u0']
-            signals_lst_plain = [item for t in signals for item in t]
-
-            # ===================================================
-            # Fix the parameters to pass to the plot method
-            # ===================================================
-            # units
-            s_dict = deepcopy(u_dict)
-            s_dict.update(y_dict)
-            units = [s_dict[s] for s in signals_lst_plain]
-            units_tpl = _list_to_structured_list_of_tuple(signals, units)
-
-            colors = [
-                "b" if s in u_dict.keys() else "g" for s in signals_lst_plain
-            ]
-            colors_tpl = _list_to_structured_list_of_tuple(signals, colors)
-
-            # Figure and axes
-            n = len(signals)
-            nrows, ncols = factorize(n)  # noqa
-            fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
+            # Get axes from the plot and use them to extract tin and tout
+            axes = ds.plot(overlap=overlap)
             axes = axes.T.flat
-
-            TODO: HERE
-            for ax in axes[n:]:
-                ax.remove()
-
-            fig.suptitle(
-                "Sampling time "
-                f"= {np.round(df_ext.index[1]-df_ext.index[0],NUM_DECIMALS)} {df_ext.index.name[1]}.\n"
-                "Select the dataset time interval by resizing "
-                "the picture."
-            )
-
-            for ii, s in enumerate(signals):
-                df_ext.droplevel(level=["kind", "units"], axis=1).loc[
-                    :, s[0]
-                ].plot(
-                    subplots=True,
-                    grid=True,
-                    legend=True,
-                    color=colors_tpl[ii][0],
-                    ylabel=units_tpl[ii][0],
-                    ax=axes[ii],
-                )
-
-                # In case the user wants to overlap plots...
-                # If the overlapped plots have the same units, then there is
-                # no point in using a secondary_y
-                if len(s) == 2:
-                    if units_tpl[ii][0] == units_tpl[ii][1]:
-                        ylabel = None
-                        secondary_y = False
-                    else:
-                        ylabel = units_tpl[ii][1]
-                        secondary_y = True
-
-                    # Now you can plot
-                    df_ext.droplevel(level=["kind", "units"], axis=1).loc[
-                        :, s[1]
-                    ].plot(
-                        subplots=True,
-                        grid=True,
-                        legend=True,
-                        color=colors_tpl[ii][1],
-                        secondary_y=secondary_y,
-                        ylabel=ylabel,
-                        ax=axes[ii],
-                    )
-
-            self._shade_nans(
-                axes,
-            )
-
-            # tight layout
-            # fig.tight_layout()
 
             # Figure closure handler
             # It can be better done perhaps.
@@ -382,6 +312,13 @@ class Dataset:
             fig.canvas.draw()
             plt.show()
 
+            fig.suptitle(
+                "Sampling time "
+                f"= {np.round(self.dataset.index[1]-self.dataset.index[0],NUM_DECIMALS)} {self.dataset.index.name[1]}.\n"
+                "Select the dataset time interval by resizing "
+                "the picture."
+            )
+
             # =======================================================
             # This is needed for Spyder to block the prompt while
             # the figure is opened.
@@ -402,101 +339,45 @@ class Dataset:
                 tout_sel, NUM_DECIMALS
             )
 
-        def _trim_dataset(
-            df_ext: pd.DataFrame,
-            tin: float | None = None,
-            tout: float | None = None,
-        ) -> pd.DataFrame:
-            # ===================================================================
-            # Trim dataset and NaN intervals based on (tin,tout)
-            # ===================================================================
-            df_ext = df_ext.loc[tin:tout, :]  # type:ignore
-            # Trim NaN_intevals
-            # TODO: code repetition
-            # Create a reference to self._nan_intervals
-            NaN_intervals = self._nan_intervals
-            for signal_name in NaN_intervals.keys():
-                # In the following, nan_chunks are time-interval.
-                # Note! For a given signal, you may have many nan_chunks.
-                for idx, nan_chunk in enumerate(NaN_intervals[signal_name]):
-                    nan_chunk = np.round(nan_chunk, NUM_DECIMALS)  # noqa
-                    NaN_intervals[signal_name][idx] = nan_chunk[
-                        nan_chunk >= tin
-                    ]
-                    NaN_intervals[signal_name][idx] = nan_chunk[
-                        nan_chunk <= tout
-                    ]
-
-            return df_ext
-
-        def _shift_dataset_tin_to_zero(
-            df_ext: pd.DataFrame,
-        ) -> pd.DataFrame:
-            # ===================================================================
-            # Shift tin to zero.
-            # ===================================================================
-            tin = df_ext.index[0]
-            timeVectorFromZero = df_ext.index - tin
-            df_ext.index = pd.Index(
-                np.round(timeVectorFromZero, NUM_DECIMALS),
-                name=df_ext.index.name,
-            )
-
-            # Shift also the NaN_intervals to tin = 0.0.
-            # Create a reference to self._nan_intervals
-            NaN_intervals = self._nan_intervals
-            for k in NaN_intervals.keys():
-                for idx, nan_chunk in enumerate(NaN_intervals[k]):
-                    nan_chunk_translated = nan_chunk - tin
-                    NaN_intervals[k][idx] = np.round(
-                        nan_chunk_translated, NUM_DECIMALS  # noqa
-                    )
-                    NaN_intervals[k][idx] = nan_chunk_translated[
-                        nan_chunk_translated >= 0.0
-                    ]
-
-            # Adjust the DataFrame accordingly
-            df_ext = df_ext.round(decimals=NUM_DECIMALS)  # noqa
-
-            return df_ext
-
         # =============================================
-        # Time interval selection.
+        # Trim Dataset main function
         # The user can either pass the pair (tin,tout) or
-        # he/she can select it graphically
+        # he/she can select it graphically if nothing has passed
         # =============================================
+
+        ds = deepcopy(self)
 
         # Check if info on (tin,tout) is passed
         if tin is not None and tout is not None:
             tin_sel = np.round(tin, NUM_DECIMALS)
             tout_sel = np.round(tout, NUM_DECIMALS)
         elif full_time_interval:
-            tin_sel = np.round(df_ext.index[0], NUM_DECIMALS)
-            tout_sel = np.round(df_ext.index[-1], NUM_DECIMALS)
+            tin_sel = np.round(ds.dataset.index[0], NUM_DECIMALS)
+            tout_sel = np.round(ds.dataset.index[-1], NUM_DECIMALS)
         else:  # pragma: no cover
-            tin_sel, tout_sel = _graph_selection(df_ext, overlap)
+            tin_sel, tout_sel = _graph_selection(ds, overlap=overlap)
 
         if verbosity != 0:
             print(
-                f"\n tin = {tin_sel}{df_ext.index.name[1]}, tout = {tout_sel}{df_ext.index.name[1]}"
+                f"\n tin = {tin_sel}{ds.dataset.index.name[1]}, tout = {tout_sel}{ds.dataset.index.name[1]}"
             )
 
-        # Once (tin,tout) have been identified, trim the dataset
-        df_ext = _trim_dataset(
-            df_ext,
-            tin_sel,
-            tout_sel,
-        )
+        # Now you can trim the dataset and update all the
+        # other time-related attributes
+        ds.dataset = ds.dataset.loc[tin_sel:tout_sel, :]  # type:ignore
+        ds._nan_intervals = ds._find_nan_intervals()
+        ds.coverage = ds._find_dataset_coverage()
 
         # ... and shift it such that tin = 0.0
-        df_ext = _shift_dataset_tin_to_zero(df_ext)
+        ds._shift_dataset_tin_to_zero()
+        ds.dataset = ds.dataset.round(NUM_DECIMALS)
 
-        return df_ext
+        return ds
 
     def _new_dataset_from_dataframe(
         self,
-        df: pd.DataFrame,
         name: str,
+        df: pd.DataFrame,
         u_names: str | list[str],
         y_names: str | list[str],
         tin: float | None = None,
@@ -519,21 +400,6 @@ class Dataset:
         # self.sampling_period
         #
         # ==============================================================
-        # NOTE: You have to use the #: to add a doc description
-        # in class attributes (see sphinx.ext.autodoc)
-
-        # Set the name first
-        self.name: str = name  #: Dataset name.
-        self.information_level: float = 0.0  #: *Not implemented yet!*
-        self.sampling_period: float = np.round(
-            df.index[1] - df.index[0], NUM_DECIMALS
-        )  #: Dataset sampling period.
-
-        # Excluded signals are either passed by _new_dataset_from_signals
-        # or is empty if a dataframe is passed by the user (all the signals
-        # in this case shall be sampled with the same sampling period).
-        self.excluded_signals: list[str] = _excluded_signals
-        """Signals that could not be re-sampled."""
 
         # Arguments validation
         if tin is None and tout is not None:
@@ -545,6 +411,21 @@ class Dataset:
             raise ValueError(
                 f" Value of tin ( ={tin}) shall be smaller than the value of tout ( ={tout})."
             )
+
+        # NOTE: You have to use the #: to add a doc description
+        # in class attributes (see sphinx.ext.autodoc)
+        # Set easy-to-set attributes
+        self.name: str = name  #: Dataset name.
+        self.information_level: float = 0.0  #: *Not implemented yet!*
+        self.sampling_period: float = np.round(
+            df.index[1] - df.index[0], NUM_DECIMALS
+        )  #: Dataset sampling period.
+
+        # Excluded signals list is either passed by _new_dataset_from_signals
+        # or it is empty if a dataframe is passed by the user (all the signals
+        # in this case shall be sampled with the same sampling period).
+        self.excluded_signals: list[str] = _excluded_signals
+        """Signals that could not be re-sampled."""
         # If the user passes a str cast into a list[str]
         u_names = str2list(u_names)
         y_names = str2list(y_names)
@@ -585,12 +466,24 @@ class Dataset:
             u_multicolumns + y_multicolumns, name=levels_name
         )
 
-        # Initialize NaN intervals, full time interval
-        self._nan_intervals: Any = self._find_nan_intervals(df_ext)
+        # Take the whole dataframe as dataset before trimming.
+        self.dataset: pd.DataFrame = df_ext  #: The actual dataset
 
-        # Initialize dataset time interval, trim all the attributes
-        df_ext = self._init_dataset_time_interval(
-            df_ext,
+        # Initialize NaN intervals, full time interval
+        self._nan_intervals: Any = self._find_nan_intervals()
+
+        # Initialize coverage region
+        self.coverage: pd.DataFrame = (
+            self._find_dataset_coverage()
+        )  # Docstring below,
+        """Coverage statistics. Mean (vector) and covariance (matrix) of
+        both input and output signals."""
+
+        # =============================================
+        # Trim the dataset
+        # =============================================
+        # Trim dataset and all the attributes
+        tmp = self.trim(
             tin,
             tout,
             overlap,
@@ -598,17 +491,10 @@ class Dataset:
             verbosity,
         )
 
-        # Initialize coverage region
-        self.coverage: pd.DataFrame = self._init_dataset_coverage(
-            df_ext
-        )  # Docstring below,
-        """Coverage statistics. Mean (vector) and covariance (matrix) of
-        both input and output signals."""
-
-        # Initialize sampling_period
-        self.dataset: pd.DataFrame = df_ext.round(
-            NUM_DECIMALS
-        )  #: Actual dataset.
+        # Update the current Dataset instance
+        self.dataset = tmp.dataset
+        self._nan_intervals = tmp._nan_intervals
+        self.coverage = tmp.coverage
 
     def _new_dataset_from_signals(
         self,
@@ -627,12 +513,13 @@ class Dataset:
         # Do not initialize any class attribute here!
         # All attributes are initialized in the _new_dataset_from_dataframe method
 
-        # If the user pass a string, we need to convert into list
-        u_names = str2list(u_names)
-        y_names = str2list(y_names)
-
         # Arguments validation
         validate_signals(*signal_list)
+
+        # If the user pass a single signal as astring,
+        # then we need to convert into a list
+        u_names = str2list(u_names)
+        y_names = str2list(y_names)
 
         # Try to align the sampling periods, whenever possible
         # Note! resampled_signals:list[Signals], whereas
@@ -643,9 +530,7 @@ class Dataset:
 
         Ts = list(resampled_signals)[0]["sampling_period"]
 
-        # Drop excluded signals from u_names and y_names
-        # resampled signals contains all the signals, it is not specified yet
-        # who is input and who is output
+        # Drop excluded signals from u_names and y_names lists
         u_names = [x["name"] for x in resampled_signals if x["name"] in u_names]
         y_names = [x["name"] for x in resampled_signals if x["name"] in y_names]
 
@@ -680,13 +565,12 @@ class Dataset:
 
         # Add some robustness: we validate the built DataFrame, even if
         # it should be correct by construction.
-
         validate_dataframe(df, u_names=u_names, y_names=y_names)
 
         # Call the initializer from DataFrame to get a Dataset object.
         self._new_dataset_from_dataframe(
-            df,
             name,
+            df,
             u_names,
             y_names,
             tin,
@@ -702,7 +586,7 @@ class Dataset:
         *signals: str,
     ) -> tuple[dict[str, str], dict[str, str], list[int], list[int]]:
         # You pass a list of signal names and the function recognizes who is input
-        # and who is output
+        # and who is output. The dicts are name:unit
         # Is no argument is passed, then it takes the whole for u_names and y_names
         # If only input or output signals are passed, then it return an empty list
         # for the non-returned labels.
@@ -710,22 +594,21 @@ class Dataset:
 
         # Separate in from out.
         # By default take everything
-        # MAYBE REMOVED!
-        u_names = list(df["INPUT"].columns.get_level_values("names"))
-        y_names = list(df["OUTPUT"].columns.get_level_values("names"))
-
-        # u_units = list(df["INPUT"].columns.get_level_values("units"))
-        # y_units = list(df["OUTPUT"].columns.get_level_values("units"))
+        # ==============================================
+        # THIS BLODK MAYBE REMOVED! It is an internal function,
+        # so perhaps the various checks have been done already
+        available_signals = list(df.columns.get_level_values("names"))
 
         # Small check. Not very pythonic but still...
         signals_not_found = difference_lists_of_str(
-            list(signals), u_names + y_names
+            list(signals), available_signals
         )
         if signals_not_found:
             raise KeyError(
                 f"Signal(s) {signals_not_found} not found in the dataset. "
                 "Use 'signal_list()' to get the list of all available signals. "
             )
+        # ========================================================
 
         # If the signals are passed, then classify in IN and OUT.
         if signals:
@@ -758,18 +641,18 @@ class Dataset:
             df["OUTPUT"].iloc[:, y_names_idx].columns.get_level_values("units")
         )
 
+        # Collect in dicts as it is cleaner
         u_dict = dict(zip(u_names, u_units))
         y_dict = dict(zip(y_names, y_units))
+
         return u_dict, y_dict, u_names_idx, y_names_idx
 
     def _validate_name_value_tuples(
         self,
         *signals_values: tuple[str, float],
     ) -> tuple[
-        list[str],
-        list[str],
-        list[str],
-        list[str],
+        dict[str, str],
+        dict[str, str],
         list[tuple[str, float]],
         list[tuple[str, float]],
     ]:
@@ -779,61 +662,56 @@ class Dataset:
         # and the validated tuples.
 
         signals = [s[0] for s in signals_values]
-        u_names, y_names, u_units, y_units, _, _ = self._classify_signals(
-            *signals
-        )
+        u_dict, y_dict, _, _ = self._classify_signals(*signals)
 
         u_names = list(u_dict.keys())
-        u_units = list(u_dict.values())
-
         y_names = list(y_dict.keys())
-        y_units = list(y_dict.values())
 
         u_list = [(s[0], s[1]) for s in signals_values if s[0] in u_names]
         y_list = [(s[0], s[1]) for s in signals_values if s[0] in y_names]
 
-        return u_names, y_names, u_units, y_units, u_list, y_list
+        return u_dict, y_dict, u_list, y_list
 
-    def _get_plot_params(
-        self,
-        p: int,
-        q: int,
-        u_names_idx: list[int],
-        y_names_idx: list[int],
-        overlap: bool,
-    ) -> tuple[int, np.ndarray, np.ndarray, list[str], list[str]]:
-        # Return n, range_in, range_out, u_titles, y_titles.
+    # def _get_plot_params(
+    #     self,
+    #     p: int,
+    #     q: int,
+    #     u_names_idx: list[int],
+    #     y_names_idx: list[int],
+    #     overlap: bool,
+    # ) -> tuple[int, np.ndarray, np.ndarray, list[str], list[str]]:
+    #     # Return n, range_in, range_out, u_titles, y_titles.
 
-        # Input range is always [0:p]
-        range_in = np.arange(0, p)
-        if overlap:
-            n = max(p, q)
-            range_out = np.arange(0, q)
+    #     # Input range is always [0:p]
+    #     range_in = np.arange(0, p)
+    #     if overlap:
+    #         n = max(p, q)
+    #         range_out = np.arange(0, q)
 
-            # Adjust subplot titles
-            m = min(p, q)
-            # Common titles
-            titles_a = ["IN #" + str(ii + 1) for ii in u_names_idx]
-            titles_b = [" - OUT #" + str(ii + 1) for ii in y_names_idx]
-            common_titles = [s1 + s2 for s1, s2 in zip(titles_a, titles_b)]
+    #         # Adjust subplot titles
+    #         m = min(p, q)
+    #         # Common titles
+    #         titles_a = ["IN #" + str(ii + 1) for ii in u_names_idx]
+    #         titles_b = [" - OUT #" + str(ii + 1) for ii in y_names_idx]
+    #         common_titles = [s1 + s2 for s1, s2 in zip(titles_a, titles_b)]
 
-            if p > q:
-                trail = ["INPUT #" + str(ii + 1) for ii in u_names_idx[m:]]
-                u_titles = common_titles + trail
-                y_titles = []
-            else:
-                trail = ["OUTPUT #" + str(ii + 1) for ii in y_names_idx[m:]]
-                u_titles = []
-                y_titles = common_titles + trail
-        else:
-            n = p + q
-            range_out = np.arange(p, p + q)
+    #         if p > q:
+    #             trail = ["INPUT #" + str(ii + 1) for ii in u_names_idx[m:]]
+    #             u_titles = common_titles + trail
+    #             y_titles = []
+    #         else:
+    #             trail = ["OUTPUT #" + str(ii + 1) for ii in y_names_idx[m:]]
+    #             u_titles = []
+    #             y_titles = common_titles + trail
+    #     else:
+    #         n = p + q
+    #         range_out = np.arange(p, p + q)
 
-            # Adjust titles
-            u_titles = ["INPUT #" + str(ii + 1) for ii in u_names_idx]
-            y_titles = ["OUTPUT #" + str(ii + 1) for ii in y_names_idx]
+    #         # Adjust titles
+    #         u_titles = ["INPUT #" + str(ii + 1) for ii in u_names_idx]
+    #         y_titles = ["OUTPUT #" + str(ii + 1) for ii in y_names_idx]
 
-        return n, range_in, range_out, u_titles, y_titles
+    #     return n, range_in, range_out, u_titles, y_titles
 
     def _fix_sampling_periods(
         self,
@@ -841,39 +719,11 @@ class Dataset:
         target_sampling_period: float | None = None,
         verbosity: int = 0,
     ) -> tuple[list[Signal], list[str]]:
-        # Resample the :py:class:`Signals <dymoval.dataset.Signal>` in the *signal_list*.
-
         # The signals are resampled either with the slowest sampling period as target,
         # or towards the sampling period specified by the *target_sampling_period*
         # parameter, if specified.
 
-        # Nevertheless, signals whose sampling period is not a divisor of the
-        # the target sampling period will not be resampled and a list with the names
-        # of such signals is returned.
-
-        # Parameters
-        # ----------
-        # signal_list :
-        #     List of :py:class:`Signals <dymoval.dataset.Signal>` to be resampled.
-        # target_sampling_period :
-        #     Target sampling period.
-
-        # Raises
-        # ------
-        # ValueError
-        #     If the *target_sampling_period* value is not positive.
-
-        # Returns
-        # -------
-        # resampled_signals:
-        #     List of :py:class:`Signal <dymoval.dataset.Signal>` with adjusted
-        #     sampling period.
-        # excluded_signals:
-        #     List of signal names that could not be resampled.
-        # """
-        # ===========================================================
         # arguments Validation
-        #
         if target_sampling_period is not None:
             if (
                 not isinstance(target_sampling_period, float)
