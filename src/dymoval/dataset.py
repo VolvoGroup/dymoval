@@ -1152,7 +1152,7 @@ class Dataset:
         units_tpl = _list_to_structured_list_of_tuple(signals_lst, units)
 
         # Linestyles
-        linestyles_tpl: list[tuple[str, str] | tuple[str]] = []
+        linestyles_tpl: list[tuple[str, ...]] = []
         for val in colors_tpl:
             if len(val) == 2:
                 if val[0] == val[1]:
@@ -2063,8 +2063,8 @@ class Dataset:
 
 
 def _list_to_structured_list_of_tuple(
-    tpl: list[tuple[str, str] | tuple[str]], lst: list[str]
-) -> list[tuple[str, str] | tuple[str]]:
+    tpl: list[tuple[str, ...]], lst: list[str]
+) -> list[tuple[str, ...]]:
     """
     MISSING DOCSTRUNG
 
