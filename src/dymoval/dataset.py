@@ -11,7 +11,6 @@ import matplotlib
 import numpy as np
 import pandas as pd
 import matplotlib.gridspec as gridspec
-import itertools
 from matplotlib import pyplot as plt
 from scipy import io, fft
 from .config import *  # noqa
@@ -134,6 +133,22 @@ class Dataset:
         verbosity: int = 0,
     ) -> None:
 
+        # ==============================
+        # Instance attributes
+        # ==============================
+        # Here are declared but they will be initialized
+        # in the method _new_dataset_from_dataframe
+        self.name: str = "foo"
+        self.dataset: pd.DataFrame = pd.DataFrame()
+        self.coverage: pd.DataFrame = pd.DataFrame()
+        self.information_level: float = 0.0
+        self._nan_intervals: dict[str, list[np.ndarray]] = {}
+        self.excluded_signals: list[str] = []
+        self.sampling_period: float = 1.0
+
+        # ==============================
+        # Initialization functions
+        # ==============================
         # Initialization by Signals.
         # It will call _new_dataset_from_dataframe
         if all(isinstance(x, dict) for x in signal_list):
@@ -236,8 +251,8 @@ class Dataset:
         # ===================================================================
         # The values are already set due to the .loc[tin:tout] done elsewhere
         # You only need to shift the timestamps in all the time-related attributes
-        tin = self.dataset.index[0]
-        timeVectorFromZero = self.dataset.index - tin
+        tin: float = self.dataset.index[0]
+        timeVectorFromZero: np.ndarray = self.dataset.index - tin
         new_index = pd.Index(
             np.round(timeVectorFromZero, NUM_DECIMALS),
             name=self.dataset.index.name,
@@ -297,16 +312,16 @@ class Dataset:
         # NOTE: You have to use the #: to add a doc description
         # in class attributes (see sphinx.ext.autodoc)
         # Set easy-to-set attributes
-        self.name: str = name  #: Dataset name.
-        self.information_level: float = 0.0  #: *Not implemented yet!*
-        self.sampling_period: float = np.round(
+        self.name = name  #: Dataset name.
+        self.information_level = 0.0  #: *Not implemented yet!*
+        self.sampling_period = np.round(
             df.index[1] - df.index[0], NUM_DECIMALS
         )  #: Dataset sampling period.
 
         # Excluded signals list is either passed by _new_dataset_from_signals
         # or it is empty if a dataframe is passed by the user (all the signals
         # in this case shall be sampled with the same sampling period).
-        self.excluded_signals: list[str] = _excluded_signals
+        self.excluded_signals = _excluded_signals
         """Signals that could not be re-sampled."""
         # If the user passes a str cast into a list[str]
         u_names = str2list(u_names)
@@ -349,15 +364,13 @@ class Dataset:
         )
 
         # Take the whole dataframe as dataset before trimming.
-        self.dataset: pd.DataFrame = df_ext  #: The actual dataset
+        self.dataset = df_ext  #: The actual dataset
 
         # Initialize NaN intervals, full time interval
-        self._nan_intervals: Any = self._find_nan_intervals()
+        self._nan_intervals = self._find_nan_intervals()
 
         # Initialize coverage region
-        self.coverage: pd.DataFrame = (
-            self._find_dataset_coverage()
-        )  # Docstring below,
+        self.coverage = self._find_dataset_coverage()  # Docstring below,
         """Coverage statistics. Mean (vector) and covariance (matrix) of
         both input and output signals."""
 
@@ -481,7 +494,7 @@ class Dataset:
     def _classify_signals(
         self,
         *signals: str,
-    ) -> tuple[dict[str, str], dict[str, str], list[int], list[int]]:
+    ) -> tuple[dict[str, str], dict[str, str]]:
         # You pass a list of signal names and the function recognizes who is input
         # and who is output. The dicts are name:unit
         # Is no argument is passed, then it takes the whole for u_names and y_names
@@ -541,7 +554,7 @@ class Dataset:
         u_dict = dict(zip(u_names, u_units))
         y_dict = dict(zip(y_names, y_units))
 
-        return u_dict, y_dict, u_names_idx, y_names_idx
+        return u_dict, y_dict
 
     def _validate_name_value_tuples(
         self,
@@ -558,7 +571,7 @@ class Dataset:
         # and the validated tuples.
 
         signals = [s[0] for s in signals_values]
-        u_dict, y_dict, _, _ = self._classify_signals(*signals)
+        u_dict, y_dict = self._classify_signals(*signals)
 
         u_names = list(u_dict.keys())
         y_names = list(y_dict.keys())
@@ -719,7 +732,7 @@ class Dataset:
         )
 
         # Update NaN intervals
-        NaN_intervals = self._find_nan_intervals(df_temp)
+        NaN_intervals = self._find_nan_intervals()
         ds._nan_intervals.update(
             NaN_intervals
         )  # Join two dictionaries through update()
@@ -1020,7 +1033,7 @@ class Dataset:
         self,
         # Only positional arguments
         /,
-        *signals: str | tuple[str, str] | None,
+        *signals: str | tuple[str, str],
         # Key-word arguments
         overlap: bool = False,
         line_color_input: str = "blue",
@@ -1099,27 +1112,25 @@ class Dataset:
             # OBS! zip cuts the longest list
             p = len(u_names) - len(y_names)
             leftovers = u_names[p + 1 :] if p > 0 else y_names[p + 1 :]
-            signals = list(zip(u_names, y_names)) + leftovers
-        # Convert passed tuple to list
+            signals_lst = list(zip(u_names, y_names)) + leftovers
+        # Convert passed tuple[tuple|str] to list[tuple|str]
         elif signals:
-            signals = [s for s in signals]
+            signals_lst = list(signals)
         else:
-            signals = u_names + y_names
+            signals_lst = u_names + y_names
 
         # Make all tuples like [('u0', 'u1'), ('y0',), ('u1', 'y1', 'u0')]
-        for ii, s in enumerate(signals):
+        for ii, s in enumerate(signals_lst):
             if isinstance(s, str):
-                signals[ii] = (s,)
+                signals_lst[ii] = (s,)
 
         # signals_lst_plain, e.g. ['u0', 'u1', 'y0', 'u1', 'y1', 'u0']
-        signals_lst_plain = [item for t in signals for item in t]
+        signals_lst_plain = [item for t in signals_lst for item in t]
 
         # Arguments validation
         (
             u_dict,
             y_dict,
-            u_names_idx,
-            y_names_idx,
         ) = self._classify_signals(*signals_lst_plain)
 
         # ===================================================
@@ -1132,16 +1143,16 @@ class Dataset:
             line_color_input if s in u_dict.keys() else line_color_output
             for s in signals_lst_plain
         ]
-        colors_tpl = _list_to_structured_list_of_tuple(signals, colors)
+        colors_tpl = _list_to_structured_list_of_tuple(signals_lst, colors)
 
         # units
         s_dict = deepcopy(u_dict)
         s_dict.update(y_dict)
         units = [s_dict[s] for s in signals_lst_plain]
-        units_tpl = _list_to_structured_list_of_tuple(signals, units)
+        units_tpl = _list_to_structured_list_of_tuple(signals_lst, units)
 
         # Linestyles
-        linestyles_tpl = []
+        linestyles_tpl: list[tuple[str, str] | tuple[str]] = []
         for val in colors_tpl:
             if len(val) == 2:
                 if val[0] == val[1]:
@@ -1263,8 +1274,6 @@ class Dataset:
         (
             u_dict,
             y_dict,
-            u_names_idx,
-            y_names_idx,
         ) = self._classify_signals(*signals)
 
         # Remove duplicated labels as they are not needed for coverage
@@ -1378,7 +1387,7 @@ class Dataset:
             If the dataset contains *NaN*:s
         """
         # Validation
-        u_names, y_names, _, _, _, _ = self._classify_signals(*signals)
+        u_dict, y_dict = self._classify_signals(*signals)
         # Remove 'INPUT' 'OUTPUT' columns level from dataframe
         df_temp = self.dataset.droplevel(level=["kind", "units"], axis=1)
 
@@ -1482,12 +1491,8 @@ class Dataset:
         """
         # validation
         (
-            u_names,
-            y_names,
-            u_units,
-            y_units,
-            u_names_idx,
-            y_names_idx,
+            u_dict,
+            y_dict,
         ) = self._classify_signals(*signals)
 
         if kind not in SPECTRUM_KIND:
@@ -1668,9 +1673,7 @@ class Dataset:
             the input signals in the dataset.
         """
         # Arguments validation
-        u_names, y_names, u_units, y_units, _, _ = self._classify_signals(
-            *signals
-        )
+        u_dict, y_dict = self._classify_signals(*signals)
 
         # Safe copy
         ds_temp = deepcopy(self)
@@ -1938,7 +1941,7 @@ class Dataset:
             ds_temp.dataset.columns = new_idx
 
         # Update the coverage
-        ds_temp.coverage = self._init_dataset_coverage(ds_temp.dataset)
+        ds_temp.coverage = self._find_dataset_coverage()
 
         return ds_temp
 
@@ -2060,8 +2063,8 @@ class Dataset:
 
 
 def _list_to_structured_list_of_tuple(
-    tpl: tuple[Any], lst: list[str]
-) -> list[tuple[Any]]:
+    tpl: list[tuple[str, str] | tuple[str]], lst: list[str]
+) -> list[tuple[str, str] | tuple[str]]:
     """
     MISSING DOCSTRUNG
 
