@@ -1170,6 +1170,7 @@ class Dataset:
         n = len(signals_lst)
         nrows, ncols = factorize(n)  # noqa
         if ax is None:  # Create new figure and axes
+
             fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
         else:  # Otherwise use what is passed
             axes = np.asarray(ax)
@@ -1621,6 +1622,8 @@ class Dataset:
         else:  # Otherwise use what is passed
             axes = np.asarray(ax)
         axes = axes.T.flat
+
+        # GET THE GRIDSPEC AND ADD SOME SUBPLOTS
 
         for ax in axes[n:]:
             ax.remove()
