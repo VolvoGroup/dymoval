@@ -1033,7 +1033,7 @@ class Dataset:
         self,
         # Only positional arguments
         /,
-        *signals: str | tuple[str, str],
+        *signals: str | tuple[str, str] | None,
         # Key-word arguments
         overlap: bool = False,
         line_color_input: str = "blue",
@@ -1104,6 +1104,10 @@ class Dataset:
         # df points to self.dataset.
         df = self.dataset
 
+        # ===================================================
+        # Selection of signals to plot
+        # ===================================================
+
         # All possible names
         u_names = list(df["INPUT"].columns.get_level_values("names"))
         y_names = list(df["OUTPUT"].columns.get_level_values("names"))
@@ -1163,7 +1167,7 @@ class Dataset:
                 linestyles_tpl.append((linestyle_fg,))
 
         # Figure and axes
-        n = len(signals)
+        n = len(signals_lst)
         nrows, ncols = factorize(n)  # noqa
         if ax is None:  # Create new figure and axes
             fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
@@ -1174,15 +1178,15 @@ class Dataset:
         for ax in axes[n:]:
             ax.remove()
 
-        for ax in axes:
-            # ax.spines.set(visible=True)
-            ax.tick_params(axis="x")
+        #  for ax in axes:
+        # ax.spines.set(visible=True)
+        #     ax.tick_params(axis="x")
         # Title
         plt.suptitle(
             f"Dataset {self.name}. \n {line_color_input} lines are inputs and {line_color_output} lines are outputs."
         )
 
-        for ii, s in enumerate(signals):
+        for ii, s in enumerate(signals_lst):
             df.droplevel(level=["kind", "units"], axis=1).loc[:, s[0]].plot(
                 subplots=True,
                 grid=True,
@@ -1289,11 +1293,6 @@ class Dataset:
         p = len(u_names)
         q = len(y_names)
 
-        # get some plot parameters based on user preferences
-        # _, _, _, u_titles, y_titles = self._get_plot_params(
-        #     p, q, u_names_idx, y_names_idx, overlap=False
-        # )
-
         # This if is needed in case the user wants to plot only one signal
         if u_names:
             nrows_in, ncols_in = factorize(p)  # noqa
@@ -1306,6 +1305,10 @@ class Dataset:
                 axes_in = np.asarray(ax_in)
 
             axes_in = axes_in.T.flat
+
+            for ax in axes_in[p:]:
+                ax.remove()
+
             df["INPUT"].droplevel(level="units", axis=1).loc[:, u_names].hist(
                 grid=True,
                 bins=nbins,
@@ -1336,6 +1339,10 @@ class Dataset:
                 axes_out = np.asarray(ax_out)
 
             axes_out = axes_out.T.flat
+
+            for ax in axes_out[q:]:
+                ax.remove()
+
             df["OUTPUT"].droplevel(level="units", axis=1).loc[:, y_names].hist(
                 grid=True,
                 bins=nbins,
@@ -1388,6 +1395,10 @@ class Dataset:
         """
         # Validation
         u_dict, y_dict = self._classify_signals(*signals)
+
+        u_names = list(u_dict.keys())
+        y_names = list(y_dict.keys())
+
         # Remove 'INPUT' 'OUTPUT' columns level from dataframe
         df_temp = self.dataset.droplevel(level=["kind", "units"], axis=1)
 
@@ -1410,7 +1421,7 @@ class Dataset:
         u_extended_labels = list(zip(["INPUT"] * len(u_names), u_names))
         y_extended_labels = list(zip(["OUTPUT"] * len(y_names), y_names))
         cols = pd.MultiIndex.from_tuples(
-            [*u_extended_labels, *y_extended_labels]
+            [*u_extended_labels, *y_extended_labels], name=["kind", "names"]
         )
         df_freq = pd.DataFrame(data=vals.round(NUM_DECIMALS), columns=cols)
         df_freq = df_freq.T.drop_duplicates().T  # Drop duplicated columns
@@ -1429,15 +1440,15 @@ class Dataset:
 
     def plot_spectrum(
         self,
-        *signals: str,
+        *signals: str | tuple[str, str] | None,
         kind: Literal["amplitude", "power", "psd"] = "power",
         overlap: bool = False,
-        line_color_input: str = "b",
-        linestyle_input: str = "-",
-        alpha_input: float = 1.0,
-        line_color_output: str = "g",
-        linestyle_output: str = "-",
-        alpha_output: float = 1.0,
+        line_color_input: str = "blue",
+        linestyle_fg: str = "-",
+        alpha_fg: float = 1.0,
+        line_color_output: str = "green",
+        linestyle_bg: str = "--",
+        alpha_bg: float = 1.0,
         ax: matplotlib.axes.Axes | None = None,
         save_as: str | None = None,
     ) -> matplotlib.axes.Axes:
@@ -1489,11 +1500,42 @@ class Dataset:
         ValueError
             If *kind* doen not match any allowed values.
         """
+
+        # df points to self.dataset.
+        df = self.dataset
+
+        # ===================================================
+        # Selection of signals to plot
+        # ===================================================
+
+        # All possible names
+        u_names = list(df["INPUT"].columns.get_level_values("names"))
+        y_names = list(df["OUTPUT"].columns.get_level_values("names"))
+
+        if overlap:
+            # OBS! zip cuts the longest list
+            p = len(u_names) - len(y_names)
+            leftovers = u_names[p + 1 :] if p > 0 else y_names[p + 1 :]
+            signals_lst = list(zip(u_names, y_names)) + leftovers
+        # Convert passed tuple[tuple|str] to list[tuple|str]
+        elif signals:
+            signals_lst = list(signals)
+        else:
+            signals_lst = u_names + y_names
+
+        # Make all tuples like [('u0', 'u1'), ('y0',), ('u1', 'y1', 'u0')]
+        for ii, s in enumerate(signals_lst):
+            if isinstance(s, str):
+                signals_lst[ii] = (s,)
+
+        # signals_lst_plain, e.g. ['u0', 'u1', 'y0', 'u1', 'y1', 'u0']
+        signals_lst_plain = [item for t in signals_lst for item in t]
+
         # validation
         (
             u_dict,
             y_dict,
-        ) = self._classify_signals(*signals)
+        ) = self._classify_signals(*signals_lst_plain)
 
         if kind not in SPECTRUM_KIND:
             raise ValueError(f"kind must be one of {SPECTRUM_KIND}")
@@ -1501,10 +1543,11 @@ class Dataset:
         # ====================================
         # Compute Spectrums
         # ===================================
+
         # For real signals, the spectrum is Hermitian anti-simmetric, i.e.
         # the amplitude is symmetric wrt f=0 and the phase is antisymmetric wrt f=0.
         # See e.g. https://ccrma.stanford.edu/~jos/ReviewFourier/Symmetries_Real_Signals.html
-        df_freq = self.fft(*signals)
+        df_freq = self.fft(*signals_lst_plain)
         # Frequency and number of samples
         Ts = self.sampling_period
         N = len(self.dataset.index)  # number of samples
@@ -1532,9 +1575,103 @@ class Dataset:
             df_freq = df_freq.abs() ** 2 / Delta_f
             df_freq[1:-1] = 2 * df_freq[1:-1]
 
-        # ====================================
-        # Plot Spectrums
-        # ===================================
+        # ===================================================
+        # Arrange the parameters to pass to the plot method
+        # ===================================================
+
+        # All the lists are plain (i.e. no list of tuples)
+        # colors
+        colors = [
+            line_color_input if s in u_dict.keys() else line_color_output
+            for s in signals_lst_plain
+        ]
+        colors_tpl = _list_to_structured_list_of_tuple(signals_lst, colors)
+
+        # ylabels (units)
+        # input
+        s_dict = deepcopy(u_dict)
+        s_dict.update(y_dict)
+        if kind == "power":
+            units = [f"({s_dict[s]}**2)" for s in signals_lst_plain]
+            units_tpl = _list_to_structured_list_of_tuple(signals_lst, units)
+        elif kind == "psd":
+            units = [f"({s_dict[s]}**2/Hz)" for s in signals_lst_plain]
+            units_tpl = _list_to_structured_list_of_tuple(signals_lst, units)
+        elif kind == "amplitude":
+            axes[2 * ii].set_ylabel(f"({unit})")
+            axes[2 * ii + 1].set_ylabel("(rad)")
+
+        # Linestyles
+        linestyles_tpl: list[tuple[str, ...]] = []
+        for val in colors_tpl:
+            if len(val) == 2:
+                if val[0] == val[1]:
+                    linestyles_tpl.append((linestyle_fg, linestyle_bg))
+                else:
+                    linestyles_tpl.append((linestyle_fg, linestyle_fg))
+            else:
+                linestyles_tpl.append((linestyle_fg,))
+
+        # Figure and axes
+        n = len(signals_lst)
+        nrows, ncols = factorize(n)  # noqa
+
+        if ax is None:  # Create new figure and axes
+            fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
+        else:  # Otherwise use what is passed
+            axes = np.asarray(ax)
+        axes = axes.T.flat
+
+        for ax in axes[n:]:
+            ax.remove()
+
+        # Title
+        plt.suptitle(
+            f"Dataset '{self.name}' {kind.capitalize()} spectrum. \n {line_color_input} lines are inputs and {line_color_output} lines are outputs."
+        )
+
+        # ====================================================
+        # Actual plot
+        # ====================================================
+
+        for ii, s in enumerate(signals_lst):
+            df_freq.droplevel(level="kind", axis=1).loc[:, s[0]].plot(
+                subplots=True,
+                grid=True,
+                legend=True,
+                color=colors_tpl[ii][0],
+                linestyle=linestyles_tpl[ii][0],
+                alpha=alpha_fg,
+                ylabel=units_tpl[ii][0],
+                ax=axes[ii],
+            )
+
+            # In case the user wants to overlap plots...
+            # If the overlapped plots have the same units, then there is
+            # no point in using a secondary_y
+            if len(s) == 2:
+                if units_tpl[ii][0] == units_tpl[ii][1]:
+                    ylabel = None
+                    secondary_y = False
+                else:
+                    ylabel = units_tpl[ii][1]
+                    secondary_y = True
+
+                # Now you can plot
+                df_freq.droplevel(level="kind", axis=1).loc[:, s[1]].plot(
+                    subplots=True,
+                    grid=True,
+                    legend=True,
+                    color=colors_tpl[ii][1],
+                    linestyle=linestyles_tpl[ii][1],
+                    alpha=alpha_bg,
+                    secondary_y=secondary_y,
+                    ylabel=ylabel,
+                    ax=axes[ii],
+                )
+
+        # ====================== END HERE =========================== #
+
         # Adjust input-output lengths and labels for plots.
 
         p = len(u_names)
@@ -1571,82 +1708,6 @@ class Dataset:
             if np.mod(nrows, 2) != 0:
                 nrows -= 1
                 ncols += int(np.ceil(ncols / nrows))
-
-        # Overwrite axes if you want the plot to be on the figure instantiated by the caller.
-        if ax is None:  # Create new figure and axes
-            fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        else:  # Otherwise use what is passed
-            axes = np.asarray(ax)
-
-        # Flatten array for more readable code
-        axes = axes.T.flat
-
-        if u_names:
-            df_freq["INPUT"].loc[:, u_names].plot(
-                subplots=True,
-                grid=True,
-                color=line_color_input,
-                linestyle=linestyle_input,
-                alpha=alpha_input,
-                legend=u_names,
-                title=u_titles,
-                ax=axes[range_in],
-            )
-
-        if y_names:
-            df_freq["OUTPUT"].loc[:, y_names].plot(
-                subplots=True,
-                grid=True,
-                color=line_color_output,
-                linestyle=linestyle_output,
-                alpha=alpha_output,
-                secondary_y=secondary_y,
-                legend=y_names,
-                title=y_titles,
-                ax=axes[range_out],
-            )
-
-        # Set ylabels
-        # input
-        for ii, unit in enumerate(u_units):
-            if kind == "power":
-                axes[ii].set_ylabel(f"({unit}**2)")
-            elif kind == "psd":
-                axes[ii].set_ylabel(f"({unit}**2/Hz)")
-            elif kind == "amplitude":
-                axes[2 * ii].set_ylabel(f"({unit})")
-                axes[2 * ii + 1].set_ylabel("(rad)")
-
-        # Output
-        if not sorted(u_units) == sorted(y_units):
-            for jj, unit in enumerate(y_units):
-                if overlap:
-                    if kind == "power":
-                        axes[jj].right_ax.set_ylabel(f"({unit}**2)")
-                        axes[jj].right_ax.grid(None, axis="y")
-                    elif kind == "psd":
-                        axes[jj].right_ax.set_ylabel(f"({unit}**2/Hz)")
-                        axes[jj].right_ax.grid(None, axis="y")
-                    elif kind == "amplitude":
-                        axes[2 * jj].right_ax.set_ylabel(f"({unit})")
-                        axes[2 * jj].right_ax.grid(None, axis="y")
-                        axes[2 * jj + 1].set_ylabel("(rad)")
-                        axes[2 * jj + 1].right_ax.grid(None, axis="y")
-
-                else:
-                    if kind == "power":
-                        axes[p + jj].set_ylabel(f"({unit}**2)")
-                    elif kind == "psd":
-                        axes[p + jj].set_ylabel(f"({unit}**2/Hz)")
-                    elif kind == "amplitude":
-                        axes[p + 2 * jj].set_ylabel(f"({unit})")
-                        axes[p + 2 * jj + 1].set_ylabel("(rad)")
-
-        # Set xlabel
-        for ii in range(ncols):
-            axes[nrows - 1 :: nrows][ii].set_xlabel(df_freq.index.name)
-
-        plt.suptitle(f"{kind.capitalize()} spectrum.")
 
         # Tight figure if no ax is passed (e.g. from compare_datasets())
         # if ax is None:
