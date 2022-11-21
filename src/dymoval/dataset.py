@@ -200,7 +200,8 @@ class Dataset:
         NaN_intervals = self._nan_intervals
 
         # Unify left and right axes in a unique list
-        axes_all = axes[0].get_shared_x_axes().get_siblings(axes[0])
+        # axes_all = axes[0].get_shared_x_axes().get_siblings(axes[0])
+        axes_all = axes
 
         for ii, ax in enumerate(axes_all):
             lines, signal_names = ax.get_legend_handles_labels()
@@ -784,8 +785,8 @@ class Dataset:
             plt.ion()
 
             # Get axes from the plot and use them to extract tin and tout
-            axes = ds.plot(*signals)
-            axes = axes.T.flat
+            figure = ds.plot(*signals)
+            axes = figure.get_axes()
 
             # Figure closure handler
             # It can be better done perhaps.
@@ -1045,7 +1046,7 @@ class Dataset:
         ax: matplotlib.axes.Axes | None = None,
         p_max: int = 0,
         save_as: str | None = None,
-    ) -> matplotlib.axes.Axes:
+    ) -> matplotlib.figure.Figure:
         """Plot the Dataset.
 
         For each signal pair passed as a *tuple*, the signals will be placed in
@@ -1166,28 +1167,32 @@ class Dataset:
             else:
                 linestyles_tpl.append((linestyle_fg,))
 
+        # ===================================================
+        # Actual plot
+        # ===================================================
+
         # Figure and axes
         n = len(signals_lst)
         nrows, ncols = factorize(n)  # noqa
         if ax is None:  # Create new figure and axes
-
-            fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
+            fig = plt.figure()
+            grid = fig.add_gridspec(nrows, ncols)
         else:  # Otherwise use what is passed
             axes = np.asarray(ax)
-        axes = axes.T.flat
-
-        for ax in axes[n:]:
-            ax.remove()
 
         #  for ax in axes:
         # ax.spines.set(visible=True)
         #     ax.tick_params(axis="x")
+
         # Title
         plt.suptitle(
             f"Dataset {self.name}. \n {line_color_input} lines are inputs and {line_color_output} lines are outputs."
         )
 
+        # Dummy axes, needed for using sharex
+        axes = fig.add_subplot(grid[0])
         for ii, s in enumerate(signals_lst):
+            axes = fig.add_subplot(grid[ii], sharex=axes)
             df.droplevel(level=["kind", "units"], axis=1).loc[:, s[0]].plot(
                 subplots=True,
                 grid=True,
@@ -1196,7 +1201,7 @@ class Dataset:
                 linestyle=linestyles_tpl[ii][0],
                 alpha=alpha_fg,
                 ylabel=units_tpl[ii][0],
-                ax=axes[ii],
+                ax=axes,
             )
 
             # In case the user wants to overlap plots...
@@ -1211,6 +1216,7 @@ class Dataset:
                     secondary_y = True
 
                 # Now you can plot
+                axes_right = axes.twinx()  # noqa
                 df.droplevel(level=["kind", "units"], axis=1).loc[:, s[1]].plot(
                     subplots=True,
                     grid=True,
@@ -1220,18 +1226,20 @@ class Dataset:
                     alpha=alpha_bg,
                     secondary_y=secondary_y,
                     ylabel=ylabel,
-                    ax=axes[ii],
+                    ax=axes_right,
                 )
+        # Remove dummy axes
+        fig.get_axes()[0].remove()
 
-        self._shade_nans(
-            axes,
-        )
+        # Shade NaN:s areas
+        self._shade_nans(fig.get_axes())
 
         # Eventually save and return figures.
         if save_as is not None and ax is None:
             save_plot_as(fig, axes, save_as)  # noqa
 
-        return axes.base
+        # return axes.base
+        return fig
 
     def plot_coverage(
         self,
@@ -1244,7 +1252,9 @@ class Dataset:
         ax_in: matplotlib.axes.Axes | None = None,
         ax_out: matplotlib.axes.Axes | None = None,
         save_as: str | None = None,
-    ) -> tuple[matplotlib.axes.Axes | None, matplotlib.axes.Axes | None]:
+    ) -> tuple[
+        matplotlib.figure.Figure | None, matplotlib.figure.Figure | None
+    ]:
         """
         Plot the dataset coverage as histograms.
 
@@ -1369,12 +1379,12 @@ class Dataset:
 
         # Return
         if u_names and y_names:
-            return axes_in.base, axes_out.base
+            return fig_in, fig_out
 
         elif u_names and not y_names:
-            return axes_in.base, None
+            return fig_in, None
         else:  # The only option left is not u_names and y_names
-            return None, axes_out.base
+            return None, fig_out
 
     def fft(
         self,
