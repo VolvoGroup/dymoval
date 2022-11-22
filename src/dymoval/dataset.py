@@ -1628,13 +1628,12 @@ class Dataset:
         s_dict.update(y_dict)
         if kind == "power":
             units = [f"({s_dict[s]}**2)" for s in signals_lst_plain]
-            units_tpl = _list_to_structured_list_of_tuple(signals_lst, units)
         elif kind == "psd":
             units = [f"({s_dict[s]}**2/Hz)" for s in signals_lst_plain]
-            units_tpl = _list_to_structured_list_of_tuple(signals_lst, units)
         elif kind == "amplitude":
             units = list(product(s_dict.values(), ["(rad)"]))
-            units_tpl = _list_to_structured_list_of_tuple(signals_lst, units)
+
+        units_tpl = _list_to_structured_list_of_tuple(signals_lst, units)
 
         # Linestyles
         linestyles_tpl: list[tuple[str, ...]] = []
@@ -1663,9 +1662,24 @@ class Dataset:
             f"Dataset '{self.name}' {kind.capitalize()} spectrum. \n {line_color_input} lines are inputs and {line_color_output} lines are outputs."
         )
 
-        axes = fig.add_subplot(grid[0])
+        # From now on, we consider everything as a list in order
+        # to handle both normal and amplitude spectrums with pretty much
+        # the same code
+
+        # Dummy axes to enable sharex at the first iteration
+        if kind != "amplitude":
+            axes = [fig.add_subplot(grid[0])]
+        else:
+            inner_grid = grid[0].subgridspec(2, 1)
+            axes = [fig.add_subplot(inner_grid[0])]
         for ii, s in enumerate(signals_lst):
-            axes = fig.add_subplot(grid[ii], sharex=axes)
+            # at each iteration a new axes is created and it is placed
+            # either into a 1D or 2D list.
+            if kind != "amplitude":
+                axes = [fig.add_subplot(grid[ii], sharex=axes[0])]
+            else:
+                inner_grid = grid[ii].subgridspec(2, 1)
+                axes = [fig.add_subplot(g, sharex=axes[0]) for g in inner_grid]
             df_freq.droplevel(level="kind", axis=1).loc[:, s[0]].plot(
                 subplots=True,
                 grid=True,
@@ -1673,22 +1687,27 @@ class Dataset:
                 linestyle=linestyles_tpl[ii][0],
                 alpha=alpha_fg,
                 ylabel=units_tpl[ii][0],
+                ax=axes,
             )
-            line_l, labels_l = axes.get_legend_handles_labels()
+            line_l, labels_l = axes[0].get_legend_handles_labels()
 
             # In case the user wants to overlap plots...
             # If the overlapped plots have the same units, then there is
             # no point in using a secondary_y
             line_r = []
             labels_r = []
-            if len(s) == 2:
+            if len(s) == 2:  # tuple like ("u1","u2")
+                if kind != "amplitude":
+                    axes_right = [axes[0].twinx()]
+                else:
+                    axes_right = [axes[0].twinx(), axes[1].twinx()]
+
+                # If the two signals have the same unit, then show the unit only once
                 if units_tpl[ii][0] == units_tpl[ii][1]:
                     ylabel = None
                 else:
                     ylabel = units_tpl[ii][1]
 
-                # Now you can plot
-                axes_right = axes.twinx()
                 df_freq.droplevel(level="kind", axis=1).loc[:, s[1]].plot(
                     subplots=True,
                     grid=False,
@@ -1696,11 +1715,18 @@ class Dataset:
                     linestyle=linestyles_tpl[ii][1],
                     alpha=alpha_bg,
                     ylabel=ylabel,
+                    ax=axes_right,
                 )
-                line_r, labels_r = axes_right.get_legend_handles_labels()
+                if kind != "amplitude":
+                    line_r, labels_r = axes_right[0].get_legend_handles_labels()
+                else:
+                    pass
 
             # Set nice legend
-            axes.legend(line_r + line_l, labels_l + labels_r, loc=0)
+            axes[0].legend(line_r + line_l, labels_l + labels_r, loc=0)
+
+        # Remove dummy axes
+        fig.get_axes()[0].remove()
 
         # Save and return
         if save_as is not None:
