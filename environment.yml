@@ -1,4 +1,4 @@
-name: dymoval 
+name: dymoval
 channels:
   - conda-forge
   - defaults

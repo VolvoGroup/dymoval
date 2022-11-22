@@ -10,6 +10,7 @@ from __future__ import annotations
 import matplotlib
 import numpy as np
 import pandas as pd
+from itertools import product
 import matplotlib.gridspec as gridspec
 from matplotlib import pyplot as plt
 from scipy import io, fft
@@ -1066,7 +1067,19 @@ class Dataset:
         (e.g. *line_color_input* , *alpha_output*. etc).
         are the same for the corresponding plot function in matplotlib.
 
-        TODO TIGHT FIGURE HANDLING
+
+        Note
+        ----
+        The returned figure has a default layout.
+        It is possible to change the layout for example by using the
+        `set_layout_engine` method of matplotlib.Figure.
+
+
+        Example
+        -------
+        >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig.set_layout_engine("constrained")
+
 
         Parameters
         ----------
@@ -1139,7 +1152,7 @@ class Dataset:
         ) = self._classify_signals(*signals_lst_plain)
 
         # ===================================================
-        # Fix the parameters to pass to the plot method
+        # Arrange the parameters to pass to the plot method
         # ===================================================
 
         # All the lists are plain (i.e. no list of tuples)
@@ -1178,15 +1191,11 @@ class Dataset:
             fig = plt.figure()
             grid = fig.add_gridspec(nrows, ncols)
         else:  # Otherwise use what is passed
-            axes = np.asarray(ax)
-
-        #  for ax in axes:
-        # ax.spines.set(visible=True)
-        #     ax.tick_params(axis="x")
+            grid = []
 
         # Title
         plt.suptitle(
-            f"Dataset {self.name}. \n {line_color_input} lines are inputs and {line_color_output} lines are outputs."
+            f"Dataset '{self.name}'. \n {line_color_input} lines are inputs and {line_color_output} lines are outputs."
         )
 
         # Dummy axes, needed for using sharex
@@ -1196,38 +1205,39 @@ class Dataset:
             df.droplevel(level=["kind", "units"], axis=1).loc[:, s[0]].plot(
                 subplots=True,
                 grid=True,
-                legend=True,
                 color=colors_tpl[ii][0],
                 linestyle=linestyles_tpl[ii][0],
                 alpha=alpha_fg,
                 ylabel=units_tpl[ii][0],
-                ax=axes,
             )
+            line_l, labels_l = axes.get_legend_handles_labels()
 
             # In case the user wants to overlap plots...
             # If the overlapped plots have the same units, then there is
             # no point in using a secondary_y
+            line_r = []
+            labels_r = []
             if len(s) == 2:
                 if units_tpl[ii][0] == units_tpl[ii][1]:
                     ylabel = None
-                    secondary_y = False
                 else:
                     ylabel = units_tpl[ii][1]
-                    secondary_y = True
 
                 # Now you can plot
-                axes_right = axes.twinx()  # noqa
+                axes_right = axes.twinx()
                 df.droplevel(level=["kind", "units"], axis=1).loc[:, s[1]].plot(
                     subplots=True,
-                    grid=True,
-                    legend=True,
+                    grid=False,
                     color=colors_tpl[ii][1],
                     linestyle=linestyles_tpl[ii][1],
                     alpha=alpha_bg,
-                    secondary_y=secondary_y,
                     ylabel=ylabel,
-                    ax=axes_right,
                 )
+                line_r, labels_r = axes_right.get_legend_handles_labels()
+
+            # Set nice legend
+            axes.legend(line_r + line_l, labels_l + labels_r, loc=0)
+
         # Remove dummy axes
         fig.get_axes()[0].remove()
 
@@ -1462,7 +1472,7 @@ class Dataset:
         alpha_bg: float = 1.0,
         ax: matplotlib.axes.Axes | None = None,
         save_as: str | None = None,
-    ) -> matplotlib.axes.Axes:
+    ) -> matplotlib.figure.Figure:
         """
         Plot the spectrum of the specified signals in the dataset in different format.
 
@@ -1504,6 +1514,20 @@ class Dataset:
             Save the figure with a specified name.
             The figure is automatically resized with a 16:9 aspect ratio.
             You must specify the complete *filename*, including the path.
+
+
+        Note
+        ----
+        The returned figure has a default layout.
+        It is possible to change the layout for example by using the
+        `set_layout_engine` method of matplotlib.Figure.
+
+
+        Example
+        -------
+        >>> fig = ds.plot_spectrum() # ds is a dymoval Dataset
+        >>> fig.set_layout_engine("constrained")
+
 
 
         Raises
@@ -1609,8 +1633,8 @@ class Dataset:
             units = [f"({s_dict[s]}**2/Hz)" for s in signals_lst_plain]
             units_tpl = _list_to_structured_list_of_tuple(signals_lst, units)
         elif kind == "amplitude":
-            axes[2 * ii].set_ylabel(f"({unit})")
-            axes[2 * ii + 1].set_ylabel("(rad)")
+            units = list(product(s_dict.values(), ["(rad)"]))
+            units_tpl = _list_to_structured_list_of_tuple(signals_lst, units)
 
         # Linestyles
         linestyles_tpl: list[tuple[str, ...]] = []
@@ -1623,114 +1647,66 @@ class Dataset:
             else:
                 linestyles_tpl.append((linestyle_fg,))
 
-        # Figure and axes
+        # ===================================================
+        # Actual plot
+        # ===================================================
         n = len(signals_lst)
         nrows, ncols = factorize(n)  # noqa
-
         if ax is None:  # Create new figure and axes
-            fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
+            fig = plt.figure()
+            grid = fig.add_gridspec(nrows, ncols)
         else:  # Otherwise use what is passed
-            axes = np.asarray(ax)
-        axes = axes.T.flat
-
-        # GET THE GRIDSPEC AND ADD SOME SUBPLOTS
-
-        for ax in axes[n:]:
-            ax.remove()
+            grid = []
 
         # Title
         plt.suptitle(
             f"Dataset '{self.name}' {kind.capitalize()} spectrum. \n {line_color_input} lines are inputs and {line_color_output} lines are outputs."
         )
 
-        # ====================================================
-        # Actual plot
-        # ====================================================
-
+        axes = fig.add_subplot(grid[0])
         for ii, s in enumerate(signals_lst):
+            axes = fig.add_subplot(grid[ii], sharex=axes)
             df_freq.droplevel(level="kind", axis=1).loc[:, s[0]].plot(
                 subplots=True,
                 grid=True,
-                legend=True,
                 color=colors_tpl[ii][0],
                 linestyle=linestyles_tpl[ii][0],
                 alpha=alpha_fg,
                 ylabel=units_tpl[ii][0],
-                ax=axes[ii],
             )
+            line_l, labels_l = axes.get_legend_handles_labels()
 
             # In case the user wants to overlap plots...
             # If the overlapped plots have the same units, then there is
             # no point in using a secondary_y
+            line_r = []
+            labels_r = []
             if len(s) == 2:
                 if units_tpl[ii][0] == units_tpl[ii][1]:
                     ylabel = None
-                    secondary_y = False
                 else:
                     ylabel = units_tpl[ii][1]
-                    secondary_y = True
 
                 # Now you can plot
+                axes_right = axes.twinx()
                 df_freq.droplevel(level="kind", axis=1).loc[:, s[1]].plot(
                     subplots=True,
-                    grid=True,
-                    legend=True,
+                    grid=False,
                     color=colors_tpl[ii][1],
                     linestyle=linestyles_tpl[ii][1],
                     alpha=alpha_bg,
-                    secondary_y=secondary_y,
                     ylabel=ylabel,
-                    ax=axes[ii],
                 )
+                line_r, labels_r = axes_right.get_legend_handles_labels()
 
-        # ====================== END HERE =========================== #
-
-        # Adjust input-output lengths and labels for plots.
-
-        p = len(u_names)
-        q = len(y_names)
-
-        # If the spectrum type is amplitude, then we need to plot
-        # abs and phase, so we need to double a number of things
-        if kind == "amplitude":
-            # Adjust (p,q): numbers of input and outputs are doubled
-            # because they contain (abs,angle)
-            p = 2 * p
-            q = 2 * q
-            # Adjust, labels idx, i.e. each entry appears two times
-            u_names_idx = [u for u in u_names_idx for ii in range(2)]
-            y_names_idx = [y for y in y_names_idx for ii in range(2)]
-
-        # get some plot parameters based on user preferences
-        n, range_in, range_out, u_titles, y_titles = self._get_plot_params(
-            p, q, u_names_idx, y_names_idx, overlap
-        )
-
-        # Find nrwos and ncols for the plot
-        nrows, ncols = factorize(n)
-
-        if overlap:
-            secondary_y = True
-        else:
-            secondary_y = False
-
-        if kind == "amplitude":
-            # To have the phase plot below the abs plot, then the number
-            # of rows must be an even number, otherwise the plot got screwed.
-            # OBS: the same code is in compare_datasets()
-            if np.mod(nrows, 2) != 0:
-                nrows -= 1
-                ncols += int(np.ceil(ncols / nrows))
-
-        # Tight figure if no ax is passed (e.g. from compare_datasets())
-        # if ax is None:
-        #    fig.tight_layout()
+            # Set nice legend
+            axes.legend(line_r + line_l, labels_l + labels_r, loc=0)
 
         # Save and return
         if save_as is not None:
             save_plot_as(fig, axes, save_as)
 
-        return axes.base
+        return fig
 
     def remove_means(
         self,
