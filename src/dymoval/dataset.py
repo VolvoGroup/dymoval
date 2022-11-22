@@ -1044,8 +1044,8 @@ class Dataset:
         line_color_output: str = "green",
         linestyle_bg: str = "--",
         alpha_bg: float = 1.0,
-        ax: matplotlib.axes.Axes | None = None,
-        p_max: int = 0,
+        _axes: matplotlib.axes.Axes | None = None,
+        _p_max: int = 0,
         save_as: str | None = None,
     ) -> matplotlib.figure.Figure:
         """Plot the Dataset.
@@ -1104,8 +1104,8 @@ class Dataset:
             Line style of the second output signals.
         alpha_bg:
             Alpha channel value for the output signals.
-        ax:
-            Matplotlib Axes where to place the plot.
+        _axes:
+            Matplotlib Axes where to place the plot. (Used internally)
         p_max:
             Maximum number of inputs. It is a parameters used internally so
             it can be left alone.
@@ -1187,11 +1187,11 @@ class Dataset:
         # Figure and axes
         n = len(signals_lst)
         nrows, ncols = factorize(n)  # noqa
-        if ax is None:  # Create new figure and axes
+        if _axes is None:  # Create new figure and axes
             fig = plt.figure()
             grid = fig.add_gridspec(nrows, ncols)
         else:  # Otherwise use what is passed
-            grid = []
+            fig = _axes[0].get_figure()
 
         # Title
         plt.suptitle(
@@ -1200,8 +1200,12 @@ class Dataset:
 
         # Dummy axes, needed for using sharex
         axes = fig.add_subplot(grid[0])
+        # Iteration
         for ii, s in enumerate(signals_lst):
             axes = fig.add_subplot(grid[ii], sharex=axes)
+            # Override axes is passed by e.g. compare_datasets
+            if _axes:
+                axes = _axes[ii]
             df.droplevel(level=["kind", "units"], axis=1).loc[:, s[0]].plot(
                 subplots=True,
                 grid=True,
@@ -1209,6 +1213,7 @@ class Dataset:
                 linestyle=linestyles_tpl[ii][0],
                 alpha=alpha_fg,
                 ylabel=units_tpl[ii][0],
+                ax=axes,
             )
             line_l, labels_l = axes.get_legend_handles_labels()
 
@@ -1232,6 +1237,7 @@ class Dataset:
                     linestyle=linestyles_tpl[ii][1],
                     alpha=alpha_bg,
                     ylabel=ylabel,
+                    ax=axes_right,
                 )
                 line_r, labels_r = axes_right.get_legend_handles_labels()
 
@@ -1245,7 +1251,7 @@ class Dataset:
         self._shade_nans(fig.get_axes())
 
         # Eventually save and return figures.
-        if save_as is not None and ax is None:
+        if save_as is not None and _axes is None:
             save_plot_as(fig, axes, save_as)  # noqa
 
         # return axes.base
@@ -1667,11 +1673,13 @@ class Dataset:
         # the same code
 
         # Dummy axes to enable sharex at the first iteration
+        # axes ZERO
         if kind != "amplitude":
             axes = [fig.add_subplot(grid[0])]
         else:
             inner_grid = grid[0].subgridspec(2, 1)
             axes = [fig.add_subplot(inner_grid[0])]
+        # Other AXIS
         for ii, s in enumerate(signals_lst):
             # at each iteration a new axes is created and it is placed
             # either into a 1D or 2D list.
@@ -1680,6 +1688,8 @@ class Dataset:
             else:
                 inner_grid = grid[ii].subgridspec(2, 1)
                 axes = [fig.add_subplot(g, sharex=axes[0]) for g in inner_grid]
+            if _axes:
+                pass
             df_freq.droplevel(level="kind", axis=1).loc[:, s[0]].plot(
                 subplots=True,
                 grid=True,
