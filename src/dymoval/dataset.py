@@ -10,7 +10,6 @@ from __future__ import annotations
 import matplotlib
 import numpy as np
 import pandas as pd
-from itertools import product
 import matplotlib.gridspec as gridspec
 from matplotlib import pyplot as plt
 from scipy import io, fft
@@ -583,46 +582,51 @@ class Dataset:
 
         return u_dict, y_dict, u_list, y_list
 
-    # def _get_plot_params(
-    #     self,
-    #     p: int,
-    #     q: int,
-    #     u_names_idx: list[int],
-    #     y_names_idx: list[int],
-    #     overlap: bool,
-    # ) -> tuple[int, np.ndarray, np.ndarray, list[str], list[str]]:
-    #     # Return n, range_in, range_out, u_titles, y_titles.
+    def _select_signals_to_plot(
+        self, *signals: str | tuple[str, str] | None, overlap: bool
+    ) -> tuple[
+        dict[str, str], dict[str, str], list[tuple[str, ...]], list[str]
+    ]:
+        # ===================================================
+        # Selection of signals to plot
+        # ===================================================
+        # Returns the signals passed by the users.
+        # If None has passed, it takes all the signals in the Dataset instance
+        # overlap parameter override eventual signals passed by the user
 
-    #     # Input range is always [0:p]
-    #     range_in = np.arange(0, p)
-    #     if overlap:
-    #         n = max(p, q)
-    #         range_out = np.arange(0, q)
+        # df points to self.dataset.
+        df = self.dataset
 
-    #         # Adjust subplot titles
-    #         m = min(p, q)
-    #         # Common titles
-    #         titles_a = ["IN #" + str(ii + 1) for ii in u_names_idx]
-    #         titles_b = [" - OUT #" + str(ii + 1) for ii in y_names_idx]
-    #         common_titles = [s1 + s2 for s1, s2 in zip(titles_a, titles_b)]
+        # All possible names
+        u_names = list(df["INPUT"].columns.get_level_values("names"))
+        y_names = list(df["OUTPUT"].columns.get_level_values("names"))
 
-    #         if p > q:
-    #             trail = ["INPUT #" + str(ii + 1) for ii in u_names_idx[m:]]
-    #             u_titles = common_titles + trail
-    #             y_titles = []
-    #         else:
-    #             trail = ["OUTPUT #" + str(ii + 1) for ii in y_names_idx[m:]]
-    #             u_titles = []
-    #             y_titles = common_titles + trail
-    #     else:
-    #         n = p + q
-    #         range_out = np.arange(p, p + q)
+        if overlap:
+            # OBS! zip cuts the longest list
+            p = len(u_names) - len(y_names)
+            leftovers = u_names[p + 1 :] if p > 0 else y_names[p + 1 :]
+            signals_lst = list(zip(u_names, y_names)) + leftovers
+        # Convert passed tuple[tuple|str] to list[tuple|str]
+        elif signals:
+            signals_lst = list(signals)
+        else:
+            signals_lst = u_names + y_names
 
-    #         # Adjust titles
-    #         u_titles = ["INPUT #" + str(ii + 1) for ii in u_names_idx]
-    #         y_titles = ["OUTPUT #" + str(ii + 1) for ii in y_names_idx]
+        # Make all tuples like [('u0', 'u1'), ('y0',), ('u1', 'y1', 'u0')]
+        for ii, s in enumerate(signals_lst):
+            if isinstance(s, str):
+                signals_lst[ii] = (s,)
 
-    #     return n, range_in, range_out, u_titles, y_titles
+        # signals_lst_plain, e.g. ['u0', 'u1', 'y0', 'u1', 'y1', 'u0']
+        signals_lst_plain = [item for t in signals_lst for item in t]
+
+        # validation
+        (
+            u_dict,
+            y_dict,
+        ) = self._classify_signals(*signals_lst_plain)
+
+        return u_dict, y_dict, signals_lst, signals_lst_plain
 
     def _fix_sampling_periods(
         self,
@@ -1121,40 +1125,17 @@ class Dataset:
         # ===================================================
         # Selection of signals to plot
         # ===================================================
-
-        # All possible names
-        u_names = list(df["INPUT"].columns.get_level_values("names"))
-        y_names = list(df["OUTPUT"].columns.get_level_values("names"))
-
-        if overlap:
-            # OBS! zip cuts the longest list
-            p = len(u_names) - len(y_names)
-            leftovers = u_names[p + 1 :] if p > 0 else y_names[p + 1 :]
-            signals_lst = list(zip(u_names, y_names)) + leftovers
-        # Convert passed tuple[tuple|str] to list[tuple|str]
-        elif signals:
-            signals_lst = list(signals)
-        else:
-            signals_lst = u_names + y_names
-
-        # Make all tuples like [('u0', 'u1'), ('y0',), ('u1', 'y1', 'u0')]
-        for ii, s in enumerate(signals_lst):
-            if isinstance(s, str):
-                signals_lst[ii] = (s,)
-
-        # signals_lst_plain, e.g. ['u0', 'u1', 'y0', 'u1', 'y1', 'u0']
-        signals_lst_plain = [item for t in signals_lst for item in t]
-
-        # Arguments validation
         (
             u_dict,
             y_dict,
-        ) = self._classify_signals(*signals_lst_plain)
+            signals_lst,
+            signals_lst_plain,
+        ) = self._select_signals_to_plot(*signals, overlap=overlap)
 
         # ===================================================
         # Arrange the parameters to pass to the plot method
         # ===================================================
-
+        # TODO:
         # All the lists are plain (i.e. no list of tuples)
         # colors
         colors = [
@@ -1174,24 +1155,21 @@ class Dataset:
         for val in colors_tpl:
             if len(val) == 2:
                 if val[0] == val[1]:
-                    linestyles_tpl.append((linestyle_fg, linestyle_bg))
+                    linestyles_tpl.append((linestyle_bg, linestyle_fg))
                 else:
                     linestyles_tpl.append((linestyle_fg, linestyle_fg))
             else:
                 linestyles_tpl.append((linestyle_fg,))
 
+        # Figure and axes
+        fig = plt.figure()
+        n = len(signals_lst)
+        nrows, ncols = factorize(n)  # noqa
+        grid = fig.add_gridspec(nrows, ncols)
+
         # ===================================================
         # Actual plot
         # ===================================================
-
-        # Figure and axes
-        n = len(signals_lst)
-        nrows, ncols = factorize(n)  # noqa
-        if _axes is None:  # Create new figure and axes
-            fig = plt.figure()
-            grid = fig.add_gridspec(nrows, ncols)
-        else:  # Otherwise use what is passed
-            fig = _axes[0].get_figure()
 
         # Title
         plt.suptitle(
@@ -1242,7 +1220,7 @@ class Dataset:
                 line_r, labels_r = axes_right.get_legend_handles_labels()
 
             # Set nice legend
-            axes.legend(line_r + line_l, labels_l + labels_r, loc=0)
+            axes.legend(line_r + line_l, labels_l + labels_r)
 
         # Remove dummy axes
         fig.get_axes()[0].remove()
@@ -1265,8 +1243,8 @@ class Dataset:
         alpha_input: float = 1.0,
         line_color_output: str = "g",
         alpha_output: float = 1.0,
-        ax_in: matplotlib.axes.Axes | None = None,
-        ax_out: matplotlib.axes.Axes | None = None,
+        axes_in: matplotlib.axes.Axes | None = None,
+        axes_out: matplotlib.axes.Axes | None = None,
         save_as: str | None = None,
     ) -> tuple[
         matplotlib.figure.Figure | None, matplotlib.figure.Figure | None
@@ -1324,12 +1302,12 @@ class Dataset:
         if u_names:
             nrows_in, ncols_in = factorize(p)  # noqa
 
-            if ax_in is None:  # Create new figure and axes
+            if axes_in is None:  # Create new figure and axes
                 fig_in, axes_in = plt.subplots(
                     nrows_in, ncols_in, squeeze=False
                 )
             else:  # Otherwise use what is passed
-                axes_in = np.asarray(ax_in)
+                axes_in = np.asarray(axes_in)
 
             axes_in = axes_in.T.flat
 
@@ -1352,18 +1330,18 @@ class Dataset:
             plt.suptitle("Coverage region (INPUT).")
 
             # Tight figure if no ax is passed (e.g. from compare_datasets())
-            # if ax_in is None:
+            # if axes_in is None:
             #    fig_in.tight_layout()
 
         if y_names:
             nrows_out, ncols_out = factorize(q)  # noqa
 
-            if ax_out is None:  # Create new figure and axes
+            if axes_out is None:  # Create new figure and axes
                 fig_out, axes_out = plt.subplots(
                     nrows_out, ncols_out, squeeze=False
                 )
             else:  # Otherwise use what is passed
-                axes_out = np.asarray(ax_out)
+                axes_out = np.asarray(axes_out)
 
             axes_out = axes_out.T.flat
 
@@ -1386,7 +1364,7 @@ class Dataset:
             plt.suptitle("Coverage region (OUTPUT).")
 
             # tight figure if no ax is passed (e.g. from compare_datasets())
-            # if ax_out is None:
+            # if axes_out is None:
             #    fig_out.tight_layout()
 
         if save_as is not None:
@@ -1476,7 +1454,7 @@ class Dataset:
         line_color_output: str = "green",
         linestyle_bg: str = "--",
         alpha_bg: float = 1.0,
-        ax: matplotlib.axes.Axes | None = None,
+        _axes: matplotlib.axes.Axes | None = None,
         save_as: str | None = None,
     ) -> matplotlib.figure.Figure:
         """
@@ -1542,47 +1520,21 @@ class Dataset:
             If *kind* doen not match any allowed values.
         """
 
-        # df points to self.dataset.
-        df = self.dataset
+        if kind not in SPECTRUM_KIND:
+            raise ValueError(f"kind must be one of {SPECTRUM_KIND}")
 
         # ===================================================
         # Selection of signals to plot
         # ===================================================
-
-        # All possible names
-        u_names = list(df["INPUT"].columns.get_level_values("names"))
-        y_names = list(df["OUTPUT"].columns.get_level_values("names"))
-
-        if overlap:
-            # OBS! zip cuts the longest list
-            p = len(u_names) - len(y_names)
-            leftovers = u_names[p + 1 :] if p > 0 else y_names[p + 1 :]
-            signals_lst = list(zip(u_names, y_names)) + leftovers
-        # Convert passed tuple[tuple|str] to list[tuple|str]
-        elif signals:
-            signals_lst = list(signals)
-        else:
-            signals_lst = u_names + y_names
-
-        # Make all tuples like [('u0', 'u1'), ('y0',), ('u1', 'y1', 'u0')]
-        for ii, s in enumerate(signals_lst):
-            if isinstance(s, str):
-                signals_lst[ii] = (s,)
-
-        # signals_lst_plain, e.g. ['u0', 'u1', 'y0', 'u1', 'y1', 'u0']
-        signals_lst_plain = [item for t in signals_lst for item in t]
-
-        # validation
         (
             u_dict,
             y_dict,
-        ) = self._classify_signals(*signals_lst_plain)
-
-        if kind not in SPECTRUM_KIND:
-            raise ValueError(f"kind must be one of {SPECTRUM_KIND}")
+            signals_lst,
+            signals_lst_plain,
+        ) = self._select_signals_to_plot(*signals, overlap=overlap)
 
         # ====================================
-        # Compute Spectrums
+        # Compute Spectrums values
         # ===================================
 
         # For real signals, the spectrum is Hermitian anti-simmetric, i.e.
@@ -1617,7 +1569,7 @@ class Dataset:
             df_freq[1:-1] = 2 * df_freq[1:-1]
 
         # ===================================================
-        # Arrange the parameters to pass to the plot method
+        # Arrange colors, ylabels (=units) and linestyles
         # ===================================================
 
         # All the lists are plain (i.e. no list of tuples)
@@ -1637,7 +1589,7 @@ class Dataset:
         elif kind == "psd":
             units = [f"({s_dict[s]}**2/Hz)" for s in signals_lst_plain]
         elif kind == "amplitude":
-            units = list(product(s_dict.values(), ["(rad)"]))
+            units = [s_dict[s] for s in signals_lst_plain]
 
         units_tpl = _list_to_structured_list_of_tuple(signals_lst, units)
 
@@ -1646,27 +1598,92 @@ class Dataset:
         for val in colors_tpl:
             if len(val) == 2:
                 if val[0] == val[1]:
-                    linestyles_tpl.append((linestyle_fg, linestyle_bg))
+                    linestyles_tpl.append((linestyle_bg, linestyle_fg))
                 else:
                     linestyles_tpl.append((linestyle_fg, linestyle_fg))
             else:
                 linestyles_tpl.append((linestyle_fg,))
 
+        fig = plt.figure()
+        n = len(signals_lst)
+        nrows, ncols = factorize(n)  # noqa
+        grid = fig.add_gridspec(nrows, ncols)
+
         # ===================================================
         # Actual plot
         # ===================================================
-        n = len(signals_lst)
-        nrows, ncols = factorize(n)  # noqa
-        if ax is None:  # Create new figure and axes
-            fig = plt.figure()
-            grid = fig.add_gridspec(nrows, ncols)
-        else:  # Otherwise use what is passed
-            grid = []
 
         # Title
-        plt.suptitle(
-            f"Dataset '{self.name}' {kind.capitalize()} spectrum. \n {line_color_input} lines are inputs and {line_color_output} lines are outputs."
-        )
+        #         fig.suptitle(
+        #             f"Dataset '{self.name}' {kind} spectrum. \n {line_color_input} lines are inputs and {line_color_output} lines are outputs."
+        #         )
+        #
+        #         # axes ZERO
+        #         axes = fig.add_subplot(grid[0])
+        #         # Other AXIS
+        #         for ii, s in enumerate(signals_lst):
+        #             # at each iteration a new axes who sharex with the
+        #             # previously created axes, is created
+        #             axes = fig.add_subplot(grid[ii], sharex=axes)
+        #             if _axes:
+        #                 axes = _axes[ii]
+        #             df_freq.droplevel(level="kind", axis=1).loc[:, s[0]].plot(
+        #                 subplots=True,
+        #                 grid=True,
+        #                 color=colors_tpl[ii][0],
+        #                 linestyle=linestyles_tpl[ii][0],
+        #                 alpha=alpha_fg,
+        #                 ylabel=units_tpl[ii][0],
+        #                 ax=axes,
+        #             )
+        #             line_l, label_l = axes.get_legend_handles_labels()
+        #
+        #             # In case the user wants to overlap plots...
+        #             # If the overlapped plots have the same units, then there is
+        #             # no point in using a secondary_y
+        #             line_r = []
+        #             labels_r = []
+        #             if len(s) == 2:  # tuple like ("u1","u2")
+        #                 axes_right = axes.twinx()
+        #
+        #                 # If the two signals have the same unit, then show the unit only once
+        #                 if units_tpl[ii][0] == units_tpl[ii][1]:
+        #                     ylabel = None
+        #                 else:
+        #                     ylabel = units_tpl[ii][1]
+        #
+        #                 df_freq.droplevel(level="kind", axis=1).loc[:, s[1]].plot(
+        #                     subplots=True,
+        #                     grid=False,
+        #                     legend=False,
+        #                     color=colors_tpl[ii][1],
+        #                     linestyle=linestyles_tpl[ii][1],
+        #                     alpha=alpha_bg,
+        #                     ylabel=ylabel,
+        #                     ax=axes_right,
+        #                 )
+        #                 line_r, label_r = axes_right.get_legend_handles_labels()
+        #
+        #             # Set nice legend
+        #             axes.legend(line_r + line_l, label_l + label_r)
+        #
+        #         # Remove dummy axes
+        #         fig.get_axes()[0].remove()
+
+        # ===================================================
+        # Special case: amplitude spectrum
+        # ===================================================
+        # This must be treated a special case because it double the number of axes
+        # on the  same figure.
+        # We tried to make a cleaner code but it ended up in a plethora of
+        # if-then-else and for loops that made the code pretty much unreadable.
+        # One of the reason is that matplotlib is difficult to handle, especially
+        # if you need to shuffle things around. Also, pandas plot, which is built upon
+        # matplotlib won't take iterables in many arguments
+        # (for example df.plot(ylabel=...) can only be a single value, even if you are
+        # plotting multiple columns at once.
+        # Also, to have nested subplots (for plotting abs and angle) you must
+        # use gridspecs.
 
         # From now on, we consider everything as a list in order
         # to handle both normal and amplitude spectrums with pretty much
@@ -1674,67 +1691,77 @@ class Dataset:
 
         # Dummy axes to enable sharex at the first iteration
         # axes ZERO
-        if kind != "amplitude":
-            axes = [fig.add_subplot(grid[0])]
-        else:
-            inner_grid = grid[0].subgridspec(2, 1)
-            axes = [fig.add_subplot(inner_grid[0])]
-        # Other AXIS
+        inner_grid = grid[0].subgridspec(2, 1)
+        axes = [fig.add_subplot(inner_grid[0])]
+        # Iteration
         for ii, s in enumerate(signals_lst):
             # at each iteration a new axes is created and it is placed
             # either into a 1D or 2D list.
-            if kind != "amplitude":
-                axes = [fig.add_subplot(grid[ii], sharex=axes[0])]
-            else:
-                inner_grid = grid[ii].subgridspec(2, 1)
-                axes = [fig.add_subplot(g, sharex=axes[0]) for g in inner_grid]
+            # Add a subplot(2,1) to each already existing subplots
+            inner_grid = grid[ii].subgridspec(2, 1)
+            axes = [fig.add_subplot(g, sharex=axes[0]) for g in inner_grid]
             if _axes:
-                pass
+                axes = _axes[ii]
+            # Two colums per time are being plot: (abs,angle)
             df_freq.droplevel(level="kind", axis=1).loc[:, s[0]].plot(
                 subplots=True,
                 grid=True,
                 color=colors_tpl[ii][0],
                 linestyle=linestyles_tpl[ii][0],
                 alpha=alpha_fg,
-                ylabel=units_tpl[ii][0],
                 ax=axes,
             )
-            line_l, labels_l = axes[0].get_legend_handles_labels()
+            # ylabels (units)
+            axes[0].set_ylabel(f"({units_tpl[ii][0]})")
+            axes[1].set_ylabel("(rad)")
+
+            # legend (s,abs) and (s,angle) (will be placed at the end)
+            # abs
+            line_abs_l, _ = axes[0].get_legend_handles_labels()
+            label_abs_l = [f"{s[0]}, abs"]
+
+            # angle
+            line_angle_l, _ = axes[1].get_legend_handles_labels()
+            label_angle_l = [f"{s[0]}, angle"]
 
             # In case the user wants to overlap plots...
             # If the overlapped plots have the same units, then there is
             # no point in using a secondary_y
-            line_r = []
-            labels_r = []
+            line_abs_r = []
+            label_abs_r = []
+            line_angle_r = []
+            label_angle_r = []
             if len(s) == 2:  # tuple like ("u1","u2")
-                if kind != "amplitude":
-                    axes_right = [axes[0].twinx()]
-                else:
-                    axes_right = [axes[0].twinx(), axes[1].twinx()]
-
-                # If the two signals have the same unit, then show the unit only once
-                if units_tpl[ii][0] == units_tpl[ii][1]:
-                    ylabel = None
-                else:
-                    ylabel = units_tpl[ii][1]
-
+                axes_right = [axes[0].twinx(), axes[1].twinx()]
                 df_freq.droplevel(level="kind", axis=1).loc[:, s[1]].plot(
                     subplots=True,
                     grid=False,
                     color=colors_tpl[ii][1],
+                    legend=False,
                     linestyle=linestyles_tpl[ii][1],
                     alpha=alpha_bg,
-                    ylabel=ylabel,
                     ax=axes_right,
                 )
-                if kind != "amplitude":
-                    line_r, labels_r = axes_right[0].get_legend_handles_labels()
-                else:
-                    pass
+                # ylabels (units)
+                if units_tpl[ii][0] != units_tpl[ii][1]:
+                    axes_right[0].set_ylabel(f"({units_tpl[ii][1]})")
 
+                # legend (s,abs) and (s,angle) (will be placed at the end)
+                # abs
+                line_abs_r, _ = axes_right[0].get_legend_handles_labels()
+                label_abs_r = [f"{s[1]}, abs"]
+
+                # angle
+                line_angle_r, _ = axes_right[1].get_legend_handles_labels()
+                label_angle_r = [f"{s[1]}, abs"]
+
+            # legend handling
             # Set nice legend
-            axes[0].legend(line_r + line_l, labels_l + labels_r, loc=0)
-
+            axes[0].legend(line_abs_r + line_abs_l, label_abs_l + label_abs_r)
+            axes[1].legend(
+                line_angle_r + line_angle_l,
+                label_angle_l + label_angle_r,
+            )
         # Remove dummy axes
         fig.get_axes()[0].remove()
 
