@@ -628,6 +628,66 @@ class Dataset:
 
         return u_dict, y_dict, signals_lst, signals_lst_plain
 
+    def _create_fig_and_params(
+        self,
+        kind: Literal["time", "coverage"] | Spectrum_type,
+        u_dict: dict[str, str],
+        y_dict: dict[str, str],
+        signals_lst_plain: list[str],
+        signals_lst: list[tuple[str, ...]],
+        line_color_input: str,
+        line_color_output: str,
+        linestyle_fg: str,
+        linestyle_bg: str,
+    ) -> tuple[colors_tpl, units_tpl, linestyles_tpl]:
+        # signals_lst is passed only to be a reference for casting
+        # signals_lst_plain, which is e.g.
+        # signals_lst_plain = ["u1","u2","u3", "y1","y4",...]
+        # to a structure that resemble signals_lst, e.g.
+        # signals_lst[("u1","u2"),("u3",), ("y1","y4")...]
+
+        # colors
+        colors = [
+            line_color_input if s in u_dict.keys() else line_color_output
+            for s in signals_lst_plain
+        ]
+        colors_tpl = _list_to_structured_list_of_tuple(signals_lst, colors)
+
+        # ylabels (units)
+        # input
+        s_dict = deepcopy(u_dict)
+        s_dict.update(y_dict)
+        if kind in ["time", "coverage", "amplitude"]:
+            ylabels = [s_dict[s] for s in signals_lst_plain]
+        if kind == "power":
+            ylabels = [f"({s_dict[s]}**2)" for s in signals_lst_plain]
+        elif kind == "psd":
+            ylabels = [f"({s_dict[s]}**2/Hz)" for s in signals_lst_plain]
+
+        ylabels_tpl = _list_to_structured_list_of_tuple(signals_lst, ylabels)
+
+        # Linestyles
+        linestyles_tpl: list[tuple[str, ...]] = []
+        for val in colors_tpl:
+            if len(val) == 2:
+                if val[0] == val[1]:
+                    linestyles_tpl.append((linestyle_bg, linestyle_fg))
+                else:
+                    linestyles_tpl.append((linestyle_fg, linestyle_fg))
+            else:
+                linestyles_tpl.append((linestyle_fg,))
+
+        if not _axes:
+            fig = plt.figure()
+            n = len(signals_lst)
+            nrows, ncols = factorize(n)  # noqa
+            # grid = fig.add_gridspec(nrows, ncols)
+            fig.add_gridspec(nrows, ncols)
+        else:
+            fig = _axes.get_figure()
+
+        return colors_tpl, ylabels_tpl, linestyles_tpl
+
     def _fix_sampling_periods(
         self,
         signal_list: list[Signal],
@@ -1571,43 +1631,18 @@ class Dataset:
         # ===================================================
         # Arrange colors, ylabels (=units) and linestyles
         # ===================================================
-
-        # All the lists are plain (i.e. no list of tuples)
-        # colors
-        colors = [
-            line_color_input if s in u_dict.keys() else line_color_output
-            for s in signals_lst_plain
-        ]
-        colors_tpl = _list_to_structured_list_of_tuple(signals_lst, colors)
-
-        # ylabels (units)
-        # input
-        s_dict = deepcopy(u_dict)
-        s_dict.update(y_dict)
-        if kind == "power":
-            units = [f"({s_dict[s]}**2)" for s in signals_lst_plain]
-        elif kind == "psd":
-            units = [f"({s_dict[s]}**2/Hz)" for s in signals_lst_plain]
-        elif kind == "amplitude":
-            units = [s_dict[s] for s in signals_lst_plain]
-
-        units_tpl = _list_to_structured_list_of_tuple(signals_lst, units)
-
-        # Linestyles
-        linestyles_tpl: list[tuple[str, ...]] = []
-        for val in colors_tpl:
-            if len(val) == 2:
-                if val[0] == val[1]:
-                    linestyles_tpl.append((linestyle_bg, linestyle_fg))
-                else:
-                    linestyles_tpl.append((linestyle_fg, linestyle_fg))
-            else:
-                linestyles_tpl.append((linestyle_fg,))
-
-        fig = plt.figure()
-        n = len(signals_lst)
-        nrows, ncols = factorize(n)  # noqa
-        grid = fig.add_gridspec(nrows, ncols)
+        fig, colors_tpl, units_tpl, linestyles_tpl = _create_fig_and_params(
+            kind,
+            u_dict,
+            y_dict,
+            signals_lst_plain,
+            signals_lst,
+            line_color_input,
+            line_color_output,
+            linestyle_fg,
+            linestyle_bg,
+            _axes,
+        )
 
         # ===================================================
         # Actual plot
@@ -1691,6 +1726,7 @@ class Dataset:
 
         # Dummy axes to enable sharex at the first iteration
         # axes ZERO
+        grid = fig.get_axes()[0].get_gridspec()
         inner_grid = grid[0].subgridspec(2, 1)
         axes = [fig.add_subplot(inner_grid[0])]
         # Iteration
