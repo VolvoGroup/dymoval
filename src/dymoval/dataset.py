@@ -692,6 +692,7 @@ class Dataset:
 
         # This is the function who makes the actual plot once all the
         # parameters are set and passed
+        # Adjust passed dataframe.
 
         # Initialize iteration
         fig = grid.figure
@@ -701,7 +702,7 @@ class Dataset:
             # at each iteration a new axes who sharex with the
             # previously created axes, is created
             axes = fig.add_subplot(grid[ii], sharex=axes)
-            df.droplevel(level="kind", axis=1).loc[:, s[0]].plot(
+            df.droplevel(level=["kind", "units"], axis=1).loc[:, s[0]].plot(
                 subplots=True,
                 grid=True,
                 color=colors_tpl[ii][0],
@@ -711,7 +712,6 @@ class Dataset:
                 ax=axes,
             )
             line_l, label_l = axes.get_legend_handles_labels()
-            print(df.droplevel(level="kind", axis=1).columns)
 
             # In case the user wants to overlap plots...
             # If the overlapped plots have the same units, then there is
@@ -727,7 +727,7 @@ class Dataset:
                 else:
                     ylabel = units_tpl[ii][1]
 
-                df.droplevel(level="kind", axis=1).loc[:, s[1]].plot(
+                df.droplevel(level=["kind", "units"], axis=1).loc[:, s[1]].plot(
                     subplots=True,
                     grid=False,
                     legend=False,
@@ -910,7 +910,7 @@ class Dataset:
             plt.ion()
 
             # Get axes from the plot and use them to extract tin and tout
-            figure = ds.plot(*signals)
+            figure = ds.plot(*signals, _grid=None)
             axes = figure.get_axes()
 
             # Figure closure handler
@@ -1113,7 +1113,7 @@ class Dataset:
         /,
         *signal_pairs: tuple[str, str],
         save_as: str | None = None,
-    ) -> matplotlib.axes.Axes:
+    ) -> matplotlib.figure.Figure:
         """You must specify the complete *filename*, including the path."""
         # df points to self.dataset.
         df = self.dataset
@@ -1149,11 +1149,13 @@ class Dataset:
                 grid=True,
             )
 
+        fig.suptitle("XY-plot.")
+
         # Eventually save and return figures.
         if save_as is not None and ax is None:
             save_plot_as(fig, axes, save_as)  # noqa
 
-        return axes.base
+        return fig
 
     def plot(
         self,
@@ -1475,11 +1477,11 @@ class Dataset:
         # Validation
         u_dict, y_dict = self._classify_signals(*signals)
 
+        # Pointer to DataFrame
+        df_temp = self.dataset
+
         u_names = list(u_dict.keys())
         y_names = list(y_dict.keys())
-
-        # Remove 'INPUT' 'OUTPUT' columns level from dataframe
-        df_temp = self.dataset.droplevel(level=["kind", "units"], axis=1)
 
         # Check if there are any NaN:s
         if df_temp.isna().any(axis=None):
@@ -1493,14 +1495,22 @@ class Dataset:
         # See https://stackoverflow.com/questions/20165193/fft-normalization
         N = len(df_temp.index)
 
-        vals = fft.rfftn(df_temp.loc[:, u_names + y_names], axes=0) / N
+        vals = (
+            fft.rfftn(
+                df_temp.droplevel(level=["kind", "units"], axis=1).loc[
+                    :, u_names + y_names
+                ],
+                axes=0,
+            )
+            / N
+        )
         vals = vals.round(NUM_DECIMALS)
 
         # Create a new Dataframe
-        u_extended_labels = list(zip(["INPUT"] * len(u_names), u_names))
-        y_extended_labels = list(zip(["OUTPUT"] * len(y_names), y_names))
+        u_cols = [col for col in df_temp.columns for u in u_names if u in col]
+        y_cols = [col for col in df_temp.columns for y in y_names if y in col]
         cols = pd.MultiIndex.from_tuples(
-            [*u_extended_labels, *y_extended_labels], name=["kind", "names"]
+            u_cols + y_cols, names=df_temp.columns.names
         )
         df_freq = pd.DataFrame(data=vals.round(NUM_DECIMALS), columns=cols)
         df_freq = df_freq.T.drop_duplicates().T  # Drop duplicated columns
