@@ -395,11 +395,25 @@ class Dataset:
             signals = []
 
         # Trim dataset and all the attributes
+        plot_kwargs = {
+            "overlap": overlap,
+            "linecolor_input": "b",
+            "linestyle_fg": "-",
+            "alpha_fg": 1.0,
+            "linecolor_output": "green",
+            "linestyle_bg": "--",
+            "alpha_bg": 1.0,
+            "_grid": None,
+            "_p_max": 0,
+            "save_as": None,
+        }
         tmp = self.trim(
             *signals,
             tin=tin,
             tout=tout,
             verbosity=verbosity,
+            # overlap=overlap,
+            **plot_kwargs,
         )
 
         # Update the current Dataset instance
@@ -683,8 +697,8 @@ class Dataset:
         df: pd.DataFrame,
         signals_lst: list[tuple[str, ...]],
         grid: matplotlib.gridspec.GridSpec,
-        colors_tpl: list[tuple[str, ...]],
-        units_tpl: list[tuple[str, ...]],
+        linecolors_tpl: list[tuple[str, ...]],
+        ylabels_tpl: list[tuple[str, ...]],
         linestyles_tpl: list[tuple[str, ...]],
         alpha_fg: float,
         alpha_bg: float,
@@ -705,10 +719,10 @@ class Dataset:
             df.droplevel(level=["kind", "units"], axis=1).loc[:, s[0]].plot(
                 subplots=True,
                 grid=True,
-                color=colors_tpl[ii][0],
+                color=linecolors_tpl[ii][0],
                 linestyle=linestyles_tpl[ii][0],
                 alpha=alpha_fg,
-                ylabel=units_tpl[ii][0],
+                ylabel=ylabels_tpl[ii][0],
                 ax=axes,
             )
             line_l, label_l = axes.get_legend_handles_labels()
@@ -722,16 +736,16 @@ class Dataset:
                 axes_right = axes.twinx()
 
                 # If the two signals have the same unit, then show the unit only once
-                if units_tpl[ii][0] == units_tpl[ii][1]:
+                if ylabels_tpl[ii][0] == ylabels_tpl[ii][1]:
                     ylabel = None
                 else:
-                    ylabel = units_tpl[ii][1]
+                    ylabel = ylabels_tpl[ii][1]
 
                 df.droplevel(level=["kind", "units"], axis=1).loc[:, s[1]].plot(
                     subplots=True,
                     grid=False,
                     legend=False,
-                    color=colors_tpl[ii][1],
+                    color=linecolors_tpl[ii][1],
                     linestyle=linestyles_tpl[ii][1],
                     alpha=alpha_bg,
                     ylabel=ylabel,
@@ -741,6 +755,7 @@ class Dataset:
 
             # Set nice legend
             axes.legend(line_r + line_l, label_l + label_r)
+            axes.set_xlabel(f"{df.index.name[0]} ({df.index.name[1]})")
 
         # Remove dummy axes (for a more general implementation check
         # _plot_ans_angle method
@@ -867,11 +882,12 @@ class Dataset:
         return ds
 
     def trim(
-        self,
+        self: Dataset,
         *signals: str | tuple[str, str] | None,
         tin: float | None = None,
         tout: float | None = None,
         verbosity: int = 0,
+        **kwargs: Any,
     ) -> Dataset:
         """
         MISSING DOCSTRUNG!!!!
@@ -886,6 +902,8 @@ class Dataset:
             DESCRIPTION. The default is None.
         verbosity : int, optional
             DESCRIPTION. The default is 0.
+        **kwargs:
+            kwargs to be passed to the plot() method.
 
 
 
@@ -898,6 +916,7 @@ class Dataset:
         def _graph_selection(
             ds: Dataset,
             *signals: str | tuple[str, str] | None,
+            **kwargs: Any,
         ) -> tuple[float, float]:  # pragma: no cover
             # Select the time interval graphically
             # OBS! This part cannot be automatically tested because the it require
@@ -910,7 +929,7 @@ class Dataset:
             plt.ion()
 
             # Get axes from the plot and use them to extract tin and tout
-            figure = ds.plot(*signals, _grid=None)
+            figure = ds.plot(*signals, **kwargs)
             axes = figure.get_axes()
 
             # Figure closure handler
@@ -980,7 +999,7 @@ class Dataset:
             tin_sel = np.round(tin, NUM_DECIMALS)
             tout_sel = np.round(tout, NUM_DECIMALS)
         else:  # pragma: no cover
-            tin_sel, tout_sel = _graph_selection(ds, *signals)
+            tin_sel, tout_sel = _graph_selection(self, *signals, **kwargs)
 
         if verbosity != 0:
             print(
@@ -1159,15 +1178,15 @@ class Dataset:
 
     def plot(
         self,
-        # Only positional arguments
         /,
+        # Only positional arguments
         *signals: str | tuple[str, str] | None,
         # Key-word arguments
         overlap: bool = False,
-        line_color_input: str = "blue",
+        linecolor_input: str = "blue",
         linestyle_fg: str = "-",
         alpha_fg: float = 1.0,
-        line_color_output: str = "green",
+        linecolor_output: str = "green",
         linestyle_bg: str = "--",
         alpha_bg: float = 1.0,
         _grid: matplotlib.gridspec.GridSpec | None = None,
@@ -1190,7 +1209,7 @@ class Dataset:
         y-axes).
 
         Possible values for the parameters describing the line used in the plot
-        (e.g. *line_color_input* , *alpha_output*. etc).
+        (e.g. *linecolor_input* , *alpha_output*. etc).
         are the same for the corresponding plot function in matplotlib.
 
 
@@ -1216,7 +1235,7 @@ class Dataset:
             pairwise.
             Eventual passed *signals will be discarded.
             The units of the outputs are displayed on the secondary y-axis.
-        line_color_input:
+        linecolor_input:
             Line color of the input signals.
         linestyle_fg:
             Line style of the signals passed as strings or line style of the first
@@ -1224,7 +1243,7 @@ class Dataset:
         alpha_fg:
             Alpha channel value of the signals passed as strings or line style
             of the first element if two signals are passed as a tuple.
-        line_color_output:
+        linecolor_output:
             Line color of the output signals.
         linestyle_bg:
             Line style of the second output signals.
@@ -1257,14 +1276,14 @@ class Dataset:
         # ===================================================
         # Arrange colors, ylabels (=units) and linestyles
         # ===================================================
-        (colors_tpl, units_tpl, linestyles_tpl) = self._create_plot_args(
+        (colors_tpl, ylabels_tpl, linestyles_tpl) = self._create_plot_args(
             "time",
             u_dict,
             y_dict,
             signals_lst_plain,
             signals_lst,
-            line_color_input,
-            line_color_output,
+            linecolor_input,
+            linecolor_output,
             linestyle_fg,
             linestyle_bg,
         )
@@ -1291,7 +1310,7 @@ class Dataset:
             signals_lst,
             grid,
             colors_tpl,
-            units_tpl,
+            ylabels_tpl,
             linestyles_tpl,
             alpha_fg,
             alpha_bg,
@@ -1299,7 +1318,7 @@ class Dataset:
 
         # Title
         plt.suptitle(
-            f"Dataset '{self.name}'. \n {line_color_input} lines are inputs and {line_color_output} lines are outputs."
+            f"Dataset '{self.name}'. \n {linecolor_input} lines are inputs and {linecolor_output} lines are outputs."
         )
 
         # Shade NaN:s areas
@@ -1315,16 +1334,13 @@ class Dataset:
         self,
         *signals: str,
         nbins: int = 100,
-        line_color_input: str = "b",
-        alpha_input: float = 1.0,
-        line_color_output: str = "g",
-        alpha_output: float = 1.0,
-        axes_in: matplotlib.axes.Axes | None = None,
-        axes_out: matplotlib.axes.Axes | None = None,
+        linecolor_input: str = "b",
+        linecolor_output: str = "g",
+        alpha: float = 1.0,
+        histtype: Literal["bar", "barstacked", "step", "stepfilled"] = "bar",
+        _grid: matplotlib.gridspec.GridSpec | None = None,
         save_as: str | None = None,
-    ) -> tuple[
-        matplotlib.figure.Figure | None, matplotlib.figure.Figure | None
-    ]:
+    ) -> matplotlib.figure.Figure:
         """
         Plot the dataset coverage as histograms.
 
@@ -1353,108 +1369,82 @@ class Dataset:
             respectively.
             The *filename* shall include the path.
         """
-        # Extract dataset
+        # df points to self.dataset.
         df = self.dataset
 
+        sigs = [s for s in signals if not isinstance(s, str)]
+        if len(sigs) > 0:
+            raise TypeError(
+                f"It seems that you are trying to overlap {sigs}. Coverage plots cannot be overlapped."
+            )
+        # ===================================================
+        # Selection of signals to plot
+        # ===================================================
         (
             u_dict,
             y_dict,
-        ) = self._classify_signals(*signals)
+            signals_lst,
+            signals_lst_plain,
+        ) = self._select_signals_to_plot(*signals, overlap=False)
 
-        # Remove duplicated labels as they are not needed for coverage
-        # This because you don't need to overlap e.g. (u1,y1), (u1,y2), etc
-        # The following is the way from Python 3.7 you remove items while
-        # preserving the order
-        u_names = list(u_dict.keys())
-        u_units = list(u_dict.values())
-        y_names = list(y_dict.keys())
-        y_units = list(y_dict.values())
+        # ===================================================
+        # Arrange colors, ylabels (=units) and linestyles
+        # ===================================================
+        (linecolors_tpl, xlabels_tpl, histtype_tpl) = self._create_plot_args(
+            "coverage",
+            u_dict,
+            y_dict,
+            signals_lst_plain,
+            signals_lst,
+            linecolor_input,
+            linecolor_output,
+            histtype,
+            histtype,
+        )
 
-        # Input-output length and indices
-        p = len(u_names)
-        q = len(y_names)
+        # ===================================================
+        # Main function
+        # ===================================================
+        # create a figure and a grid first.
+        # Subplots will be dynamically created
+        if not _grid:
+            fig = plt.figure()
+            n = len(signals_lst)
+            nrows, ncols = factorize(n)  # noqa
+            grid = fig.add_gridspec(nrows, ncols)
+        else:
+            grid = _grid
 
-        # This if is needed in case the user wants to plot only one signal
-        if u_names:
-            nrows_in, ncols_in = factorize(p)  # noqa
+        # ===================================================
+        # Actual plot
+        # ===================================================
 
-            if axes_in is None:  # Create new figure and axes
-                fig_in, axes_in = plt.subplots(
-                    nrows_in, ncols_in, squeeze=False
-                )
-            else:  # Otherwise use what is passed
-                axes_in = np.asarray(axes_in)
-
-            axes_in = axes_in.T.flat
-
-            for ax in axes_in[p:]:
-                ax.remove()
-
-            df["INPUT"].droplevel(level="units", axis=1).loc[:, u_names].hist(
+        # Initialize iteration
+        fig = grid.figure
+        axes = fig.add_subplot(grid[0])
+        # Iteration
+        for ii, s in enumerate(signals_lst):
+            # at each iteration a new axes who sharex with the
+            # previously created axes, is created
+            axes = fig.add_subplot(grid[ii], sharex=axes)
+            df.droplevel(level=["kind", "units"], axis=1).loc[:, s[0]].hist(
                 grid=True,
                 bins=nbins,
-                color=line_color_input,
-                alpha=alpha_input,
-                legend=u_names,
-                ax=axes_in[0:p],
+                color=linecolors_tpl[ii][0],
+                legend=True,
+                histtype=histtype_tpl[ii][0],
+                alpha=alpha,
+                ax=axes,
             )
+            axes.set_xlabel(xlabels_tpl[ii][0])
 
-            # Set xlabel
-            for ii, unit in enumerate(u_units):
-                # axes_in[ii].set_title(f"INPUT #{u_names_idx[ii]+1}")
-                axes_in[ii].set_xlabel(f"({unit})")
-            plt.suptitle("Coverage region (INPUT).")
+        fig.suptitle("Coverage region.")
 
-            # Tight figure if no ax is passed (e.g. from compare_datasets())
-            # if axes_in is None:
-            #    fig_in.tight_layout()
+        # Remove dummy axes (for a more general implementation check
+        # _plot_ans_angle method
+        fig.get_axes()[0].remove()
 
-        if y_names:
-            nrows_out, ncols_out = factorize(q)  # noqa
-
-            if axes_out is None:  # Create new figure and axes
-                fig_out, axes_out = plt.subplots(
-                    nrows_out, ncols_out, squeeze=False
-                )
-            else:  # Otherwise use what is passed
-                axes_out = np.asarray(axes_out)
-
-            axes_out = axes_out.T.flat
-
-            for ax in axes_out[q:]:
-                ax.remove()
-
-            df["OUTPUT"].droplevel(level="units", axis=1).loc[:, y_names].hist(
-                grid=True,
-                bins=nbins,
-                color=line_color_output,
-                alpha=alpha_output,
-                legend=y_names,
-                ax=axes_out[0:q],
-            )
-
-            # Set xlabel, ylabels
-            for ii, unit in enumerate(y_units):
-                # axes_out[ii].set_title(f"OUTPUT #{y_names_idx[ii]+1}")
-                axes_out[ii].set_xlabel(f"({unit})")
-            plt.suptitle("Coverage region (OUTPUT).")
-
-            # tight figure if no ax is passed (e.g. from compare_datasets())
-            # if axes_out is None:
-            #    fig_out.tight_layout()
-
-        if save_as is not None:
-            save_plot_as(fig_in, axes_in, save_as + "_in")  # noqa
-            save_plot_as(fig_out, axes_out, save_as + "_out")  # noqa
-
-        # Return
-        if u_names and y_names:
-            return fig_in, fig_out
-
-        elif u_names and not y_names:
-            return fig_in, None
-        else:  # The only option left is not u_names and y_names
-            return None, fig_out
+        return fig
 
     def fft(
         self,
@@ -1856,6 +1846,12 @@ class Dataset:
         """
         # Arguments validation
         u_dict, y_dict = self._classify_signals(*signals)
+
+        u_names = list(u_dict.keys())
+        y_names = list(y_dict.keys())
+
+        u_units = list(u_dict.values())
+        y_units = list(y_dict.values())
 
         # Safe copy
         ds_temp = deepcopy(self)
