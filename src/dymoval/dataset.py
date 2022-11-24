@@ -1659,8 +1659,15 @@ class Dataset:
             # Initialize iteration
             fig = grid.figure
             if fig.get_axes():
+                # TODO: CREATE LIST OF COMPREHENSION HERE OF THE FORM
+                # [[(abs,ang)] ,[(abs,ang),(abs,ang)], [(abs,ang)]]
+                temp = ("abs", "ang")
+                temp_tpl = [
+                    [temp] if len(s) == 1 else [temp, temp] for s in signals_lst
+                ]
+
                 axes_tpl = _list_to_structured_list_of_tuple(
-                    signals_lst, fig.get_axes()
+                    temp_tpl, fig.get_axes()
                 )
 
             else:
