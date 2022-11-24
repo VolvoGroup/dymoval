@@ -710,8 +710,12 @@ class Dataset:
         # Initialize iteration
         fig = grid.figure
         if fig.get_axes():
-            pass
+            # TODO This indexing shall be improved
+            axes_tpl = _list_to_structured_list_of_tuple(
+                signals_lst, fig.get_axes()
+            )
         else:
+            axes_tpl = []
             axes = fig.add_subplot(grid[0])
         # Iteration
         for ii, s in enumerate(signals_lst):
@@ -719,9 +723,9 @@ class Dataset:
             # previously created axes, is created
             # However, a new axes is created only if it does not
             # exists in such grid position.
-            if len(fig.get_axes()) > ii:
+            if len(axes_tpl) > 0:
                 # Reuse existing axes if exist
-                axes = fig.get_axes()[ii]
+                axes = axes_tpl[ii][0]
             else:
                 # Otherwise create a new axes
                 axes = fig.add_subplot(grid[ii], sharex=axes)
@@ -743,8 +747,8 @@ class Dataset:
             line_r = []
             label_r = []
             if len(s) == 2:  # tuple like ("u1","u2")
-                if len(fig.get_axes()) > ii:
-                    axes_right = fig.get_axes()[ii]
+                if len(axes_tpl) > 0:
+                    axes_right = axes_tpl[ii][1]
                 else:
                     # Otherwise create a new axes
                     axes_right = axes.twinx()
@@ -1655,8 +1659,12 @@ class Dataset:
             # Initialize iteration
             fig = grid.figure
             if fig.get_axes():
-                pass
+                axes_tpl = _list_to_structured_list_of_tuple(
+                    signals_lst, fig.get_axes()
+                )
+
             else:
+                axes_tpl = []
                 inner_grid = grid[0].subgridspec(2, 1)
                 axes = [
                     fig.add_subplot(inner_grid[0]),
@@ -1667,9 +1675,8 @@ class Dataset:
                 # at each iteration a new axes is created and it is placed
                 # either into a 1D or 2D list.
                 # Add a subplot(2,1) to each already existing subplots
-                if len(fig.get_axes()) > 2 * ii:
-                    pass
-                    # axes = fig.get_axes()[ii - 2 : ii]
+                if len(axes_tpl) > 0:
+                    axes = axes_tpl[ii][0]
                     # print(len(axes))
                 else:
                     inner_grid = grid[ii].subgridspec(2, 1)
@@ -1706,7 +1713,10 @@ class Dataset:
                 line_angle_r = []
                 label_angle_r = []
                 if len(s) == 2:  # tuple like ("u1","u2")
-                    axes_right = [axes[0].twinx(), axes[1].twinx()]
+                    if len(axes_tpl) > 0:
+                        axes = axes_tpl[ii][1]
+                    else:
+                        axes_right = [axes[0].twinx(), axes[1].twinx()]
                     df_freq.droplevel(level="kind", axis=1).loc[:, s[1]].plot(
                         subplots=True,
                         grid=False,
