@@ -404,7 +404,6 @@ class Dataset:
             "linestyle_bg": "--",
             "alpha_bg": 1.0,
             "_grid": None,
-            "_p_max": 0,
             "save_as": None,
         }
         tmp = self.trim(
@@ -671,7 +670,7 @@ class Dataset:
         s_dict = deepcopy(u_dict)
         s_dict.update(y_dict)
         if kind in ["time", "coverage", "amplitude"]:
-            ylabels = [s_dict[s] for s in signals_lst_plain]
+            ylabels = [f"({s_dict[s]})" for s in signals_lst_plain]
         if kind == "power":
             ylabels = [f"({s_dict[s]}**2)" for s in signals_lst_plain]
         elif kind == "psd":
@@ -710,12 +709,23 @@ class Dataset:
 
         # Initialize iteration
         fig = grid.figure
-        axes = fig.add_subplot(grid[0])
+        if fig.get_axes():
+            pass
+        else:
+            axes = fig.add_subplot(grid[0])
         # Iteration
         for ii, s in enumerate(signals_lst):
             # at each iteration a new axes who sharex with the
             # previously created axes, is created
-            axes = fig.add_subplot(grid[ii], sharex=axes)
+            # However, a new axes is created only if it does not
+            # exists in such grid position.
+            if len(fig.get_axes()) > ii:
+                # Reuse existing axes if exist
+                axes = fig.get_axes()[ii]
+            else:
+                # Otherwise create a new axes
+                axes = fig.add_subplot(grid[ii], sharex=axes)
+
             df.droplevel(level=["kind", "units"], axis=1).loc[:, s[0]].plot(
                 subplots=True,
                 grid=True,
@@ -733,7 +743,11 @@ class Dataset:
             line_r = []
             label_r = []
             if len(s) == 2:  # tuple like ("u1","u2")
-                axes_right = axes.twinx()
+                if len(fig.get_axes()) > ii:
+                    axes_right = fig.get_axes()[ii]
+                else:
+                    # Otherwise create a new axes
+                    axes_right = axes.twinx()
 
                 # If the two signals have the same unit, then show the unit only once
                 if ylabels_tpl[ii][0] == ylabels_tpl[ii][1]:
@@ -758,8 +772,10 @@ class Dataset:
             axes.set_xlabel(f"{df.index.name[0]} ({df.index.name[1]})")
 
         # Remove dummy axes (for a more general implementation check
-        # _plot_ans_angle method
-        fig.get_axes()[0].remove()
+        axes_all = fig.get_axes()
+        for ax in axes_all:
+            if len(ax.get_lines()) == 0:
+                ax.remove()
 
         return fig
 
@@ -1190,7 +1206,6 @@ class Dataset:
         linestyle_bg: str = "--",
         alpha_bg: float = 1.0,
         _grid: matplotlib.gridspec.GridSpec | None = None,
-        _p_max: int = 0,
         save_as: str | None = None,
     ) -> matplotlib.figure.Figure:
         """Plot the Dataset.
@@ -1421,12 +1436,21 @@ class Dataset:
 
         # Initialize iteration
         fig = grid.figure
-        axes = fig.add_subplot(grid[0])
+        if fig.get_axes():
+            pass
+        else:
+            axes = fig.add_subplot(grid[0])
         # Iteration
         for ii, s in enumerate(signals_lst):
             # at each iteration a new axes who sharex with the
             # previously created axes, is created
-            axes = fig.add_subplot(grid[ii], sharex=axes)
+            if len(fig.get_axes()) > ii:
+                # Reuse existing axes if exists
+                axes = fig.get_axes()[ii]
+            else:
+                # Create a new axes
+                axes = fig.add_subplot(grid[ii], sharex=axes)
+
             df.droplevel(level=["kind", "units"], axis=1).loc[:, s[0]].hist(
                 grid=True,
                 bins=nbins,
@@ -1441,8 +1465,10 @@ class Dataset:
         fig.suptitle("Coverage region.")
 
         # Remove dummy axes (for a more general implementation check
-        # _plot_ans_angle method
-        fig.get_axes()[0].remove()
+        #         axes_all = fig.get_axes()
+        #         for ax in axes_all:
+        #             if len(ax.get_lines()) == 0:
+        #                 ax.remove()
 
         return fig
 
@@ -1512,7 +1538,9 @@ class Dataset:
             "ps": "THz",
         }
         df_freq.index.name = (
-            f"Frequency ({time2freq_units[df_temp.index.name[1]]})"
+            "Frequency",
+            time2freq_units[df_temp.index.name[1]],
+            ")",
         )
 
         return df_freq.round(NUM_DECIMALS)
@@ -1522,10 +1550,10 @@ class Dataset:
         *signals: str | tuple[str, str] | None,
         kind: Literal["amplitude", "power", "psd"] = "power",
         overlap: bool = False,
-        line_color_input: str = "blue",
+        linecolor_input: str = "blue",
         linestyle_fg: str = "-",
         alpha_fg: float = 1.0,
-        line_color_output: str = "green",
+        linecolor_output: str = "green",
         linestyle_bg: str = "--",
         alpha_bg: float = 1.0,
         _grid: matplotlib.gridspec.GridSpec | None = None,
@@ -1554,13 +1582,13 @@ class Dataset:
         overlap:
             If true it overlaps the input and the output signals plots.
             The units of the outputs are displayed on the secondary y-axis.
-        line_color_input:
+        linecolor_input:
             Line color for the input signals.
         linestyle_input:
             Line style for the input signals.
         alpha_input:
             Alpha channel value for the input signals.
-        line_color_output:
+        linecolor_output:
             Line color for the output signals.
         linestyle_output:
             Line style for the output signals.
@@ -1604,8 +1632,8 @@ class Dataset:
             colors_tpl: list[tuple[str, ...]],
             units_tpl: list[tuple[str, ...]],
             linestyles_tpl: list[tuple[str, ...]],
-            alpha_fg: str,
-            alpha_bg: str,
+            alpha_fg: float,
+            alpha_bg: float,
         ) -> matplotlib.figure.Figure:
             # In this case each element of the grid has a nested
             # subgrid of dimension (2,1).
@@ -1626,18 +1654,28 @@ class Dataset:
 
             # Initialize iteration
             fig = grid.figure
-            inner_grid = grid[0].subgridspec(2, 1)
-            axes = [
-                fig.add_subplot(inner_grid[0]),
-                fig.add_subplot(inner_grid[1]),
-            ]
+            if fig.get_axes():
+                pass
+            else:
+                inner_grid = grid[0].subgridspec(2, 1)
+                axes = [
+                    fig.add_subplot(inner_grid[0]),
+                    fig.add_subplot(inner_grid[1]),
+                ]
             # Iteration
             for ii, s in enumerate(signals_lst):
                 # at each iteration a new axes is created and it is placed
                 # either into a 1D or 2D list.
                 # Add a subplot(2,1) to each already existing subplots
-                inner_grid = grid[ii].subgridspec(2, 1)
-                axes = [fig.add_subplot(g, sharex=axes[0]) for g in inner_grid]
+                if len(fig.get_axes()) > 2 * ii:
+                    pass
+                    # axes = fig.get_axes()[ii - 2 : ii]
+                    # print(len(axes))
+                else:
+                    inner_grid = grid[ii].subgridspec(2, 1)
+                    axes = [
+                        fig.add_subplot(g, sharex=axes[0]) for g in inner_grid
+                    ]
                 # Two colums per time are being plot: (abs,angle)
                 df_freq.droplevel(level="kind", axis=1).loc[:, s[0]].plot(
                     subplots=True,
@@ -1648,7 +1686,7 @@ class Dataset:
                     ax=axes,
                 )
                 # ylabels (units)
-                axes[0].set_ylabel(f"({units_tpl[ii][0]})")
+                axes[0].set_ylabel(f"{units_tpl[ii][0]}")
                 axes[1].set_ylabel("(rad)")
 
                 # legend (s,abs) and (s,angle) (will be placed at the end)
@@ -1770,8 +1808,8 @@ class Dataset:
             y_dict,
             signals_lst_plain,
             signals_lst,
-            line_color_input,
-            line_color_output,
+            linecolor_input,
+            linecolor_output,
             linestyle_fg,
             linestyle_bg,
         )
@@ -1817,7 +1855,7 @@ class Dataset:
 
         # Title
         fig.suptitle(
-            f"Dataset '{self.name}' {kind} spectrum. \n {line_color_input} lines are inputs and {line_color_output} lines are outputs."
+            f"Dataset '{self.name}' {kind} spectrum. \n {linecolor_input} lines are inputs and {linecolor_output} lines are outputs."
         )
         #
 
@@ -2571,7 +2609,7 @@ def compare_datasets(
         # or other matplotlib Artist (an Artist is everything you can draw
         # on a figure)
 
-        axes = axes.T.flat
+        axes = np.asarray(axes).T.flat
         for ii, ax in enumerate(axes):
             handles, labels = ax.get_legend_handles_labels()
             # print(handles)
@@ -2587,7 +2625,7 @@ def compare_datasets(
 
     def _arrange_fig_axes(
         *dfs: pd.DataFrame,
-    ) -> tuple[matplotlib.axes.Figure, matplotlib.axes.Axes, int, int]:
+    ) -> tuple[matplotlib.axes.Figure, matplotlib.gridspec.GridSpec]:
         # When performing many plots on the same figure,
         # it find the largest number of axes needed
 
@@ -2597,143 +2635,54 @@ def compare_datasets(
         n = p_max + q_max
 
         # Set nrows and ncols
-        nrows, ncols = factorize(n)
+        fig = plt.figure()
+        nrows, ncols = factorize(n)  # noqa
+        grid = fig.add_gridspec(nrows, ncols)
 
         # Create a unified figure
-        fig, ax = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        return fig, ax, p_max, q_max
+        return fig, grid
 
     # ========================================
-    #    MAIN IMPLEMENTATION
+    #    Main implementation
     # ========================================
-    # arguments validation
+    # Small check
     for ds in datasets:
         if not isinstance(ds, Dataset):
             raise TypeError("Input must be a dymoval Dataset type.")
 
+    # Arrange figure
+    dfs = [ds.dataset.droplevel(level="units", axis=1) for ds in datasets]
+    fig, grid = _arrange_fig_axes(*dfs)
+    cmap = plt.get_cmap(COLORMAP)
+
     # ========================================
-    # time comparison
+    #   Switch case
     # ========================================
-    if kind == "time" or kind == "all":
-
-        # Arrange figure
-        # Accumulate all the dataframes at signal_name level
-        dfs = [ds.dataset.droplevel(level="units", axis=1) for ds in datasets]
-        fig_time, axes_time, p_max, _ = _arrange_fig_axes(*dfs)
-
-        # Revert axes.ndarray to flatirr
-        # axes_time = axes_time.T.flat
-
+    if kind == "time":
         # All the plots made on the same axis
-        cmap = plt.get_cmap(COLORMAP)
         for ii, ds in enumerate(datasets):
-            axes_time = ds.plot(
-                line_color_input=cmap(ii),
-                line_color_output=cmap(ii),
-                ax=axes_time,
-                p_max=p_max,
+            ds.plot(
+                linecolor_input=cmap(ii),
+                linecolor_output=cmap(ii),
+                _grid=grid,
             )
-
-        # Adjust legend
-        ds_names = [ds.name for ds in datasets]
-        _adjust_legend(ds_names, axes_time)
-        fig_time.suptitle("Dataset comparison")
-        # fig_time.tight_layout()
-
-    # ========================================
-    # coverage comparison
-    # ========================================
-    if kind == "coverage" or kind == "all":
-
-        dfs = [ds.dataset.droplevel(level="units", axis=1) for ds in datasets]
-
-        # The following is a bit of code repetition but I could not come
-        # with a better idea.
-
-        # INPUT
-        p_max = max([len(df["INPUT"].columns) for df in dfs])
-        nrows, ncols = factorize(p_max)
-        fig_cov_in, ax_cov_in = plt.subplots(nrows, ncols, squeeze=False)
-        ax_cov_in = ax_cov_in.T.flat
-
-        # OUTPUT
-        q_max = max([len(df["OUTPUT"].columns) for df in dfs])
-        nrows, ncols = factorize(q_max)
-        fig_cov_out, ax_cov_out = plt.subplots(nrows, ncols, squeeze=False)
-
-        # Actual plot
-        cmap = plt.get_cmap(COLORMAP)  # noqa
+    elif kind == "coverage":
         for ii, ds in enumerate(datasets):
-            axes_cov_in, axes_cov_out = ds.plot_coverage(
-                line_color_input=cmap(ii),
-                line_color_output=cmap(ii),
-                ax_in=ax_cov_in,
-                ax_out=ax_cov_out,
+            ds.plot_coverage(
+                linecolor_input=cmap(ii),
+                linecolor_output=cmap(ii),
+                _grid=grid,
             )
-
-        # Adjust input legend
-        ds_names = [ds.name for ds in datasets]
-        _adjust_legend(ds_names, axes_cov_in)
-        _adjust_legend(ds_names, axes_cov_out)
-
-        fig_cov_in.suptitle("Dataset comparison")
-        fig_cov_out.suptitle("Dataset comparison")
-
-        # fig_cov_in.tight_layout()
-        # fig_cov_out.tight_layout()
-
-    # ========================================
-    # frequency comparison
-    # ========================================
-    if kind in SPECTRUM_KIND or kind == "all":
-        # plot_spectrum won't accept kind = "all"
-        if kind == "all":
-            kind = "power"
-
-        # Arrange figure
-        # Accumulate all the dataframes at signal_name level
-        dfs = [ds.dataset.droplevel(level="units", axis=1) for ds in datasets]
-        fig_freq, axes_freq, p_max, _ = _arrange_fig_axes(*dfs)
-        # axes_freq = axes_freq.T.flat
-
-        if kind == "amplitude":
-            nrows_old: int = axes_freq.shape[0]
-            ncols_old: int = axes_freq.shape[1]
-
-            # Due to (abs,angle) we need to double the number of axes
-            nrows, ncols = factorize(2 * nrows_old * ncols_old)
-
-            # To have the phase plot below the abs plot, then the number
-            # of rows must be an even number, otherwise the plot got screwed.
-            # OBS: the same code is in plot_spectrum()
-            if np.mod(nrows, 2) != 0:
-                nrows -= 1
-                ncols += int(np.ceil(ncols / nrows))
-
-            fig_freq, axes_freq = change_axes_layout(
-                fig_freq, axes_freq, nrows, ncols
-            )
-            # axes_freq = axes_freq.T.flat
-
-        # All datasets plots on the same axes
-        cmap = plt.get_cmap(COLORMAP)  # noqa
+    else:
         for ii, ds in enumerate(datasets):
-            axes_freq = ds.plot_spectrum(
-                line_color_input=cmap(ii),
-                line_color_output=cmap(ii),
-                ax=axes_freq,
-                # p_max=p_max,
-                kind=kind,  # type:ignore
+            ds.plot_spectrum(
+                linecolor_input=cmap(ii),
+                linecolor_output=cmap(ii),
+                _grid=grid,
+                kind=kind,
             )
 
-        # Adjust legend
-        ds_names = [ds.name for ds in datasets]
-        _adjust_legend(ds_names, axes_freq)
-        fig_freq.suptitle("Dataset comparison")
-        # fig_freq.tight_layout()
-
-
-# def analyze_inout_dataset(df):
-# -	Remove trends. Cannot do.
-# -	(Resample). One line of code with pandas
-#
+    # Adjust legend
+    ds_names = [ds.name for ds in datasets]
+    _adjust_legend(ds_names, fig.get_axes())
+    fig.suptitle("Dataset comparison.")
