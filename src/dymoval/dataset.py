@@ -478,7 +478,7 @@ class Dataset:
         # Single column level but the cols name is a tuple (name,unit)
         index = pd.Index(
             data=np.arange(max_idx) * Ts,
-            name=("Time", f"{resampled_signals[0]['time_unit']}"),
+            name=("Time", resampled_signals[0]["time_unit"]),
         )
         columns_tuples = list(zip(u_names + y_names, u_units + y_units))
         df = pd.DataFrame(
@@ -646,41 +646,45 @@ class Dataset:
         kind: Literal["time", "coverage"] | Spectrum_type,
         u_dict: dict[str, str],
         y_dict: dict[str, str],
-        signals_lst_plain: list[str],
-        signals_lst: list[tuple[str, ...]],
-        line_color_input: str,
-        line_color_output: str,
+        signals_tpl_plain: list[str],
+        signals_tpl: list[tuple[str, ...]],
+        linecolor_input: str,
+        linecolor_output: str,
         linestyle_fg: str,
         linestyle_bg: str,
-    ) -> tuple[colors_tpl, units_tpl, linestyles_tpl]:
-        # signals_lst is passed only to be a reference for casting
-        # signals_lst_plain, which is e.g.
-        # signals_lst_plain = ["u1","u2","u3", "y1","y4",...]
-        # to a structure that resemble signals_lst, e.g.
-        # signals_lst[("u1","u2"),("u3",), ("y1","y4")...]
+    ) -> tuple[linecolors_tpl, units_tpl, linestyles_tpl]:
+        # signals_tpl is passed only to be a reference for casting
+        # signals_tpl_plain, which is e.g.
+        # signals_tpl_plain = ["u1","u2","u3", "y1","y4",...]
+        # to a structure that resemble signals_tpl, e.g.
+        # signals_tpl[("u1","u2"),("u3",), ("y1","y4")...]
 
-        # colors
-        colors = [
-            line_color_input if s in u_dict.keys() else line_color_output
-            for s in signals_lst_plain
+        # linecolors
+        linecolors = [
+            linecolor_input if s in u_dict.keys() else linecolor_output
+            for s in signals_tpl_plain
         ]
-        colors_tpl = _list_to_structured_list_of_tuple(signals_lst, colors)
+        linecolors_tpl = _list_to_structured_list_of_tuple(
+            signals_tpl, linecolors
+        )
+        # print("signals_tpl =  ", signals_tpl)
+        # print("linecolors_tpl =  ", linecolors_tpl)
 
         # ylabels (units)
         s_dict = deepcopy(u_dict)
         s_dict.update(y_dict)
         if kind in ["time", "coverage", "amplitude"]:
-            ylabels = [f"({s_dict[s]})" for s in signals_lst_plain]
+            ylabels = [f"({s_dict[s]})" for s in signals_tpl_plain]
         if kind == "power":
-            ylabels = [f"({s_dict[s]}**2)" for s in signals_lst_plain]
+            ylabels = [f"({s_dict[s]}**2)" for s in signals_tpl_plain]
         elif kind == "psd":
-            ylabels = [f"({s_dict[s]}**2/Hz)" for s in signals_lst_plain]
+            ylabels = [f"({s_dict[s]}**2/Hz)" for s in signals_tpl_plain]
 
-        ylabels_tpl = _list_to_structured_list_of_tuple(signals_lst, ylabels)
+        ylabels_tpl = _list_to_structured_list_of_tuple(signals_tpl, ylabels)
 
         # Linestyles
         linestyles_tpl: list[tuple[str, ...]] = []
-        for val in colors_tpl:
+        for val in linecolors_tpl:
             if len(val) == 2:
                 if val[0] == val[1]:
                     linestyles_tpl.append((linestyle_bg, linestyle_fg))
@@ -689,7 +693,7 @@ class Dataset:
             else:
                 linestyles_tpl.append((linestyle_fg,))
 
-        return colors_tpl, ylabels_tpl, linestyles_tpl
+        return linecolors_tpl, ylabels_tpl, linestyles_tpl
 
     def _plot_actual(
         self,
@@ -717,6 +721,8 @@ class Dataset:
         else:
             axes_tpl = []
             axes = fig.add_subplot(grid[0])
+        # print(signals_tpl)
+        # print(linecolors_tpl)
         # Iteration
         for ii, s in enumerate(signals_tpl):
             # at each iteration a new axes who sharex with the
@@ -729,6 +735,7 @@ class Dataset:
             else:
                 # Otherwise create a new axes
                 axes = fig.add_subplot(grid[ii], sharex=axes)
+            # print(s[0], linecolors_tpl[ii][0])
 
             df.droplevel(level=["kind", "units"], axis=1).loc[:, s[0]].plot(
                 subplots=True,
@@ -772,7 +779,7 @@ class Dataset:
                 line_r, label_r = axes_right.get_legend_handles_labels()
 
             # Set nice legend
-            axes.legend(line_r + line_l, label_l + label_r)
+            axes.legend(line_l + line_r, label_l + label_r)
             axes.set_xlabel(f"{df.index.name[0]} ({df.index.name[1]})")
 
         # Remove dummy axes (for a more general implementation check
@@ -1288,19 +1295,19 @@ class Dataset:
         (
             u_dict,
             y_dict,
-            signals_lst,
+            signals_tpl,
             signals_lst_plain,
         ) = self._select_signals_to_plot(*signals, overlap=overlap)
 
         # ===================================================
         # Arrange colors, ylabels (=units) and linestyles
         # ===================================================
-        (colors_tpl, ylabels_tpl, linestyles_tpl) = self._create_plot_args(
+        (linecolors_tpl, ylabels_tpl, linestyles_tpl) = self._create_plot_args(
             "time",
             u_dict,
             y_dict,
             signals_lst_plain,
-            signals_lst,
+            signals_tpl,
             linecolor_input,
             linecolor_output,
             linestyle_fg,
@@ -1314,7 +1321,7 @@ class Dataset:
         # Subplots will be dynamically created
         if not _grid:
             fig = plt.figure()
-            n = len(signals_lst)
+            n = len(signals_tpl)
             nrows, ncols = factorize(n)  # noqa
             grid = fig.add_gridspec(nrows, ncols)
         else:
@@ -1326,9 +1333,9 @@ class Dataset:
 
         fig = self._plot_actual(
             df,
-            signals_lst,
+            signals_tpl,
             grid,
-            colors_tpl,
+            linecolors_tpl,
             ylabels_tpl,
             linestyles_tpl,
             alpha_fg,
@@ -1765,7 +1772,7 @@ class Dataset:
                     )
                     # ylabels (units)
                     if units_tpl[ii][0] != units_tpl[ii][1]:
-                        axes_right[0].set_ylabel(f"({units_tpl[ii][1]})")
+                        axes_right[0].set_ylabel(f"{units_tpl[ii][1]}")
 
                     # legend (s,abs) and (s,angle) (will be placed at the end)
                     # abs
@@ -1779,10 +1786,10 @@ class Dataset:
                 # legend handling
                 # Set nice legend
                 axes[0].legend(
-                    line_abs_r + line_abs_l, label_abs_l + label_abs_r
+                    line_abs_l + line_abs_r, label_abs_l + label_abs_r
                 )
                 axes[1].legend(
-                    line_angle_r + line_angle_l,
+                    line_angle_l + line_angle_r,
                     label_angle_l + label_angle_r,
                 )
 
@@ -1805,7 +1812,7 @@ class Dataset:
 
         # A small check
         if kind not in SPECTRUM_KIND:
-            raise ValueError(f"kind must be one of {SPECTRUM_KIND}")
+            raise ValueError(f"Argument 'kind' must be one of {SPECTRUM_KIND}")
 
         # ===================================================
         # Selection of signals
