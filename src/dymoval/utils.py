@@ -62,30 +62,43 @@ def str2list(x: str | list[str]) -> list[str]:
 
 def save_plot_as(
     fig: matplotlib.figure.Figure,
-    axes: matplotlib.axes.Axes,
-    name: str,
+    save_as: str,
+    layout: Literal[
+        "constrained", "compressed", "tight", "none"
+    ] = "constrained",
     **kwargs: Any,
 ) -> None:
     """Save matplotlib figure on disk.
+
+    You can save pretty much any figure.
+
+
+    Example
+    -------
+    >>> from matplotlib import pyplot as plt
+    >>> import dymoval as dmv
+    >>> fig = plt.gcf() # Get current figure, for a complete list of all opened figures use plt.get_fignums()
+    >>> dmv.save_plot_as("my_fig.png","constrained")
+
 
     Parameters
     ----------
     fig:
         Figure to be saved.
-    axes:
-        Axes flat iterator.
-    name:
-        Figure filename.
+    save_as:
+        Filename for the figure to be saved.
+    layout:
+        Type of layout for saving the figure.
+        It can be any of {'constrained', 'compressed', 'tight', 'none'}.
     """
-    # Get Axes layout
-    nrows = axes.base.T.shape[0]
-    ncols = axes.base.T.shape[1]
+    # Get figure layout
+    nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
+    nrows = fig.get_axes()[0].get_gridspec().get_geometry()[1]
     fig.set_size_inches(ncols * AX_WIDTH, nrows * AX_HEIGHT)
 
-    # fig.set_layout_engine("tight")
-    fig.tight_layout()
-    fig.savefig(name, **kwargs)
-    fig.clf()
+    fig.set_layout_engine(layout)
+    fig.savefig(save_as, **kwargs)
+    fig.clf()  # TODO: Do we need this line?!
     plt.close("all")
 
 

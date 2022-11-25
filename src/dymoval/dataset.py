@@ -18,8 +18,6 @@ from .utils import *  # noqa, Type
 from typing import TypedDict, Any, Literal
 from copy import deepcopy
 
-# from itertools import product
-
 
 class Signal(TypedDict):
     """*Signals* are used to represent real-world measurements.
@@ -405,6 +403,7 @@ class Dataset:
             "alpha_bg": 1.0,
             "_grid": None,
             "save_as": None,
+            "layout": None,
         }
         tmp = self.trim(
             *signals,
@@ -776,7 +775,12 @@ class Dataset:
                     ylabel=ylabel,
                     ax=axes_right,
                 )
-                line_r, label_r = axes_right.get_legend_handles_labels()
+                (
+                    line_r,
+                    label_r,
+                ) = (
+                    axes_right.get_legend_handles_labels()  # type:ignore
+                )  # noqa , false positive from pylsp?
 
             # Set nice legend
             axes.legend(line_l + line_r, label_l + label_r)
@@ -1159,6 +1163,9 @@ class Dataset:
         /,
         *signal_pairs: tuple[str, str],
         save_as: str | None = None,
+        layout: Literal[
+            "constrained", "compressed", "tight", "none"
+        ] = "constrained",
     ) -> matplotlib.figure.Figure:
         """You must specify the complete *filename*, including the path."""
         # df points to self.dataset.
@@ -1174,8 +1181,8 @@ class Dataset:
         if names_not_found:
             raise ValueError(f"Signal(s) {names_not_found} not found.")
 
-        # signal_name:signal_unit dict for the axes labels
-        signal_unit = dict(df.droplevel(level="kind", axis=1).columns)
+        # signal_name:signals_units dict for the axes labels
+        signals_units = dict(df.droplevel(level="kind", axis=1).columns)
 
         # Start the plot ritual
         n = len(signal_pairs)
@@ -1190,16 +1197,16 @@ class Dataset:
                 y=val[1],
                 ax=axes[ii],
                 legend=None,
-                xlabel=f"{val[0]}, ({ signal_unit[val[0]]})",
-                ylabel=f"{val[1]}, ({ signal_unit[val[1]]})",
+                xlabel=f"{val[0]}, ({ signals_units[val[0]]})",
+                ylabel=f"{val[1]}, ({ signals_units[val[1]]})",
                 grid=True,
             )
 
         fig.suptitle("XY-plot.")
 
         # Eventually save and return figures.
-        if save_as is not None and ax is None:
-            save_plot_as(fig, axes, save_as)  # noqa
+        if save_as is not None:
+            save_plot_as(fig, save_as, layout)  # noqa
 
         return fig
 
@@ -1218,6 +1225,9 @@ class Dataset:
         alpha_bg: float = 1.0,
         _grid: matplotlib.gridspec.GridSpec | None = None,
         save_as: str | None = None,
+        layout: Literal[
+            "constrained", "compressed", "tight", "none"
+        ] = "constrained",
     ) -> matplotlib.figure.Figure:
         """Plot the Dataset.
 
@@ -1275,11 +1285,8 @@ class Dataset:
             Line style of the second output signals.
         alpha_bg:
             Alpha channel value for the output signals.
-        _axes:
-            Matplotlib Axes where to place the plot. (Used internally)
-        p_max:
-            Maximum number of inputs. It is a parameters used internally so
-            it can be left alone.
+        _grid:
+            Matplotlib GridSpec where to place the plot. (Used internally)
         save_as:
             Save the figure with a specified name.
             The figure is automatically resized to try to keep a 16:9 aspect ratio.
@@ -1351,8 +1358,8 @@ class Dataset:
         self._shade_nans(fig.get_axes())
 
         # Eventually save and return figures.
-        if save_as is not None and _axes is None:
-            save_plot_as(fig, axes, save_as)  # noqa
+        if save_as is not None and _grid is None:
+            save_plot_as(fig, save_as, layout)  # noqa
 
         return fig
 
@@ -1366,6 +1373,9 @@ class Dataset:
         histtype: Literal["bar", "barstacked", "step", "stepfilled"] = "bar",
         _grid: matplotlib.gridspec.GridSpec | None = None,
         save_as: str | None = None,
+        layout: Literal[
+            "constrained", "compressed", "tight", "none"
+        ] = "constrained",
     ) -> matplotlib.figure.Figure:
         """
         Plot the dataset coverage as histograms.
@@ -1481,6 +1491,10 @@ class Dataset:
         #             if len(ax.get_lines()) == 0:
         #                 ax.remove()
 
+        # Eventually save and return figures.
+        if save_as is not None and _grid is None:
+            save_plot_as(fig, save_as, layout)  # noqa
+
         return fig
 
     def fft(
@@ -1553,8 +1567,16 @@ class Dataset:
             "ns": "GHz",
             "ps": "THz",
         }
-        new_index_name = ("Frequency", time2freq_units[df_temp.index.name[1]])
 
+        # If the time unit are in time2freq_units then convert
+        # in frequency units
+        if df_temp.index.name[1] in time2freq_units.keys():
+            new_index_name = (
+                "Frequency",
+                time2freq_units[df_temp.index.name[1]],
+            )
+        else:
+            new_index_name = ("Frequency", "")
         #
         f_bins = fft.rfftfreq(N, Ts)
         # NOTE: I had to use pd.Index to preserve the name and being able to
@@ -1576,6 +1598,9 @@ class Dataset:
         alpha_bg: float = 1.0,
         _grid: matplotlib.gridspec.GridSpec | None = None,
         save_as: str | None = None,
+        layout: Literal[
+            "constrained", "compressed", "tight", "none"
+        ] = "constrained",
     ) -> matplotlib.figure.Figure:
         """
         Plot the spectrum of the specified signals in the dataset in different format.
@@ -1926,7 +1951,7 @@ class Dataset:
         # ===================================================
         # Save and return
         if save_as is not None:
-            save_plot_as(fig, axes, save_as)
+            save_plot_as(fig, save_as, layout)
 
         return fig
 
@@ -2001,20 +2026,24 @@ class Dataset:
             in the dataset.
             The *offset* parameter is the value to remove to the *name* signal.
         """
-
+        # TODO: can be refactored
         # Safe copy
         ds_temp = deepcopy(self)
         df_temp = ds_temp.dataset
 
         # Validate passed arguments
         (
-            u_names,
-            y_names,
-            u_units,
-            y_units,
+            u_dict,
+            y_dict,
             u_list,
             y_list,
         ) = self._validate_name_value_tuples(*signals_values)
+
+        u_names = list(u_dict.keys())
+        y_names = list(y_dict.keys())
+
+        u_units = list(u_dict.values())
+        y_units = list(y_dict.values())
 
         # First adjust the input columns
         if u_list:
@@ -2038,7 +2067,6 @@ class Dataset:
             )
 
         df_temp.round(NUM_DECIMALS)
-        # ds_temp.dataset.loc[:, :] = df_temp.to_numpy().round(NUM_DECIMALS)
 
         return ds_temp
 
@@ -2073,19 +2101,24 @@ class Dataset:
         ValueError
             If any of the passed cut-off frequencies is negative.
         """
+        # TODO: can be refactored
         # Safe copy
         ds_temp = deepcopy(self)
         df_temp = ds_temp.dataset
 
         # Validate passed arguments
         (
-            u_names,
-            y_names,
-            u_units,
-            y_units,
+            u_dict,
+            y_dict,
             u_list,
             y_list,
         ) = self._validate_name_value_tuples(*signals_values)
+
+        u_names = list(u_dict.keys())
+        y_names = list(y_dict.keys())
+
+        u_units = list(u_dict.values())
+        y_units = list(y_dict.values())
 
         # Sampling frequency
         fs = 1 / (ds_temp.dataset.index[1] - ds_temp.dataset.index[0])
