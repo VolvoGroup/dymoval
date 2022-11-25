@@ -12,7 +12,6 @@ from .config import *  # noqa
 from .utils import *  # noqa
 from .dataset import *  # noqa
 from typing import TypedDict, Literal
-from itertools import product
 
 
 class XCorrelation(TypedDict):
@@ -438,143 +437,133 @@ class ValidationSession:
                 )
 
         # Now we start
+        vs = self
         ds_val = self.Dataset
         df_val = ds_val.dataset
         df_sim = self.simulations_results
-        q = len(df_val["OUTPUT"].columns.get_level_values("names"))
         p = len(df_val["INPUT"].columns.get_level_values("names"))
-        u_units = df_val["INPUT"].columns.get_level_values("units")
-        y_units = df_val["OUTPUT"].columns.get_level_values("units")
-
-        if dataset == "in" or dataset == "both":
-            secondary_y = True
-        else:
-            secondary_y = False
-
+        q = len(df_val["OUTPUT"].columns.get_level_values("names"))
+        #         u_units = df_val["INPUT"].columns.get_level_values("units")
+        #         y_units = df_val["OUTPUT"].columns.get_level_values("units")
         # ================================================================
         # Start the plot.
         # ================================================================
         # Arange figure
+        fig = plt.figure()
         cmap = plt.get_cmap(COLORMAP)
         if dataset == "in" or dataset == "both":
             n = max(p, q)
         else:
             n = q
         nrows, ncols = factorize(n)  # noqa
+        grid = fig.add_gridspec(nrows, ncols)
+        # Set a dummy initial axis
+        axes = fig.add_subplot(grid[0])
 
-        # Plot the simulations output signals
-        fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        axes = axes.T.flat
-        for ii, sim_name in enumerate(list_sims):
-            # Scan simulation names.
-            df_sim.droplevel("units", axis=1).loc[:, sim_name].plot(
-                subplots=True,
-                grid=True,
-                ax=axes[0:q],
-                secondary_y=secondary_y,
-                color=cmap(ii),
-                title="Simulations results.",
-            )
-
-        #  Plot the out dataset (if requested)
+        # ================================================================
+        # Start the plot.
+        # ================================================================
+        # Iterate through all the simulations
+        sims = list(vs.simulations_names())
+        for kk, sim in enumerate(sims):
+            signals_units = vs.simulation_signals_list(sim)
+            for ii, s in enumerate(signals_units):
+                if kk > 0:
+                    # Second (and higher) roundr of simulations
+                    axes = fig.get_axes()[ii]
+                else:
+                    axes = fig.add_subplot(grid[ii], sharex=axes)
+                df_sim[sim].loc[:, s].plot(
+                    subplots=True,
+                    grid=True,
+                    color=cmap(kk),
+                    legend=True,
+                    ylabel=f"({s[1]})",
+                    ax=axes,
+                )
+            # At the end of the first iteration drop the dummmy axis
+            if kk == 0:
+                fig.get_axes()[0].remove()
+            #             lines_l, labels_l = axes.get_legend_handles_labels()
+            #             for ii, l in enumerate(labels_l):
+            #                 labels_l[ii] = sim + l
+            #
         if dataset == "out" or dataset == "both":
-            df_val.droplevel("units", axis=1).loc[:, "OUTPUT"].plot(
-                subplots=True,
-                grid=True,
-                color="gray",
-                secondary_y=secondary_y,
-                ax=axes[0:q],
-            )
+            signals_units = df_val["OUTPUT"].columns
+            for ii, s in enumerate(signals_units):
+                axes = fig.get_axes()[ii]
+                df_val["OUTPUT"].loc[:, s].plot(
+                    subplots=True,
+                    grid=True,
+                    color="gray",
+                    ax=axes,
+                )
+
+            line_l, label_l = axes.get_legend_handles_labels()
+
+        if dataset == "in" or dataset == "both":
+            num_axes_left = len(fig.get_axes())
+            signals_units = df_val["INPUT"].columns
+            for ii, s in enumerate(signals_units):
+                if ii < num_axes_left:
+                    axes = fig.get_axes()[ii]
+                    axes_right = axes.twinx()
+                else:
+                    axes_right = fig.add_subplot(grid[ii], sharex=axes)
+                    axes_right.grid(visible=True)
+                    # axes.set_yticks([])
+                    # axes_right = axes.twinx()
+                df_val["INPUT"].loc[:, s].plot(
+                    subplots=True,
+                    color="gray",
+                    legend=True,
+                    linestyle="--",
+                    ylabel=f"({s[1]})",
+                    ax=axes_right,
+                )
+
+            line_r, label_r = axes_right.get_legend_handles_labels()
 
         # ==========================================================
         # Legends, labels, etc
         # ==========================================================
 
-        # Set legend
-        q = len(df_val["OUTPUT"].columns.get_level_values("names"))
-        labels = list(df_sim.droplevel(level="units", axis=1).columns)
-
-        # Legend for the dataset
-        if dataset == "out" or dataset == "both":
-            labels += product(
-                [ds_val.name],
-                list(df_val["OUTPUT"].columns.get_level_values("names")),
-            )
-
-        # Legend and titles
-        for ii, ax in enumerate(axes[0:q]):
-            new_labels = labels[ii::q]
-            if secondary_y:
-                handles, _ = ax.right_ax.get_legend_handles_labels()
-                ax.right_ax.legend(handles, new_labels)
-                # ax.set_title(f"IN/OUT #{ii+1}")
-            else:
-                handles, _ = ax.get_legend_handles_labels()
-                ax.legend(handles, new_labels)
-                # ax.set_title(f"OUTPUT #{ii+1}")
-
-        # Set y-labels
-        for jj, unit in enumerate(y_units):
-            ylabel = f"({unit })"
-            if secondary_y:
-                axes[jj].right_ax.set_ylabel(ylabel)
-            else:
-                axes[jj].set_ylabel(ylabel)
-
-        # Set xlabels
-        xlabel = f"{df_val.index.name[0]} ({df_val.index.name[1]})"  # Time (s)
-        for ii in range((nrows - 1) * ncols, nrows * ncols):
-            axes[ii].set_xlabel(xlabel)
-
-        # ==========================================================
-        # INPUT signal hanling
-        # ==========================================================
-        if dataset == "in" or dataset == "both":
-            df_val.loc[:, "INPUT"].plot(
-                subplots=True,
-                grid=True,
-                color="gray",
-                linestyle="--",
-                ax=axes[0:p],
-            )
-
-            # Plot the last details: shade NaN:s areas.
-            ds_val._shade_nans(
-                fig.get_axes()[0:p],
-            )
-
-            # Set legend
-            u_names = list(df_val["INPUT"].columns.get_level_values("names"))
-            u_labels = list(product([ds_val.name], u_names))
-            # current_legend, _
-            for ii in range(p):
-                axes[ii].legend([f"{u_labels[ii][0], u_labels[ii][1]}"])
-
-            # Set leftover titles
-            r = p - q
-            if r > 0:
-                for ii in range(r):
-                    axes[q + ii].set_title(f"INPUT #{q+ii+1}")
-            elif r < 0:
-                for ii in range(-r):
-                    axes[p + ii].set_title(f"OUTPUT #{p+ii+1}")
-
-            # Set y_labels
-            for ii, unit in enumerate(u_units):
-                axes[ii].set_ylabel("(" + unit + ")")
-
-            # Set grid
-            for jj in range(q):
-                axes[jj].grid(visible=False, axis="y")
-
-        # Shade NaN:s areas
-        axes = fig.get_axes()
-        ds_val._shade_nans(
-            axes,
-        )
-
-        for ii in range(n, len(axes)):
-            axes[ii].remove()
+        #         # Set legend
+        #         q = len(df_val["OUTPUT"].columns.get_level_values("names"))
+        #         labels = list(df_sim.droplevel(level="units", axis=1).columns)
+        #
+        #         # Legend for the dataset
+        #         if dataset == "out" or dataset == "both":
+        #             labels += product(
+        #                 [ds_val.name],
+        #                 list(df_val["OUTPUT"].columns.get_level_values("names")),
+        #             )
+        #
+        #         # Legend and titles
+        #         for ii, ax in enumerate(axes[0:q]):
+        #             new_labels = labels[ii::q]
+        #             if secondary_y:
+        #                 handles, _ = ax.right_ax.get_legend_handles_labels()
+        #                 ax.right_ax.legend(handles, new_labels)
+        #                 # ax.set_title(f"IN/OUT #{ii+1}")
+        #             else:
+        #                 handles, _ = ax.get_legend_handles_labels()
+        #                 ax.legend(handles, new_labels)
+        #                 # ax.set_title(f"OUTPUT #{ii+1}")
+        #
+        #         # Set y-labels
+        #         for jj, unit in enumerate(y_units):
+        #             ylabel = f"({unit })"
+        #             if secondary_y:
+        #                 axes[jj].right_ax.set_ylabel(ylabel)
+        #             else:
+        #                 axes[jj].set_ylabel(ylabel)
+        #
+        #         # Set xlabels
+        #         xlabel = f"{df_val.index.name[0]} ({df_val.index.name[1]})"  # Time (s)
+        #         for ii in range((nrows - 1) * ncols, nrows * ncols):
+        #             axes[ii].set_xlabel(xlabel)
+        #
 
         # ===============================================================
         # Save and eventually return figures.
