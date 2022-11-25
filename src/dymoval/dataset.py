@@ -694,7 +694,7 @@ class Dataset:
     def _plot_actual(
         self,
         df: pd.DataFrame,
-        signals_lst: list[tuple[str, ...]],
+        signals_tpl: list[tuple[str, ...]],
         grid: matplotlib.gridspec.GridSpec,
         linecolors_tpl: list[tuple[str, ...]],
         ylabels_tpl: list[tuple[str, ...]],
@@ -712,13 +712,13 @@ class Dataset:
         if fig.get_axes():
             # TODO This indexing shall be improved
             axes_tpl = _list_to_structured_list_of_tuple(
-                signals_lst, fig.get_axes()
+                signals_tpl, fig.get_axes()
             )
         else:
             axes_tpl = []
             axes = fig.add_subplot(grid[0])
         # Iteration
-        for ii, s in enumerate(signals_lst):
+        for ii, s in enumerate(signals_tpl):
             # at each iteration a new axes who sharex with the
             # previously created axes, is created
             # However, a new axes is created only if it does not
@@ -1499,6 +1499,8 @@ class Dataset:
 
         # Pointer to DataFrame
         df_temp = self.dataset
+        Ts = self.sampling_period
+        N = len(self.dataset.index)  # number of samples
 
         u_names = list(u_dict.keys())
         y_names = list(y_dict.keys())
@@ -1513,7 +1515,7 @@ class Dataset:
         # We normalize the fft with N to secure energy balance (Parseval's Theorem),
         # namely it must hold "int_T x(t) = int_F X(f)".
         # See https://stackoverflow.com/questions/20165193/fft-normalization
-        N = len(df_temp.index)
+        # N = len(df_temp.index)
 
         vals = (
             fft.rfftn(
@@ -1532,8 +1534,11 @@ class Dataset:
         cols = pd.MultiIndex.from_tuples(
             u_cols + y_cols, names=df_temp.columns.names
         )
-        df_freq = pd.DataFrame(data=vals.round(NUM_DECIMALS), columns=cols)
+        df_freq = pd.DataFrame(data=vals, columns=cols)
         df_freq = df_freq.T.drop_duplicates().T  # Drop duplicated columns
+
+        # Adjust index
+        # time_units_to_frequency_units conversion
         time2freq_units = {
             "s": "Hz",
             "ms": "kHz",
@@ -1541,11 +1546,13 @@ class Dataset:
             "ns": "GHz",
             "ps": "THz",
         }
-        df_freq.index.name = (
-            "Frequency",
-            time2freq_units[df_temp.index.name[1]],
-            ")",
-        )
+        new_index_name = ("Frequency", time2freq_units[df_temp.index.name[1]])
+
+        #
+        f_bins = fft.rfftfreq(N, Ts)
+        # NOTE: I had to use pd.Index to preserve the name and being able to
+        # replace the values
+        df_freq.index = pd.Index(f_bins, name=new_index_name)
 
         return df_freq.round(NUM_DECIMALS)
 
@@ -1656,26 +1663,27 @@ class Dataset:
             # Also, to have nested subplots (for plotting abs and angle) you must
             # use gridspecs.
 
+            # =====================================================
             # Initialize iteration
             fig = grid.figure
             if fig.get_axes():
                 # If axes already exist, use the existings (think to compare_datasets)
                 #
-                # OBS: this is tricky.
+                # OBS: this part is a bit tricky, so some explanation may be useful.
                 # You have a plain list of axes like [ax1, ax2, ax3, ...].
                 # The even represent the amplitudes whereas the odd the angles axes.
                 # However, you don't know who is left and who is right axes, but you have
                 # such an information contained into signals_tpl.
                 #
-                # Hence, you may want to group the plain axes list by following the same structure
-                # as signals_tpl, like: if
+                # Hence, you may want to group the plain axes list by following
+                # the same structure as signals_tpl, like: if
                 #
-                #     signals_tpl = [("u1",),("u2","u3"), ("y1","y2")], then
+                #   signals_tpl = [("u1",),("u2","u3"), ("y1","y2")], then
                 #
                 # you have 10 axes by considering the pairs (abs,angle).
                 # Hence, the axes shall be grouped as
                 #
-                #     axes_tpl = [[ax1 ax2], [ax3, ax4, ax5, ax6],[ax7, ax8, ax9, ax10]]
+                #   axes_tpl = [[ax1 ax2], [ax3, ax4, ax5, ax6],[ax7, ax8, ax9, ax10]]
                 #
                 # so, for each sublist in axes_tpl, the indices are
                 #
@@ -1691,7 +1699,7 @@ class Dataset:
                         tmp.append(next(axes_iter))
                     axes_tpl.append(tmp)
             else:
-                # If no axes available, then create new
+                # If no axes available, then create new ones
                 axes_tpl = []
                 inner_grid = grid[0].subgridspec(2, 1)
                 axes = [
@@ -1741,6 +1749,8 @@ class Dataset:
                 label_angle_r = []
                 if len(s) == 2:  # tuple like ("u1","u2")
                     if len(axes_tpl) > 0:
+                        # indices 3 and 4 represent the abs and phase axes of the
+                        # right axes
                         axes = [axes_tpl[ii][2], axes_tpl[ii][3]]
                     else:
                         axes_right = [axes[0].twinx(), axes[1].twinx()]
@@ -1775,6 +1785,12 @@ class Dataset:
                     line_angle_r + line_angle_l,
                     label_angle_l + label_angle_r,
                 )
+
+                # Set x_label
+                axes[1].set_xlabel(
+                    f"{df_freq.index.name[0]} ({df_freq.index.name[1]})"
+                )
+
             # Remove all dummy axes, i.e. axes with no line2D objects
             axes_all = fig.get_axes()
             for ax in axes_all:
@@ -1810,14 +1826,14 @@ class Dataset:
         # See e.g. https://ccrma.stanford.edu/~jos/ReviewFourier/Symmetries_Real_Signals.html
         df_freq = self.fft(*signals_lst_plain)
         # Frequency and number of samples
-        Ts = self.sampling_period
-        N = len(self.dataset.index)  # number of samples
+        # Ts = self.sampling_period
+        # N = len(self.dataset.index)  # number of samples
         # Compute frequency bins
-        f_bins = fft.rfftfreq(N, Ts)
+        # f_bins = fft.rfftfreq(N, Ts)
         # Update DataFame index.
         # NOTE: I had to use pd.Index to preserve the name and being able to
         # replace the values
-        df_freq.index = pd.Index(f_bins, name=df_freq.index.name)
+        # df_freq.index = pd.Index(f_bins, name=df_freq.index.name)
 
         # Switch between the kind
         if kind == "amplitude":
@@ -1832,6 +1848,8 @@ class Dataset:
             # The same happens for the psd.
             df_freq[1:-1] = 2 * df_freq[1:-1]
         elif kind == "psd":
+            Ts = self.sampling_period
+            N = len(self.dataset.index)  # number of samples
             Delta_f = 1 / (Ts * N)  # Size of each frequency bin
             df_freq = df_freq.abs() ** 2 / Delta_f
             df_freq[1:-1] = 2 * df_freq[1:-1]
