@@ -93,7 +93,7 @@ def save_plot_as(
     """
     # Get figure layout
     nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
-    nrows = fig.get_axes()[0].get_gridspec().get_geometry()[1]
+    ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
     fig.set_size_inches(ncols * AX_WIDTH, nrows * AX_HEIGHT)
 
     fig.set_layout_engine(layout)

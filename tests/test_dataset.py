@@ -68,36 +68,23 @@ class Test_Dataset_nominal:
         expected_y_units = [y_units] if isinstance(y_units, str) else y_units
         # Act
         (
-            actual_u_names,
-            actual_y_names,
-            actual_u_units,
-            actual_y_units,
-            actual_u_idx,
-            actual_y_idx,
+            u_dict,
+            y_dict,
         ) = ds._classify_signals()
 
-        if fixture == "SISO":
-            expected_u_idx = [0]
-            expected_y_idx = [0]
-        if fixture == "SIMO":
-            expected_u_idx = [0]
-            expected_y_idx = [0, 1, 2, 3]
-        if fixture == "MISO":
-            expected_u_idx = [0, 1, 2]
-            expected_y_idx = [0]
-        if fixture == "MIMO":
-            expected_u_idx = [0, 1, 2]
-            expected_y_idx = [0, 1, 2, 3]
+        actual_u_names = list(u_dict.keys())
+        actual_y_names = list(y_dict.keys())
+
+        actual_u_units = list(u_dict.values())
+        actual_y_units = list(y_dict.values())
 
         # Assert: if no arguments is passed it returns the whole list of
         # input and output signals
         assert expected_u_names == actual_u_names
         assert expected_u_units == actual_u_units
-        assert expected_u_idx == actual_u_idx
 
         assert expected_y_names == actual_y_names
         assert expected_y_units == actual_y_units
-        assert expected_y_idx == actual_y_idx
 
     @pytest.mark.parametrize(
         # Check if the function can recognize that there is no input or
@@ -143,62 +130,55 @@ class Test_Dataset_nominal:
             names_in = [names_in[0]] if names_in else []
             expected_u_names = [names_in[0]] if names_in else []
             expected_u_units = [units_in[0]] if units_in else []
-            expected_u_idx = [expected_in_idx[0]] if expected_in_idx else []
 
             names_out = [names_out[0]] if names_out else []
             expected_y_names = [names_out[0]] if names_out else []
             expected_y_units = [units_out[0]] if units_out else []
-            expected_y_idx = [expected_out_idx[0]] if expected_out_idx else []
 
         if fixture == "SIMO":
             names_in = [names_in[0]] if names_in else []
             expected_u_names = [names_in[0]] if names_in else []
             expected_u_units = [units_in[0]] if units_in else []
-            expected_u_idx = [expected_in_idx[0]] if expected_in_idx else []
 
             expected_y_names = names_out if names_out else []
             expected_y_units = units_out if units_out else []
-            expected_y_idx = expected_out_idx
 
         if fixture == "MISO":
             expected_u_names = names_in if names_in else []
             expected_u_units = units_in if units_in else []
-            expected_u_idx = expected_in_idx
 
             names_out = [names_out[0]] if names_out else []
             expected_y_names = [names_out[0]] if names_out else []
             expected_y_units = [units_out[0]] if units_out else []
-            expected_y_idx = [expected_out_idx[0]] if expected_out_idx else []
 
         if fixture == "MIMO":
             expected_u_names = names_in if names_in else []
             expected_u_units = units_in if units_in else []
-            expected_u_idx = expected_in_idx
 
             expected_y_names = names_out if names_out else []
             expected_y_units = units_out if units_out else []
-            expected_y_idx = expected_out_idx
 
         test_signal_names = names_in + names_out
 
         # Acual values
         (
-            actual_u_names,
-            actual_y_names,
-            actual_u_units,
-            actual_y_units,
-            actual_u_idx,
-            actual_y_idx,
+            u_dict,
+            y_dict,
         ) = ds._classify_signals(*test_signal_names)
 
+        actual_u_names = list(u_dict.keys())
+        actual_y_names = list(y_dict.keys())
+
+        actual_u_units = list(u_dict.values())
+        actual_y_units = list(y_dict.values())
+
+        # Assert: if no arguments is passed it returns the whole list of
         # Assert
         assert sorted(expected_u_names) == sorted(actual_u_names)
         assert sorted(expected_u_units) == sorted(actual_u_units)
-        assert sorted(expected_u_idx) == sorted(actual_u_idx)
 
         assert sorted(expected_y_names) == sorted(actual_y_names)
         assert sorted(expected_y_units) == sorted(actual_y_units)
-        assert sorted(expected_y_idx) == sorted(actual_y_idx)
 
     def test__validate_name_value_tuples(self) -> None:
         # Add a test only if you really need it.
@@ -1055,6 +1035,12 @@ class Test_Dataset_plots:
             _ = ds.plot("u1", "u2", "y1", "y2")
             plt.close("all")
 
+            _ = ds.plot(("u1", "u2"), "y1", "y2")
+            plt.close("all")
+
+            _ = ds.plot("u1", ("u2", "y1"), "y2")
+            plt.close("all")
+
             _ = ds.plot("u1", "u2", "y1", "y2", overlap=True)
             plt.close("all")
 
@@ -1084,40 +1070,42 @@ class Test_Dataset_plots:
         # save on disk
         tmp_path_str = str(tmp_path)
         filename = tmp_path_str + "/potato"
-        _ = ds.plot(save_as=filename)
+        _ = ds.plot(save_as=filename, layout="tight")
         assert os.path.exists(filename + ".png")
         plt.close("all")
         # =============================
         # plot_coverage
         # =============================
-        _, _ = ds.plot_coverage()
+        _ = ds.plot_coverage()
         plt.close("all")
 
-        _, _ = ds.plot_coverage("u1")
+        _ = ds.plot_coverage("u1")
         plt.close("all")
 
         if fixture == "MIMO":
-            _, _ = ds.plot_coverage("u1", "u2", "y1", "y2")
+            _ = ds.plot_coverage("u1", "u2", "y1", "y2")
             plt.close("all")
 
             # Test duplicated input
-            _, _ = ds.plot_coverage("u1", "u1", "y1", "y2")
+            _ = ds.plot_coverage("u1", "u1", "y1", "y2")
             plt.close("all")
 
             # Test duplicated output
-            _, _ = ds.plot_coverage("u1", "u2", "y1", "y1")
+            _ = ds.plot_coverage("u1", "u2", "y1", "y1")
             plt.close("all")
 
         _ = ds.plot_coverage("y1")
         plt.close("all")
 
+        with pytest.raises(TypeError):
+            _ = ds.plot_coverage(("y1", "u1"))
+
         # save on disk
         tmp_path_str = str(tmp_path)
         filename = tmp_path_str + "/potato"
-        _, _ = ds.plot_coverage(save_as=filename)
+        _ = ds.plot_coverage(save_as=filename, layout="tight")
         plt.close("all")
-        assert os.path.exists(filename + "_in.png")
-        assert os.path.exists(filename + "_out.png")
+        assert os.path.exists(filename + ".png")
 
     @pytest.mark.plots
     def test_plotxy(
@@ -1150,6 +1138,13 @@ class Test_Dataset_plots:
 
         with pytest.raises(ValueError):
             _ = ds.plotxy(("potato", "u1"))
+
+        # save on disk
+        tmp_path_str = str(tmp_path)
+        filename = tmp_path_str + "/potato"
+        _ = ds.plotxy(save_as=filename, layout="constrained")
+        plt.close("all")
+        assert os.path.exists(filename + ".png")
 
     @pytest.mark.plots
     def test_plot_spectrum(
@@ -1184,48 +1179,48 @@ class Test_Dataset_plots:
         plt.close("all")
 
         if fixture == "MIMO":
-            _ = ds.plot_spectrum("u1", "u2", "y1", "y2", overlap=True)
+            _ = ds.plot_spectrum("u1", "u2", "y1", "y2")
             plt.close("all")
 
-            _ = ds.plot_spectrum(
-                "u1", "u2", "y1", "y2", kind="psd", overlap=True
-            )
+            _ = ds.plot_spectrum("u1", ("u2", "y1"), "y2")
             plt.close("all")
 
-            # Duplicated input
-            _ = ds.plot_spectrum("u1", "u1", "y1", "y1", overlap=True)
+            _ = ds.plot_spectrum("u1", "u2", "y1", "y2", kind="amplitude")
             plt.close("all")
 
-            # Duplicated input and output
-            _ = ds.plot_spectrum("u1", "u1", "y2", "y2", overlap=True)
+            _ = ds.plot_spectrum(("u1", "u2"), ("y1", "y2"), kind="psd")
             plt.close("all")
 
             # Duplicated input
-            _ = ds.plot_spectrum(
-                "u1", "u1", "y1", "y2", kind="amplitude", overlap=True
-            )
+            _ = ds.plot_spectrum("u1", "u1", "y1", "y1")
             plt.close("all")
 
             # Duplicated input and output
-            _ = ds.plot_spectrum(
-                "u1", "u1", "y2", "y2", kind="amplitude", overlap=True
-            )
+            _ = ds.plot_spectrum("u1", "u1", "y2", "y2")
+            plt.close("all")
+
+            # Duplicated input
+            _ = ds.plot_spectrum("u1", "u1", "y1", "y2", kind="amplitude")
+            plt.close("all")
+
+            # Duplicated input and output
+            _ = ds.plot_spectrum("u1", "u1", "y2", "y2", kind="amplitude")
             plt.close("all")
 
             # Duplicated output
-            _ = ds.plot_spectrum("u1", "u1", "y2", "y2", overlap=True)
+            _ = ds.plot_spectrum("u1", "u1", "y2", "y2")
             plt.close("all")
 
         if fixture == "SIMO":
-            _ = ds.plot_spectrum("u1", "y1", "y2", overlap=True)
+            _ = ds.plot_spectrum("u1", "y1", "y2")
             plt.close("all")
 
         if fixture == "MISO":
-            _ = ds.plot_spectrum("u1", "u2", "y1", overlap=True)
+            _ = ds.plot_spectrum("u1", "u2", "y1")
             plt.close("all")
 
         if fixture == "SISO":
-            _ = ds.plot_spectrum("u1", "y1", overlap=True)
+            _ = ds.plot_spectrum("u1", "y1")
             plt.close("all")
 
         _ = ds.plot_spectrum(overlap=True)
@@ -1298,26 +1293,30 @@ class Test_Dataset_plots:
         # This is only valid if ds does not contain NaN:s, i.e.
         # it is good_dataframe.
         print("ds.dataset = ", ds.dataset)
-        dmv.compare_datasets(ds, ds1, ds2)
+        _ = dmv.compare_datasets(ds, ds1, ds2)
         plt.close("all")
 
-        dmv.compare_datasets(ds, ds1, ds2, kind="power")
+        _ = dmv.compare_datasets(ds, ds1, ds2, kind="power")
         plt.close("all")
 
-        dmv.compare_datasets(ds, ds1, ds2, kind="amplitude")
+        _ = dmv.compare_datasets(ds, ds1, ds2, kind="amplitude")
         plt.close("all")
 
-        dmv.compare_datasets(ds, ds1, ds2, kind="psd")
+        _ = dmv.compare_datasets(ds, ds1, ds2, kind="psd")
         plt.close("all")
 
-        dmv.compare_datasets(ds, ds1, ds2, kind="all")
-        plt.close("all")
-
-        dmv.compare_datasets(ds, ds1, ds2, kind="coverage")
+        _ = dmv.compare_datasets(ds, ds1, ds2, kind="coverage")
         plt.close("all")
 
         with pytest.raises(TypeError):
             dmv.compare_datasets(ds, "potato")
+
+        # save on disk
+        tmp_path_str = str(tmp_path)
+        filename = tmp_path_str + "/potato"
+        _ = dmv.compare_datasets(ds, ds1, ds2, save_as=filename, layout="tight")
+        assert os.path.exists(filename + ".png")
+        plt.close("all")
 
 
 class Test_Signal_validation:

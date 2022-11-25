@@ -194,22 +194,40 @@ class Dataset:
         axes: matplotlib.axes.Axes,
     ) -> None:
 
+        # Function for considering only signals present in the dataset
+        # Note that only signals in the dataset can have NaN:s
+        def filter_signals(
+            avail_signals: list[str], ax: matplotlib.axes.Axes
+        ) -> list[tuple[matplotlib.lines.Line2D, str]]:
+
+            # Implementation
+            lines, labels = ax.get_legend_handles_labels()
+            lines_labels_filt = [
+                (l, s)
+                for (l, s) in zip(lines, labels)
+                if s in available_signals
+            ]
+            return lines_labels_filt
+
+        # ==============================================
+        # Main function
+        # ==============================================
         # Reference to self._nan_intervals
         NaN_intervals = self._nan_intervals
+        available_signals = list(self.dataset.columns.get_level_values("names"))
 
-        # Unify left and right axes in a unique list
-        # axes_all = axes[0].get_shared_x_axes().get_siblings(axes[0])
-        axes_all = axes
-
-        for ii, ax in enumerate(axes_all):
-            lines, signal_names = ax.get_legend_handles_labels()
-            for line, signal in zip(lines, signal_names):
-                color = line.get_color()
-                # Every signal may have a disjoint union of NaN intervals
-                for _, val in enumerate(NaN_intervals[signal]):
-                    # Shade only if there is a non-empty interval
-                    if not val.size == 0:
-                        ax.axvspan(min(val), max(val), color=color, alpha=0.2)
+        for ii, ax in enumerate(axes):
+            lines_labels = filter_signals(available_signals, ax)
+            if lines_labels:
+                for line, signal in lines_labels:
+                    color = line.get_color()
+                    # Every signal may have a disjoint union of NaN intervals
+                    for _, val in enumerate(NaN_intervals[signal]):
+                        # Shade only if there is a non-empty interval
+                        if not val.size == 0:
+                            ax.axvspan(
+                                min(val), max(val), color=color, alpha=0.2
+                            )
 
     def _find_dataset_coverage(
         self,
@@ -1167,9 +1185,18 @@ class Dataset:
             "constrained", "compressed", "tight", "none"
         ] = "constrained",
     ) -> matplotlib.figure.Figure:
-        """You must specify the complete *filename*, including the path."""
+        """You must specify the complete *filename*, including the path.
+
+        If no args is passed zip in and out.
+        """
+
         # df points to self.dataset.
         df = self.dataset
+
+        if not signal_pairs:
+            u_names = list(df["INPUT"].columns.get_level_values("names"))
+            y_names = list(df["OUTPUT"].columns.get_level_values("names"))
+            signal_pairs = tuple(zip(u_names, y_names))
 
         # Check if the passed names exist
         available_names = list(df.columns.get_level_values("names"))
@@ -2684,7 +2711,11 @@ def plot_signals(
 def compare_datasets(
     *datasets: Dataset,
     kind: Literal["time", "coverage"] | Spectrum_type = "time",
-) -> None:
+    save_as: str | None = None,
+    layout: Literal[
+        "constrained", "compressed", "tight", "none"
+    ] = "constrained",
+) -> matplotlib.figure.Figure:
     """
     Compare different :py:class:`Datasets <dymoval.dataset.Dignal>` graphically
     by overlapping them.
@@ -2724,10 +2755,17 @@ def compare_datasets(
         # When performing many plots on the same figure,
         # it find the largest number of axes needed
 
-        # Find the larger dataset
-        p_max = max([len(df["INPUT"].columns) for df in dfs])
-        q_max = max([len(df["OUTPUT"].columns) for df in dfs])
-        n = p_max + q_max
+        # n is the number of total signals, no matter if they are INPUT or OUTPUT
+        n = max(
+            [
+                len(
+                    df.droplevel(level="kind", axis=1).columns.get_level_values(
+                        "names"
+                    )
+                )
+                for df in dfs
+            ]
+        )
 
         # Set nrows and ncols
         fig = plt.figure()
@@ -2746,6 +2784,7 @@ def compare_datasets(
             raise TypeError("Input must be a dymoval Dataset type.")
 
     # Arrange figure
+    print(datasets)
     dfs = [ds.dataset.droplevel(level="units", axis=1) for ds in datasets]
     fig, grid = _arrange_fig_axes(*dfs)
     cmap = plt.get_cmap(COLORMAP)
@@ -2781,3 +2820,9 @@ def compare_datasets(
     ds_names = [ds.name for ds in datasets]
     _adjust_legend(ds_names, fig.get_axes())
     fig.suptitle("Dataset comparison.")
+
+    # Eventually save and return figures.
+    if save_as is not None:
+        save_plot_as(fig, save_as, layout)  # noqa
+
+    return fig

@@ -386,7 +386,10 @@ class ValidationSession:
         *,
         dataset: Literal["in", "out", "both"] | None = None,
         save_as: str | None = None,
-    ) -> matplotlib.axes.Axes:
+        layout: Literal[
+            "constrained", "compressed", "tight", "none"
+        ] = "constrained",
+    ) -> matplotlib.figure.Figure:
         """Plot the stored simulation results.
 
         Possible values of the parameters describing the plot aesthetics,
@@ -411,6 +414,7 @@ class ValidationSession:
             The figure is automatically resized with a 16:9-like aspect ratio.
             You must specify the complete *filename*, including the path.
         """
+        # TODO: could be refactored
 
         # ================================================================
         # Validate and arange the plot setup.
@@ -463,7 +467,7 @@ class ValidationSession:
         axes = axes.T.flat
         for ii, sim_name in enumerate(list_sims):
             # Scan simulation names.
-            df_sim.loc[:, sim_name].plot(
+            df_sim.droplevel("units", axis=1).loc[:, sim_name].plot(
                 subplots=True,
                 grid=True,
                 ax=axes[0:q],
@@ -474,22 +478,13 @@ class ValidationSession:
 
         #  Plot the out dataset (if requested)
         if dataset == "out" or dataset == "both":
-            df_val.loc[:, "OUTPUT"].plot(
+            df_val.droplevel("units", axis=1).loc[:, "OUTPUT"].plot(
                 subplots=True,
                 grid=True,
                 color="gray",
                 secondary_y=secondary_y,
                 ax=axes[0:q],
             )
-
-        # Shade NaN:s areas.
-        ds_val._shade_nans(
-            ds_val._nan_intervals,
-            axes[0:q],
-            list(df_val["OUTPUT"].droplevel(level="units", axis=1).columns),
-            secondary_y=secondary_y,
-            color="k",
-        )
 
         # ==========================================================
         # Legends, labels, etc
@@ -512,11 +507,11 @@ class ValidationSession:
             if secondary_y:
                 handles, _ = ax.right_ax.get_legend_handles_labels()
                 ax.right_ax.legend(handles, new_labels)
-                ax.set_title(f"IN/OUT #{ii+1}")
+                # ax.set_title(f"IN/OUT #{ii+1}")
             else:
                 handles, _ = ax.get_legend_handles_labels()
                 ax.legend(handles, new_labels)
-                ax.set_title(f"OUTPUT #{ii+1}")
+                # ax.set_title(f"OUTPUT #{ii+1}")
 
         # Set y-labels
         for jj, unit in enumerate(y_units):
@@ -545,15 +540,13 @@ class ValidationSession:
 
             # Plot the last details: shade NaN:s areas.
             ds_val._shade_nans(
-                ds_val._nan_intervals,
-                axes[0:p],
-                list(df_val["INPUT"].droplevel(level="units", axis=1).columns),
-                color="k",
+                fig.get_axes()[0:p],
             )
 
             # Set legend
             u_names = list(df_val["INPUT"].columns.get_level_values("names"))
             u_labels = list(product([ds_val.name], u_names))
+            # current_legend, _
             for ii in range(p):
                 axes[ii].legend([f"{u_labels[ii][0], u_labels[ii][1]}"])
 
@@ -572,24 +565,34 @@ class ValidationSession:
 
             # Set grid
             for jj in range(q):
-                axes[jj].grid(None, axis="y")
+                axes[jj].grid(visible=False, axis="y")
 
-        # fig.tight_layout()
+        # Shade NaN:s areas
+        axes = fig.get_axes()
+        ds_val._shade_nans(
+            axes,
+        )
+
+        for ii in range(n, len(axes)):
+            axes[ii].remove()
 
         # ===============================================================
         # Save and eventually return figures.
         # ===============================================================
         if save_as is not None:
-            save_plot_as(fig, axes, save_as)  # noqa
+            save_plot_as(fig, save_as, layout)  # noqa
 
-        return axes
+        return fig
 
     def plot_residuals(
         self,
         list_sims: str | list[str] | None = None,
         *,
         save_as: str | None = None,
-    ) -> tuple[matplotlib.axes.Axes, matplotlib.axes.Axes]:
+        layout: Literal[
+            "constrained", "compressed", "tight", "none"
+        ] = "constrained",
+    ) -> tuple[matplotlib.figure.Figure, matplotlib.figure.Figure]:
         """Plot the residuals.
 
         Parameters
@@ -686,13 +689,13 @@ class ValidationSession:
         if save_as is not None:
             ax1 = ax1.flat
             # fig1.set_size_inches(q * width, q * height)
-            save_plot_as(fig1, ax1, save_as + "_eps_eps")  # noqa
+            save_plot_as(fig1, save_as + "_eps_eps", layout)  # noqa
 
             ax2 = ax2.flat
             # fig2.set_size_inches(q * width, p * height)
-            save_plot_as(fig2, ax2, save_as + "_u_eps")  # noqa
+            save_plot_as(fig2, save_as + "_u_eps", layout)  # noqa
 
-        return ax1, ax2
+        return fig1, fig2
 
     def simulation_signals_list(self, sim_name: str | list[str]) -> list[str]:
         """
