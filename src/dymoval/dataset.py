@@ -1631,7 +1631,7 @@ class Dataset:
 
         def _plot_abs_angle(
             df_freq: pd.DataFrame,
-            signals_lst: list[tuple[str, ...]],
+            signals_tpl: list[tuple[str, ...]],
             grid: matplotlib.gridspec.GridSpec,
             colors_tpl: list[tuple[str, ...]],
             units_tpl: list[tuple[str, ...]],
@@ -1659,18 +1659,39 @@ class Dataset:
             # Initialize iteration
             fig = grid.figure
             if fig.get_axes():
-                # TODO: CREATE LIST OF COMPREHENSION HERE OF THE FORM
-                # [[(abs,ang)] ,[(abs,ang),(abs,ang)], [(abs,ang)]]
-                temp = ("abs", "ang")
-                temp_tpl = [
-                    [temp] if len(s) == 1 else [temp, temp] for s in signals_lst
-                ]
-
-                axes_tpl = _list_to_structured_list_of_tuple(
-                    temp_tpl, fig.get_axes()
-                )
-
+                # If axes already exist, use the existings (think to compare_datasets)
+                #
+                # OBS: this is tricky.
+                # You have a plain list of axes like [ax1, ax2, ax3, ...].
+                # The even represent the amplitudes whereas the odd the angles axes.
+                # However, you don't know who is left and who is right axes, but you have
+                # such an information contained into signals_tpl.
+                #
+                # Hence, you may want to group the plain axes list by following the same structure
+                # as signals_tpl, like: if
+                #
+                #     signals_tpl = [("u1",),("u2","u3"), ("y1","y2")], then
+                #
+                # you have 10 axes by considering the pairs (abs,angle).
+                # Hence, the axes shall be grouped as
+                #
+                #     axes_tpl = [[ax1 ax2], [ax3, ax4, ax5, ax6],[ax7, ax8, ax9, ax10]]
+                #
+                # so, for each sublist in axes_tpl, the indices are
+                #
+                # 0 - absolute left axes
+                # 1 - angle left axes
+                # (3 - absolute right axes, if any)
+                # (4 - angle right axes, if any)
+                axes_tpl = []
+                axes_iter = iter(fig.get_axes())
+                for val in signals_tpl:
+                    tmp = []
+                    for jj, _ in enumerate(2 * val):
+                        tmp.append(next(axes_iter))
+                    axes_tpl.append(tmp)
             else:
+                # If no axes available, then create new
                 axes_tpl = []
                 inner_grid = grid[0].subgridspec(2, 1)
                 axes = [
@@ -1678,13 +1699,12 @@ class Dataset:
                     fig.add_subplot(inner_grid[1]),
                 ]
             # Iteration
-            for ii, s in enumerate(signals_lst):
+            for ii, s in enumerate(signals_tpl):
                 # at each iteration a new axes is created and it is placed
                 # either into a 1D or 2D list.
-                # Add a subplot(2,1) to each already existing subplots
+                # Add a subplot(2,1) to each "main" subplots
                 if len(axes_tpl) > 0:
-                    axes = axes_tpl[ii][0]
-                    # print(len(axes))
+                    axes = [axes_tpl[ii][0], axes_tpl[ii][1]]
                 else:
                     inner_grid = grid[ii].subgridspec(2, 1)
                     axes = [
@@ -1721,7 +1741,7 @@ class Dataset:
                 label_angle_r = []
                 if len(s) == 2:  # tuple like ("u1","u2")
                     if len(axes_tpl) > 0:
-                        axes = axes_tpl[ii][1]
+                        axes = [axes_tpl[ii][2], axes_tpl[ii][3]]
                     else:
                         axes_right = [axes[0].twinx(), axes[1].twinx()]
                     df_freq.droplevel(level="kind", axis=1).loc[:, s[1]].plot(
