@@ -448,8 +448,6 @@ class ValidationSession:
         df_sim = self.simulations_results
         p = len(df_val["INPUT"].columns.get_level_values("names"))
         q = len(df_val["OUTPUT"].columns.get_level_values("names"))
-        #         u_units = df_val["INPUT"].columns.get_level_values("units")
-        #         y_units = df_val["OUTPUT"].columns.get_level_values("units")
         # ================================================================
         # Arrange the figure
         # ================================================================
@@ -466,7 +464,7 @@ class ValidationSession:
         axes = fig.add_subplot(grid[0])
 
         # ================================================================
-        # Start the plot.
+        # Start the simulations plots
         # ================================================================
         # Iterate through all the simulations
         sims = list(vs.simulations_names())
@@ -510,18 +508,18 @@ class ValidationSession:
                     ax=axes,
                 )
 
-        # Collect the legends of the left axes
-        # Until now, everything is on the left axes
+        # Until now, all the axes are on the left side.
         # Due to that fig.get_axes() returns a list of all axes
         # and apparently it is not possible to distinguis between
         # left and right, it is therefore wise to keep track of the
         # axes on the left side.
-        # Note that len(axes_l) = q, until now.
-        # len(axes_l) will change when p>q as we will place
-        # p-q axes on the left side to save space.
+        # Note that len(axes_l) = q, but only until now.
+        # len(axes_l) will change if p>q as we will place the remaining
+        # p-q inputs on the left side axes to save space.
         axes_l = fig.get_axes()
 
-        # Get labels and handles
+        # Get labels and handles needed for the legend in all the
+        # axes on the left side.
         labels_l = []
         handles_l = []
         for axes in axes_l:
@@ -529,19 +527,21 @@ class ValidationSession:
             labels_l.append(labels)
             handles_l.append(handles)
 
-        # Add input plots if needed
+        # ===============================================
+        # Input signal handling.
+        # ===============================================
+
         if dataset == "in" or dataset == "both":
             signals_units = df_val["INPUT"].columns
             for ii, s in enumerate(signals_units):
-                # Add a right axes to the exiistings (which are equal to
-                # the number of outputs "q")
+                # Add a right axes to the existings "q" left axes
                 if ii < q:
                     # If there are available axes, then
                     # add a secondary y_axis to it.
                     axes = fig.get_axes()[ii]
                     axes_right = axes.twinx()
                 else:
-                    # Otherwise, create a new "left" axes.
+                    # Otherwise, create a new "left" axis.
                     # We do this because there is no need of creating
                     # a pair of two new axes for just one signal
                     axes = fig.add_subplot(grid[ii], sharex=axes)
@@ -563,6 +563,7 @@ class ValidationSession:
 
                 # get labels for legend
                 handles, labels = axes_right.get_legend_handles_labels()
+
                 # If there are enough axes, then add an entry to the
                 # existing legend, otherwise append new legend for the
                 # newly added axes.
@@ -573,15 +574,18 @@ class ValidationSession:
                     labels_l.append(labels)
                     handles_l.append(handles)
                     axes_right.grid(True)
+        # ====================================================
+
+        # Shade NaN:s areas
+        if dataset is not None:
+            ds_val._shade_nans(fig.get_axes())
 
         # Write the legend by considering only the left axes
         for ii, ax in enumerate(axes_l):
             ax.legend(handles_l[ii], labels_l[ii])
 
-        axes.set_xlabel(f"{df_val.index.name[0]} ({df_val.index.name[1]})")
-
-        ds_val._shade_nans(axes_l)
-
+        # Title
+        fig.suptitle("Simulations results.")
         # ===============================================================
         # Save and eventually return figures.
         # ===============================================================
@@ -668,7 +672,6 @@ class ValidationSession:
                     ax1[ii, jj].set_title(rf"r_eps{ii}eps_{jj}")
                     ax1[ii, jj].legend()
         fig1.suptitle("Residuals auto-correlation")
-        # fig1.tight_layout()
 
         # ===============================================================
         # Plot input-residuals cross-correlation
@@ -690,15 +693,12 @@ class ValidationSession:
                     ax2[ii, jj].set_title(rf"r_u{ii}eps{jj}")
                     ax2[ii, jj].legend()
         fig2.suptitle("Input-residuals cross-correlation")
-        # fig2.tight_layout()
 
         if save_as is not None:
             ax1 = ax1.flat
-            # fig1.set_size_inches(q * width, q * height)
             save_plot_as(fig1, save_as + "_eps_eps", layout)  # noqa
 
             ax2 = ax2.flat
-            # fig2.set_size_inches(q * width, p * height)
             save_plot_as(fig2, save_as + "_u_eps", layout)  # noqa
 
         return fig1, fig2

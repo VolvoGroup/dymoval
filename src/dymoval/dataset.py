@@ -202,12 +202,15 @@ class Dataset:
 
             # Implementation
             lines, labels = ax.get_legend_handles_labels()
-            print(labels)
-            lines_labels_filt = [
-                (l, s)
-                for (l, s) in zip(lines, labels)
-                if s in available_signals
-            ]
+            lines_labels_all = list(zip(lines, labels))
+            lines_labels_filt = []
+            for line_label in lines_labels_all:
+                for s in available_signals:
+                    if s in line_label[1]:  # we is s is in the legend
+                        # if so, we save the associated line (to get the color)
+                        lines_labels_filt.append((line_label[0], s))
+
+            # lines_labels_filt = [(l, s) for (l, s) in lines_labels_filt]
             return lines_labels_filt
 
         # ==============================================
@@ -219,7 +222,7 @@ class Dataset:
 
         for ii, ax in enumerate(axes):
             lines_labels = filter_signals(available_signals, ax)
-            if lines_labels:
+            if lines_labels:  # TODO: maybe this is always verified
                 for line, signal in lines_labels:
                     color = line.get_color()
                     # Every signal may have a disjoint union of NaN intervals
@@ -772,7 +775,7 @@ class Dataset:
             line_r = []
             label_r = []
             if len(s) == 2:  # tuple like ("u1","u2")
-                if len(axes_tpl) > 0:
+                if len(axes_tpl) > 0:  # TODO: this may be alwaye true.
                     axes_right = axes_tpl[ii][1]
                 else:
                     # Otherwise create a new axes
@@ -1808,7 +1811,9 @@ class Dataset:
                 line_angle_r = []
                 label_angle_r = []
                 if len(s) == 2:  # tuple like ("u1","u2")
-                    if len(axes_tpl) > 0:
+                    if (
+                        len(axes_tpl) > 0
+                    ):  # TODO: this may be always true. To check.
                         # indices 3 and 4 represent the abs and phase axes of the
                         # right axes
                         axes = [axes_tpl[ii][2], axes_tpl[ii][3]]
@@ -2153,6 +2158,7 @@ class Dataset:
         N = len(ds_temp.dataset.index)
 
         # INPUT LPF
+        # TODO: Here you may want to refactor a bit.
         if u_list:
             u_fc = [u[1] for u in u_list]
             if any(u_val < 0 for u_val in u_fc):
