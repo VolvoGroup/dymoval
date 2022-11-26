@@ -695,9 +695,9 @@ class Dataset:
         if kind in ["time", "coverage", "amplitude"]:
             ylabels = [f"({s_dict[s]})" for s in signals_tpl_plain]
         if kind == "power":
-            ylabels = [f"({s_dict[s]}**2)" for s in signals_tpl_plain]
+            ylabels = [f"(({s_dict[s]})^2)" for s in signals_tpl_plain]
         elif kind == "psd":
-            ylabels = [f"({s_dict[s]}**2/Hz)" for s in signals_tpl_plain]
+            ylabels = [f"(({s_dict[s]})^2/Hz)" for s in signals_tpl_plain]
 
         ylabels_tpl = _list_to_structured_list_of_tuple(signals_tpl, ylabels)
 
@@ -764,7 +764,6 @@ class Dataset:
                 ax=axes,
             )
             line_l, label_l = axes.get_legend_handles_labels()
-
             # In case the user wants to overlap plots...
             # If the overlapped plots have the same units, then there is
             # no point in using a secondary_y
@@ -1639,7 +1638,7 @@ class Dataset:
 
             - *amplitude* plot both the amplitude and phase spectrum.
               If the signal has unit V, then the amplitude has unit *V*.
-              Phase is in radians.
+              Phase is in degrees.
             - *power* plot the autopower spectrum.
               If the signal has unit V, then the amplitude has unit *V^2*.
             - *psd* plot the power density spectrum.
@@ -1775,9 +1774,14 @@ class Dataset:
                         fig.add_subplot(g, sharex=axes[0]) for g in inner_grid
                     ]
                 # Two colums per time are being plot: (abs,angle)
-                df_freq.droplevel(level="kind", axis=1).loc[:, s[0]].plot(
+                # If you do ax.legend(handles,my_labels) and then you do
+                # handled, labels = ax.get_legend_handles_labels() pandas will
+                # return the columns names rather than my_labels that you previously set
+                # Hence, we must droplevels until we have only e.g. "u1" as column names
+                df_freq.droplevel(level=[0, 2, 3], axis=1).loc[:, s[0]].plot(
                     subplots=True,
                     grid=True,
+                    legend=False,
                     color=colors_tpl[ii][0],
                     linestyle=linestyles_tpl[ii][0],
                     alpha=alpha_fg,
@@ -1785,7 +1789,7 @@ class Dataset:
                 )
                 # ylabels (units)
                 axes[0].set_ylabel(f"{units_tpl[ii][0]}")
-                axes[1].set_ylabel("(rad)")
+                axes[1].set_ylabel("(deg)")
 
                 # legend (s,abs) and (s,angle) (will be placed at the end)
                 # abs
@@ -1812,7 +1816,9 @@ class Dataset:
                         axes = [axes_tpl[ii][2], axes_tpl[ii][3]]
                     else:
                         axes_right = [axes[0].twinx(), axes[1].twinx()]
-                    df_freq.droplevel(level="kind", axis=1).loc[:, s[1]].plot(
+                    df_freq.droplevel(level=[0, 2, 3], axis=1).loc[
+                        :, s[1]
+                    ].plot(
                         subplots=True,
                         grid=False,
                         color=colors_tpl[ii][1],
@@ -1843,13 +1849,15 @@ class Dataset:
                     line_angle_l + line_angle_r,
                     label_angle_l + label_angle_r,
                 )
-
                 # Set x_label
                 axes[1].set_xlabel(
                     f"{df_freq.index.name[0]} ({df_freq.index.name[1]})"
                 )
 
             # Remove all dummy axes, i.e. axes with no line2D objects
+            # TODO: as seen, inspite you explictely set the legends,
+            # pandas decide what are the legends.
+            # print(fig.get_axes()[2].get_legend_handles_labels())
             axes_all = fig.get_axes()
             for ax in axes_all:
                 if len(ax.get_lines()) == 0:
@@ -1896,7 +1904,9 @@ class Dataset:
         # Switch between the kind
         if kind == "amplitude":
             # Add another level to specify abs and phase
-            df_freq = df_freq.agg([np.abs, np.angle])
+            df_freq = df_freq.agg([np.abs, lambda x: np.angle(x, deg=True)])
+            df_freq = df_freq.rename(columns={"<lambda>": "angle"}, level=3)
+            # df_freq = df_freq.agg([np.abs, np.angle])
 
         elif kind == "power":
             df_freq = df_freq.abs() ** 2
@@ -2725,7 +2735,6 @@ def compare_datasets(
         # or other matplotlib Artist (an Artist is everything you can draw
         # on a figure)
 
-        axes = np.asarray(axes).T.flat
         for ii, ax in enumerate(axes):
             handles, labels = ax.get_legend_handles_labels()
             # print(handles)
@@ -2807,7 +2816,7 @@ def compare_datasets(
     # Adjust legend
     ds_names = [ds.name for ds in datasets]
     _adjust_legend(ds_names, fig.get_axes())
-    fig.suptitle("Dataset comparison.")
+    fig.suptitle(f"Dataset comparison in {kind}.")
 
     # Eventually save and return figures.
     if save_as is not None:
