@@ -202,6 +202,7 @@ class Dataset:
 
             # Implementation
             lines, labels = ax.get_legend_handles_labels()
+            print(labels)
             lines_labels_filt = [
                 (l, s)
                 for (l, s) in zip(lines, labels)

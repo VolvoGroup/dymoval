@@ -414,6 +414,11 @@ class ValidationSession:
             You must specify the complete *filename*, including the path.
         """
         # TODO: could be refactored
+        # It uses the left axis for the simulation results and the dataset output.
+        # If the dataset input is overlapped, then we use the right axes.
+        # However, if the number of inputs "p" is greater than the number of
+        # outputs "q", we use the left axes of the remaining p-q axes since
+        # there is no need to create a pair of axes only for one extra signal.
 
         # ================================================================
         # Validate and arange the plot setup.
@@ -446,7 +451,7 @@ class ValidationSession:
         #         u_units = df_val["INPUT"].columns.get_level_values("units")
         #         y_units = df_val["OUTPUT"].columns.get_level_values("units")
         # ================================================================
-        # Start the plot.
+        # Arrange the figure
         # ================================================================
         # Arange figure
         fig = plt.figure()
@@ -473,97 +478,109 @@ class ValidationSession:
                     axes = fig.get_axes()[ii]
                 else:
                     axes = fig.add_subplot(grid[ii], sharex=axes)
-                df_sim[sim].loc[:, s].plot(
+                # Actual plot
+                df_sim.droplevel(level="units", axis=1).loc[
+                    :, (sim, s[0])
+                ].plot(
                     subplots=True,
                     grid=True,
                     color=cmap(kk),
                     legend=True,
                     ylabel=f"({s[1]})",
+                    xlabel=f"{df_val.index.name[0]} ({df_val.index.name[1]})",
                     ax=axes,
                 )
             # At the end of the first iteration drop the dummmy axis
             if kk == 0:
                 fig.get_axes()[0].remove()
-            #             lines_l, labels_l = axes.get_legend_handles_labels()
-            #             for ii, l in enumerate(labels_l):
-            #                 labels_l[ii] = sim + l
-            #
+
+        # Add output plots if requested
         if dataset == "out" or dataset == "both":
             signals_units = df_val["OUTPUT"].columns
             for ii, s in enumerate(signals_units):
                 axes = fig.get_axes()[ii]
-                df_val["OUTPUT"].loc[:, s].plot(
+                df_val.droplevel(level="units", axis=1).loc[
+                    :, ("OUTPUT", s[0])
+                ].plot(
                     subplots=True,
                     grid=True,
+                    legend=True,
                     color="gray",
+                    xlabel=f"{df_val.index.name[0]} ({df_val.index.name[1]})",
                     ax=axes,
                 )
 
-            line_l, label_l = axes.get_legend_handles_labels()
+        # Collect the legends of the left axes
+        # Until now, everything is on the left axes
+        # Due to that fig.get_axes() returns a list of all axes
+        # and apparently it is not possible to distinguis between
+        # left and right, it is therefore wise to keep track of the
+        # axes on the left side.
+        # Note that len(axes_l) = q, until now.
+        # len(axes_l) will change when p>q as we will place
+        # p-q axes on the left side to save space.
+        axes_l = fig.get_axes()
 
+        # Get labels and handles
+        labels_l = []
+        handles_l = []
+        for axes in axes_l:
+            handles, labels = axes.get_legend_handles_labels()
+            labels_l.append(labels)
+            handles_l.append(handles)
+
+        # Add input plots if needed
         if dataset == "in" or dataset == "both":
-            num_axes_left = len(fig.get_axes())
             signals_units = df_val["INPUT"].columns
             for ii, s in enumerate(signals_units):
-                if ii < num_axes_left:
+                # Add a right axes to the exiistings (which are equal to
+                # the number of outputs "q")
+                if ii < q:
+                    # If there are available axes, then
+                    # add a secondary y_axis to it.
                     axes = fig.get_axes()[ii]
                     axes_right = axes.twinx()
                 else:
-                    axes_right = fig.add_subplot(grid[ii], sharex=axes)
-                    axes_right.grid(visible=True)
-                    # axes.set_yticks([])
-                    # axes_right = axes.twinx()
-                df_val["INPUT"].loc[:, s].plot(
+                    # Otherwise, create a new "left" axes.
+                    # We do this because there is no need of creating
+                    # a pair of two new axes for just one signal
+                    axes = fig.add_subplot(grid[ii], sharex=axes)
+                    axes_right = axes
+                    # Update the list of axis on the left
+                    axes_l.append(axes)
+
+                # Plot.
+                df_val.droplevel(level="units", axis=1).loc[
+                    :, ("INPUT", s[0])
+                ].plot(
                     subplots=True,
                     color="gray",
-                    legend=True,
                     linestyle="--",
                     ylabel=f"({s[1]})",
+                    xlabel=f"{df_val.index.name[0]} ({df_val.index.name[1]})",
                     ax=axes_right,
                 )
 
-            line_r, label_r = axes_right.get_legend_handles_labels()
+                # get labels for legend
+                handles, labels = axes_right.get_legend_handles_labels()
+                # If there are enough axes, then add an entry to the
+                # existing legend, otherwise append new legend for the
+                # newly added axes.
+                if ii < q:
+                    labels_l[ii] += labels
+                    handles_l[ii] += handles
+                else:
+                    labels_l.append(labels)
+                    handles_l.append(handles)
+                    axes_right.grid(True)
 
-        # ==========================================================
-        # Legends, labels, etc
-        # ==========================================================
+        # Write the legend by considering only the left axes
+        for ii, ax in enumerate(axes_l):
+            ax.legend(handles_l[ii], labels_l[ii])
 
-        #         # Set legend
-        #         q = len(df_val["OUTPUT"].columns.get_level_values("names"))
-        #         labels = list(df_sim.droplevel(level="units", axis=1).columns)
-        #
-        #         # Legend for the dataset
-        #         if dataset == "out" or dataset == "both":
-        #             labels += product(
-        #                 [ds_val.name],
-        #                 list(df_val["OUTPUT"].columns.get_level_values("names")),
-        #             )
-        #
-        #         # Legend and titles
-        #         for ii, ax in enumerate(axes[0:q]):
-        #             new_labels = labels[ii::q]
-        #             if secondary_y:
-        #                 handles, _ = ax.right_ax.get_legend_handles_labels()
-        #                 ax.right_ax.legend(handles, new_labels)
-        #                 # ax.set_title(f"IN/OUT #{ii+1}")
-        #             else:
-        #                 handles, _ = ax.get_legend_handles_labels()
-        #                 ax.legend(handles, new_labels)
-        #                 # ax.set_title(f"OUTPUT #{ii+1}")
-        #
-        #         # Set y-labels
-        #         for jj, unit in enumerate(y_units):
-        #             ylabel = f"({unit })"
-        #             if secondary_y:
-        #                 axes[jj].right_ax.set_ylabel(ylabel)
-        #             else:
-        #                 axes[jj].set_ylabel(ylabel)
-        #
-        #         # Set xlabels
-        #         xlabel = f"{df_val.index.name[0]} ({df_val.index.name[1]})"  # Time (s)
-        #         for ii in range((nrows - 1) * ncols, nrows * ncols):
-        #             axes[ii].set_xlabel(xlabel)
-        #
+        axes.set_xlabel(f"{df_val.index.name[0]} ({df_val.index.name[1]})")
+
+        ds_val._shade_nans(axes_l)
 
         # ===============================================================
         # Save and eventually return figures.

@@ -104,7 +104,7 @@ class Test_save_plot_as:
 
         tmp_path_str = str(tmp_path)
         filename = tmp_path_str + "/potato"
-        dmv.save_plot_as(fig, axes, filename)
+        dmv.save_plot_as(fig, filename, "tight")
         assert os.path.exists(filename + ".png")
 
 
