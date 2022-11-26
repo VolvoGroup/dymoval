@@ -114,7 +114,7 @@ class Dataset:
     Raises
     -----
     TypeError
-        If the signals_list has the wrong datatype.
+        If the *signals_list* has the wrong datatype.
     """
 
     def __init__(
@@ -135,7 +135,7 @@ class Dataset:
         # Instance attributes
         # ==============================
         # Here are declared but they will be initialized
-        # in the method _new_dataset_from_dataframe
+        # in the method _new_dataset_from_dataframe()
         self.name: str = "foo"
         self.dataset: pd.DataFrame = pd.DataFrame()
         self.coverage: pd.DataFrame = pd.DataFrame()
@@ -148,7 +148,7 @@ class Dataset:
         # Initialization functions
         # ==============================
         # Initialization by Signals.
-        # It will call _new_dataset_from_dataframe
+        # It will call _new_dataset_from_dataframe()
         if all(isinstance(x, dict) for x in signal_list):
             self._new_dataset_from_signals(
                 name,
@@ -194,7 +194,7 @@ class Dataset:
         axes: matplotlib.axes.Axes,
     ) -> None:
 
-        # Function for considering only signals present in the dataset
+        # Function for cfiltering out only the signals present in the dataset
         # Note that only signals in the dataset can have NaN:s
         def filter_signals(
             avail_signals: list[str], ax: matplotlib.axes.Axes
@@ -206,11 +206,10 @@ class Dataset:
             lines_labels_filt = []
             for line_label in lines_labels_all:
                 for s in available_signals:
-                    if s in line_label[1]:  # we is s is in the legend
+                    if s in line_label[1]:  # check if s is in the legend
                         # if so, we save the associated line (to get the color)
                         lines_labels_filt.append((line_label[0], s))
 
-            # lines_labels_filt = [(l, s) for (l, s) in lines_labels_filt]
             return lines_labels_filt
 
         # ==============================================
@@ -218,20 +217,19 @@ class Dataset:
         # ==============================================
         # Reference to self._nan_intervals
         NaN_intervals = self._nan_intervals
+        # All the signals present in the dataset
         available_signals = list(self.dataset.columns.get_level_values("names"))
 
         for ii, ax in enumerate(axes):
             lines_labels = filter_signals(available_signals, ax)
-            if lines_labels:  # TODO: maybe this is always verified
-                for line, signal in lines_labels:
-                    color = line.get_color()
-                    # Every signal may have a disjoint union of NaN intervals
-                    for _, val in enumerate(NaN_intervals[signal]):
-                        # Shade only if there is a non-empty interval
-                        if not val.size == 0:
-                            ax.axvspan(
-                                min(val), max(val), color=color, alpha=0.2
-                            )
+            # if lines_labels:  # TODO: maybe this is always verified
+            for line, signal in lines_labels:
+                color = line.get_color()
+                # Every signal may have a disjoint union of NaN intervals
+                for _, val in enumerate(NaN_intervals[signal]):
+                    # Shade only if there is a non-empty interval
+                    if not val.size == 0:
+                        ax.axvspan(min(val), max(val), color=color, alpha=0.2)
 
     def _find_dataset_coverage(
         self,
@@ -328,7 +326,7 @@ class Dataset:
             raise ValueError(
                 f" Value of tin ( ={tin}) shall be smaller than the value of tout ( ={tout})."
             )
-        # CHECK IF THE NAMES ARE IN THE AVAIL NAMES
+        # TODO: CHECK IF THE NAMES ARE IN THE AVAIL NAMES
 
         # NOTE: You have to use the #: to add a doc description
         # in class attributes (see sphinx.ext.autodoc)
@@ -339,7 +337,7 @@ class Dataset:
             df.index[1] - df.index[0], NUM_DECIMALS
         )  #: Dataset sampling period.
 
-        # Excluded signals list is either passed by _new_dataset_from_signals
+        # Excluded signals list is either passed by _new_dataset_from_signals()
         # or it is empty if a dataframe is passed by the user (all the signals
         # in this case shall be sampled with the same sampling period).
         self.excluded_signals = _excluded_signals
@@ -456,12 +454,12 @@ class Dataset:
     ) -> None:
 
         # Do not initialize any class attribute here!
-        # All attributes are initialized in the _new_dataset_from_dataframe method
+        # All attributes are initialized in the _new_dataset_from_dataframe() method
 
         # Arguments validation
         validate_signals(*signal_list)
 
-        # If the user pass a single signal as astring,
+        # If the user pass a single signal as a str,
         # then we need to convert into a list
         u_names = str2list(u_names)
         y_names = str2list(y_names)
@@ -532,9 +530,9 @@ class Dataset:
     ) -> tuple[dict[str, str], dict[str, str]]:
         # You pass a list of signal names and the function recognizes who is input
         # and who is output. The dicts are name:unit
-        # Is no argument is passed, then it takes the whole for u_names and y_names
-        # If only input or output signals are passed, then it return an empty list
-        # for the non-returned labels.
+        # Is no argument is passed, then the whole for u_names and y_names is taken
+        # If only input or output signals are passed, then an empty list
+        # for the non-returned labels is returned.
         df = self.dataset
 
         # Separate in from out.
@@ -554,7 +552,7 @@ class Dataset:
             )
         # ========================================================
 
-        # If the signals are passed, then classify in IN and OUT.
+        # Classify in IN and OUT in case signals are passed.
         if signals:
             u_names = [
                 s
@@ -624,11 +622,11 @@ class Dataset:
         # ===================================================
         # Selection of signals to plot
         # ===================================================
-        # Returns the signals passed by the users.
-        # If None has passed, it takes all the signals in the Dataset instance
+        # Returns the signals passed by the user.
+        # If None has passed, it takes all the signals in the Dataset instance.
         # overlap parameter override eventual signals passed by the user
 
-        # df points to self.dataset.
+        # df points to self.dataset
         df = self.dataset
 
         # All possible names
@@ -636,7 +634,8 @@ class Dataset:
         y_names = list(df["OUTPUT"].columns.get_level_values("names"))
 
         if overlap:
-            # OBS! zip cuts the longest list
+            # OBS! zip cuts the longest list, so we have to manually add
+            # the lefotovers
             p = len(u_names) - len(y_names)
             leftovers = u_names[p + 1 :] if p > 0 else y_names[p + 1 :]
             signals_lst = list(zip(u_names, y_names)) + leftovers
@@ -647,6 +646,7 @@ class Dataset:
             signals_lst = u_names + y_names
 
         # Make all tuples like [('u0', 'u1'), ('y0',), ('u1', 'y1', 'u0')]
+        # for easier indexining
         for ii, s in enumerate(signals_lst):
             if isinstance(s, str):
                 signals_lst[ii] = (s,)
@@ -688,8 +688,6 @@ class Dataset:
         linecolors_tpl = _list_to_structured_list_of_tuple(
             signals_tpl, linecolors
         )
-        # print("signals_tpl =  ", signals_tpl)
-        # print("linecolors_tpl =  ", linecolors_tpl)
 
         # ylabels (units)
         s_dict = deepcopy(u_dict)
@@ -742,21 +740,19 @@ class Dataset:
         else:
             axes_tpl = []
             axes = fig.add_subplot(grid[0])
-        # print(signals_tpl)
-        # print(linecolors_tpl)
-        # Iteration
+
+        # Iterations
         for ii, s in enumerate(signals_tpl):
             # at each iteration a new axes who sharex with the
             # previously created axes, is created
             # However, a new axes is created only if it does not
-            # exists in such grid position.
+            # exists in the givem grid position.
             if len(axes_tpl) > 0:
                 # Reuse existing axes if exist
                 axes = axes_tpl[ii][0]
             else:
                 # Otherwise create a new axes
                 axes = fig.add_subplot(grid[ii], sharex=axes)
-            # print(s[0], linecolors_tpl[ii][0])
 
             df.droplevel(level=["kind", "units"], axis=1).loc[:, s[0]].plot(
                 subplots=True,
@@ -808,7 +804,7 @@ class Dataset:
             axes.legend(line_l + line_r, label_l + label_r)
             axes.set_xlabel(f"{df.index.name[0]} ({df.index.name[1]})")
 
-        # Remove dummy axes (for a more general implementation check
+        # Remove dummy axes created at the beginning
         axes_all = fig.get_axes()
         for ax in axes_all:
             if len(ax.get_lines()) == 0:
@@ -943,22 +939,20 @@ class Dataset:
         **kwargs: Any,
     ) -> Dataset:
         """
-        MISSING DOCSTRUNG!!!!
+        Trim the Dataset instance.
 
         Parameters
         ----------
-        *signals : str | tuple[str, str] | None
-            DESCRIPTION.
-        tin : float | None, optional
-            DESCRIPTION. The default is None.
-        tout : float | None, optional
-            DESCRIPTION. The default is None.
-        verbosity : int, optional
-            DESCRIPTION. The default is 0.
+        *signals :
+            Signals to be plotted in case of trimming from a plot.
+        tin :
+            Initial time for trimming.
+        tout :
+            Final time for trimming.
+        verbosity :
+            Depending on its level, more or less info is displayed.
         **kwargs:
             kwargs to be passed to the plot() method.
-
-
 
         """
         # We have to trim the signals to have a meaningful dataset
@@ -1065,7 +1059,7 @@ class Dataset:
         ds._nan_intervals = ds._find_nan_intervals()
         ds.coverage = ds._find_dataset_coverage()
 
-        # ... and shift it such that tin = 0.0
+        # ... and shift everything such that tin = 0.0
         ds._shift_dataset_tin_to_zero()
         ds.dataset = ds.dataset.round(NUM_DECIMALS)
 
@@ -1152,7 +1146,7 @@ class Dataset:
             sampling_period = self.sampling_period
 
             for ii, val in enumerate(cols):
-                # This is the syntax for defining a dymoval signal
+                # The following is the syntax for defining a dymoval signal
                 temp: dmv.Signal = {
                     "name": names[ii],
                     "values": df.loc[:, val].to_numpy().round(NUM_DECIMALS),
@@ -1170,12 +1164,6 @@ class Dataset:
 
         It is possible to pass an arbitrary number of tuples of the
         form *(signal_name_x,signal_name_y).*
-
-
-        Raises
-        ------
-        ValueError:
-            If any passed signal does not exist in the dataset.
         """
         return list(self.dataset.columns)
 
@@ -1189,7 +1177,11 @@ class Dataset:
             "constrained", "compressed", "tight", "none"
         ] = "constrained",
     ) -> matplotlib.figure.Figure:
-        """You must specify the complete *filename*, including the path.
+        """Plot a signal against another signal in a plane (XY-plot).
+
+        The *signal_pairs* shall be passed as tuples.
+
+        You must specify the complete *filename*, including the path.
 
         If no args is passed zip in and out.
         """
@@ -1305,23 +1297,27 @@ class Dataset:
         linecolor_input:
             Line color of the input signals.
         linestyle_fg:
-            Line style of the signals passed as strings or line style of the first
-            element if two signals are passed as a tuple.
+            Linestyle of the first signals of the tuple
+            if two signals are passed as a tuple.
         alpha_fg:
-            Alpha channel value of the signals passed as strings or line style
-            of the first element if two signals are passed as a tuple.
+            Alpha channel value of the firt signals of the tuple
+            if two signals are passed as a tuple.
         linecolor_output:
             Line color of the output signals.
         linestyle_bg:
-            Line style of the second output signals.
+            Linestyle of the second signals of the tuple
+            if two signals are passed as a tuple.
         alpha_bg:
-            Alpha channel value for the output signals.
+            Alpha channel value of the second signals of the tuple
+            if two signals are passed as a tuple.
         _grid:
             Matplotlib GridSpec where to place the plot. (Used internally)
         save_as:
             Save the figure with a specified name.
             The figure is automatically resized to try to keep a 16:9 aspect ratio.
             You must specify the complete *filename*, including the path.
+        layout:
+            Before saving the figure, *layout* is applied.
         """
 
         # df points to self.dataset.
@@ -1430,11 +1426,12 @@ class Dataset:
             Axes where the input signal coverage plot shall be placed.
         as_out:
             Axes where the output signal coverage plot shall be placed.
-        save as:
-            Save the figures with a specified name.
-            It appends the suffix *_in* and *_out* to the input and output figure,
-            respectively.
-            The *filename* shall include the path.
+        save_as:
+            Save the figure with a specified name.
+            The figure is automatically resized to try to keep a 16:9 aspect ratio.
+            You must specify the complete *filename*, including the path.
+        layout:
+            Before saving the figure, *layout* is applied.
         """
         # df points to self.dataset.
         df = self.dataset
@@ -1502,7 +1499,7 @@ class Dataset:
             else:
                 # Create a new axes
                 axes = fig.add_subplot(grid[ii], sharex=axes)
-
+            # Actual plot
             df.droplevel(level=["kind", "units"], axis=1).loc[:, s[0]].hist(
                 grid=True,
                 bins=nbins,
@@ -1515,12 +1512,6 @@ class Dataset:
             axes.set_xlabel(xlabels_tpl[ii][0])
 
         fig.suptitle("Coverage region.")
-
-        # Remove dummy axes (for a more general implementation check
-        #         axes_all = fig.get_axes()
-        #         for ax in axes_all:
-        #             if len(ax.get_lines()) == 0:
-        #                 ax.remove()
 
         # Eventually save and return figures.
         if save_as is not None and _grid is None:
@@ -1668,12 +1659,14 @@ class Dataset:
             Line style for the output signals.
         alpha_output:
             Alpha channel value for the output signals.
-        ax:
-            Axes where the spectrum plot will be placed.
+        _grid:
+            Grid where the spectrum ploat will be placed *(Used only internally.)*
         save_as:
             Save the figure with a specified name.
-            The figure is automatically resized with a 16:9 aspect ratio.
+            The figure is automatically resized to try to keep a 16:9 aspect ratio.
             You must specify the complete *filename*, including the path.
+        layout:
+            Before saving the figure, *layout* is applied.
 
 
         Note
@@ -1769,9 +1762,9 @@ class Dataset:
                     fig.add_subplot(inner_grid[0]),
                     fig.add_subplot(inner_grid[1]),
                 ]
-            # Iteration
+            # Iterations
             for ii, s in enumerate(signals_tpl):
-                # at each iteration a new axes is created and it is placed
+                # At each iteration a new axes is created and it is placed
                 # either into a 1D or 2D list.
                 # Add a subplot(2,1) to each "main" subplots
                 if len(axes_tpl) > 0:
@@ -1979,9 +1972,6 @@ class Dataset:
         )
         #
 
-        # ===================================================
-        # Special case: amplitude spectrum
-        # ===================================================
         # Save and return
         if save_as is not None:
             save_plot_as(fig, save_as, layout)
@@ -2410,22 +2400,7 @@ class Dataset:
 def _list_to_structured_list_of_tuple(
     tpl: list[tuple[str, ...]], lst: list[str]
 ) -> list[tuple[str, ...]]:
-    """
-    MISSING DOCSTRUNG
 
-    Parameters
-    ----------
-    tpl : tuple[Any]
-        DESCRIPTION.
-    lst : list[str]
-        DESCRIPTION.
-
-    Returns
-    -------
-    list[tuple[Any]]
-        DESCRIPTION.
-
-    """
     # Convert a plain list to a list of tuple of a given structure, i.e.
     # Given tpl = [("a0","a1"),("b0",),("b1","a1","b0"),("a0","a1"),("b0",)]
     # and lst = ["u0", "u1", "u2", "u3", "u4", "u5", "u6", "u7" , "u8"]
@@ -2436,18 +2411,27 @@ def _list_to_structured_list_of_tuple(
         R.append(tuple(lst[idx : idx + ii]))
         idx += ii
     return R
-    # it = iter(lst)
-    # return [tuple(itertools.islice(it, len(t))) for t in tpl]
 
 
 def change_axes_layout(
     fig: matplotlib.axes.Figure,
-    axes: matplotlib.axes.Axes,
     nrows: int,
     ncols: int,
 ) -> tuple[matplotlib.axes.Figure, matplotlib.axes.Axes]:
-    """Change *Axes* layout of an existing Matplotlib *Figure*."""
+    """Change *Axes* layout of an existing Matplotlib *Figure*.
 
+
+    Parameters
+    ----------
+    fig:
+        Reference figure.
+    nrwos:
+        New number or rows.
+    ncols:
+        New number of columns
+    """
+
+    axes = fig.get_axes()
     old_nrows: int = axes.shape[0]
     old_ncols: int = axes.shape[1]
     # Remove all old axes
@@ -2673,11 +2657,8 @@ def validate_dataframe(
         raise TypeError("Elements of the DataFrame must be float.")
 
 
-def plot_signals(
-    *signals: Signal,
-) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
-    """
-    Plot :py:class:`Signals <dymoval.dataset.Signal>`.
+def plot_signals(*signals: Signal) -> matplotlib.figure.Figure:
+    """Plot :py:class:`Signals <dymoval.dataset.Signal>`.
 
     Parameters
     ----------
@@ -2710,9 +2691,11 @@ def plot_signals(
         ax[ii].set_ylabel(f"({s['signal_unit']})")
 
     fig.suptitle("Raw signals.")
-    # fig.tight_layout()
 
-    return fig, ax.base
+    for ii in range(n, len(ax)):
+        ax[ii].remove()
+
+    return fig
 
 
 def compare_datasets(
@@ -2760,8 +2743,7 @@ def compare_datasets(
         *dfs: pd.DataFrame,
     ) -> tuple[matplotlib.axes.Figure, matplotlib.gridspec.GridSpec]:
         # When performing many plots on the same figure,
-        # it find the largest number of axes needed
-
+        # this function find number of axes needed
         # n is the number of total signals, no matter if they are INPUT or OUTPUT
         n = max(
             [
@@ -2779,7 +2761,6 @@ def compare_datasets(
         nrows, ncols = factorize(n)  # noqa
         grid = fig.add_gridspec(nrows, ncols)
 
-        # Create a unified figure
         return fig, grid
 
     # ========================================

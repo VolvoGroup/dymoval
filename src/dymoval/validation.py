@@ -789,13 +789,13 @@ class ValidationSession:
 
         return vs_temp
 
-    def drop_simulation(self, *args: str) -> ValidationSession:
+    def drop_simulation(self, *sims: str) -> ValidationSession:
         """Drop simulation results from the validation session.
 
 
         Parameters
         ----------
-        *args :
+        *sims :
             Name of the simulations to be dropped.
 
         Raises
@@ -808,7 +808,7 @@ class ValidationSession:
         vs_temp = deepcopy(self)
         vs_temp._sim_list_validate()
 
-        for sim_name in args:
+        for sim_name in sims:
             if sim_name not in vs_temp.simulations_names():
                 raise ValueError(f"Simulation {sim_name} not found.")
             vs_temp.simulations_results = vs_temp.simulations_results.drop(
