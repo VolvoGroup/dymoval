@@ -624,6 +624,7 @@ class Dataset:
         # Selection of signals to plot
         # ===================================================
         # Returns the signals passed by the user.
+        # The signals passed by the user can be a mixed of tuples and strings
         # If None has passed, it takes all the signals in the Dataset instance.
         # overlap parameter override eventual signals passed by the user
 
@@ -639,21 +640,21 @@ class Dataset:
             # the lefotovers
             p = len(u_names) - len(y_names)
             leftovers = u_names[p + 1 :] if p > 0 else y_names[p + 1 :]
-            signals_lst = list(zip(u_names, y_names)) + leftovers
+            signals_from_user = list(zip(u_names, y_names)) + leftovers
         # Convert passed tuple[tuple|str] to list[tuple|str]
         elif signals:
-            signals_lst = list(signals)
+            signals_from_user = list(signals)
         else:
-            signals_lst = u_names + y_names
+            signals_from_user = u_names + y_names
 
         # Make all tuples like [('u0', 'u1'), ('y0',), ('u1', 'y1', 'u0')]
         # for easier indexining
-        for ii, s in enumerate(signals_lst):
+        for ii, s in enumerate(signals_from_user):
             if isinstance(s, str):
-                signals_lst[ii] = (s,)
+                signals_from_user[ii] = (s,)
 
         # signals_lst_plain, e.g. ['u0', 'u1', 'y0', 'u1', 'y1', 'u0']
-        signals_lst_plain = [item for t in signals_lst for item in t]
+        signals_lst_plain = [item for t in signals_from_user for item in t]
 
         # validation
         (
@@ -661,30 +662,35 @@ class Dataset:
             y_dict,
         ) = self._classify_signals(*signals_lst_plain)
 
-        return u_dict, y_dict, signals_lst, signals_lst_plain
+        return u_dict, y_dict, signals_from_user, signals_lst_plain
 
     def _create_plot_args(
         self,
         kind: Literal["time", "coverage"] | Spectrum_type,
         u_dict: dict[str, str],
         y_dict: dict[str, str],
-        signals_tpl_plain: list[str],
+        signals_lst_plain: list[str],
         signals_tpl: list[tuple[str, ...]],
         linecolor_input: str,
         linecolor_output: str,
         linestyle_fg: str,
         linestyle_bg: str,
-    ) -> tuple[linecolors_tpl, units_tpl, linestyles_tpl]:
+    ) -> tuple[
+        list[tuple[str, ...]],
+        list[tuple[str, ...]],
+        list[tuple[str, ...]],
+        list[tuple[str, ...]],
+    ]:
         # signals_tpl is passed only to be a reference for casting
-        # signals_tpl_plain, which is e.g.
-        # signals_tpl_plain = ["u1","u2","u3", "y1","y4",...]
+        # signals_lst_plain, which is e.g.
+        # signals_lst_plain = ["u1","u2","u3", "y1","y4",...]
         # to a structure that resemble signals_tpl, e.g.
         # signals_tpl[("u1","u2"),("u3",), ("y1","y4")...]
 
         # linecolors
         linecolors = [
             linecolor_input if s in u_dict.keys() else linecolor_output
-            for s in signals_tpl_plain
+            for s in signals_lst_plain
         ]
         linecolors_tpl = _list_to_structured_list_of_tuple(
             signals_tpl, linecolors
@@ -694,13 +700,27 @@ class Dataset:
         s_dict = deepcopy(u_dict)
         s_dict.update(y_dict)
         if kind in ["time", "coverage", "amplitude"]:
-            ylabels = [f"({s_dict[s]})" for s in signals_tpl_plain]
+            ylabels = [f"({s_dict[s]})" for s in signals_lst_plain]
         if kind == "power":
-            ylabels = [f"(({s_dict[s]})^2)" for s in signals_tpl_plain]
+            ylabels = [f"(({s_dict[s]})^2)" for s in signals_lst_plain]
         elif kind == "psd":
-            ylabels = [f"(({s_dict[s]})^2/Hz)" for s in signals_tpl_plain]
+            ylabels = [f"(({s_dict[s]})^2/Hz)" for s in signals_lst_plain]
 
+        # Create a structure with all tuples e.g. [("u1",),("y1","u3"),("y4",)]
         ylabels_tpl = _list_to_structured_list_of_tuple(signals_tpl, ylabels)
+
+        # labels (=legend entries)
+        # OBS: each Artist has a label. This is what is used
+        # in the legend. So, for each Artist (e.g. Line2D) you should
+        # set the label with Artist.set_label().
+        # Note that ax.legend(handles,labels) will only display
+        # with what you want, but it won't change the Artist label.
+        if kind != "amplitude":
+            labels = signals_lst_plain
+        else:
+            pass
+
+        labels_tpl = _list_to_structured_list_of_tuple(signals_tpl, labels)
 
         # Linestyles
         linestyles_tpl: list[tuple[str, ...]] = []
@@ -713,7 +733,7 @@ class Dataset:
             else:
                 linestyles_tpl.append((linestyle_fg,))
 
-        return linecolors_tpl, ylabels_tpl, linestyles_tpl
+        return linecolors_tpl, ylabels_tpl, linestyles_tpl, labels_tpl
 
     def _plot_actual(
         self,
@@ -796,19 +816,17 @@ class Dataset:
                 (
                     line_r,
                     label_r,
-                ) = (
-                    axes_right.get_legend_handles_labels()  # type:ignore
-                )  # noqa , false positive from pylsp?
+                ) = axes_right.get_legend_handles_labels()  # type:ignore
 
             # Set nice legend
             axes.legend(line_l + line_r, label_l + label_r)
-            axes.set_xlabel(f"{df.index.name[0]} ({df.index.name[1]})")
 
         # Remove dummy axes created at the beginning
         axes_all = fig.get_axes()
         for ax in axes_all:
             if len(ax.get_lines()) == 0:
                 ax.remove()
+        print(axes.get_legend_handles_labels())
 
         return fig
 
@@ -1253,7 +1271,7 @@ class Dataset:
         layout: Literal[
             "constrained", "compressed", "tight", "none"
         ] = "constrained",
-        ax_height: float = 2.5,
+        ax_height: float = 1.8,
         ax_width: float = 4.445,
     ) -> matplotlib.figure.Figure:
         """Plot the Dataset.
@@ -1339,7 +1357,12 @@ class Dataset:
         # ===================================================
         # Arrange colors, ylabels (=units) and linestyles
         # ===================================================
-        (linecolors_tpl, ylabels_tpl, linestyles_tpl) = self._create_plot_args(
+        (
+            linecolors_tpl,
+            ylabels_tpl,
+            linestyles_tpl,
+            _,
+        ) = self._create_plot_args(
             "time",
             u_dict,
             y_dict,
@@ -1460,7 +1483,7 @@ class Dataset:
         # ===================================================
         # Arrange colors, ylabels (=units) and linestyles
         # ===================================================
-        (linecolors_tpl, xlabels_tpl, histtype_tpl) = self._create_plot_args(
+        (linecolors_tpl, xlabels_tpl, histtype_tpl, _) = self._create_plot_args(
             "coverage",
             u_dict,
             y_dict,
@@ -1934,7 +1957,7 @@ class Dataset:
         # ===================================================
         # Arrange colors, ylabels (=units) and linestyles
         # ===================================================
-        (colors_tpl, units_tpl, linestyles_tpl) = self._create_plot_args(
+        (colors_tpl, units_tpl, linestyles_tpl, _) = self._create_plot_args(
             kind,
             u_dict,
             y_dict,
