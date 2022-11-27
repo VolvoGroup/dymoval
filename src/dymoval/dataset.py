@@ -742,6 +742,7 @@ class Dataset:
         grid: matplotlib.gridspec.GridSpec,
         linecolors_tpl: list[tuple[str, ...]],
         ylabels_tpl: list[tuple[str, ...]],
+        labels_tpl: list[tuple[str, ...]],
         linestyles_tpl: list[tuple[str, ...]],
         alpha_fg: float,
         alpha_bg: float,
@@ -1361,7 +1362,7 @@ class Dataset:
             linecolors_tpl,
             ylabels_tpl,
             linestyles_tpl,
-            _,
+            labels_tpl,
         ) = self._create_plot_args(
             "time",
             u_dict,
@@ -1397,6 +1398,7 @@ class Dataset:
             grid,
             linecolors_tpl,
             ylabels_tpl,
+            labels_tpl,
             linestyles_tpl,
             alpha_fg,
             alpha_bg,
@@ -1726,8 +1728,9 @@ class Dataset:
             df_freq: pd.DataFrame,
             signals_tpl: list[tuple[str, ...]],
             grid: matplotlib.gridspec.GridSpec,
-            colors_tpl: list[tuple[str, ...]],
-            units_tpl: list[tuple[str, ...]],
+            linecolors_tpl: list[tuple[str, ...]],
+            ylabels_tpl: list[tuple[str, ...]],
+            labels_tpl: list[tuple[str, ...]],
             linestyles_tpl: list[tuple[str, ...]],
             alpha_fg: float,
             alpha_bg: float,
@@ -1813,13 +1816,13 @@ class Dataset:
                     subplots=True,
                     grid=True,
                     legend=False,
-                    color=colors_tpl[ii][0],
+                    color=linecolors_tpl[ii][0],
                     linestyle=linestyles_tpl[ii][0],
                     alpha=alpha_fg,
                     ax=axes,
                 )
                 # ylabels (units)
-                axes[0].set_ylabel(f"{units_tpl[ii][0]}")
+                axes[0].set_ylabel(f"{ylabels_tpl[ii][0]}")
                 axes[1].set_ylabel("(deg)")
 
                 # legend (s,abs) and (s,angle) (will be placed at the end)
@@ -1852,15 +1855,15 @@ class Dataset:
                     ].plot(
                         subplots=True,
                         grid=False,
-                        color=colors_tpl[ii][1],
+                        color=linecolors_tpl[ii][1],
                         legend=False,
                         linestyle=linestyles_tpl[ii][1],
                         alpha=alpha_bg,
                         ax=axes_right,
                     )
                     # ylabels (units)
-                    if units_tpl[ii][0] != units_tpl[ii][1]:
-                        axes_right[0].set_ylabel(f"{units_tpl[ii][1]}")
+                    if ylabels_tpl[ii][0] != ylabelss_tpl[ii][1]:
+                        axes_right[0].set_ylabel(f"{ylabels_tpl[ii][1]}")
 
                     # legend (s,abs) and (s,angle) (will be placed at the end)
                     # abs
@@ -1910,7 +1913,7 @@ class Dataset:
         (
             u_dict,
             y_dict,
-            signals_lst,
+            signals_tpl,
             signals_lst_plain,
         ) = self._select_signals_to_plot(*signals, overlap=overlap)
 
@@ -1957,12 +1960,17 @@ class Dataset:
         # ===================================================
         # Arrange colors, ylabels (=units) and linestyles
         # ===================================================
-        (colors_tpl, units_tpl, linestyles_tpl, _) = self._create_plot_args(
+        (
+            linecolors_tpl,
+            ylabels_tpl,
+            linestyles_tpl,
+            labels_tpl,
+        ) = self._create_plot_args(
             kind,
             u_dict,
             y_dict,
             signals_lst_plain,
-            signals_lst,
+            signals_tpl,
             linecolor_input,
             linecolor_output,
             linestyle_fg,
@@ -1976,7 +1984,7 @@ class Dataset:
         # Subplots will be dynamically created
         if not _grid:
             fig = plt.figure()
-            n = len(signals_lst)
+            n = len(signals_tpl)
             nrows, ncols = factorize(n)  # noqa
             grid = fig.add_gridspec(nrows, ncols)
         else:
@@ -1988,10 +1996,11 @@ class Dataset:
         if kind == "amplitude":
             fig = _plot_abs_angle(
                 df_freq,
-                signals_lst,
+                signals_tpl,
                 grid,
-                colors_tpl,
-                units_tpl,
+                linecolors_tpl,
+                ylabels_tpl,
+                labels_tpl,
                 linestyles_tpl,
                 alpha_fg,
                 alpha_bg,
@@ -1999,10 +2008,11 @@ class Dataset:
         else:
             fig = self._plot_actual(
                 df_freq,
-                signals_lst,
+                signals_tpl,
                 grid,
-                colors_tpl,
-                units_tpl,
+                linecolors_tpl,
+                ylabels_tpl,
+                labels_tpl,
                 linestyles_tpl,
                 alpha_fg,
                 alpha_bg,
