@@ -422,9 +422,8 @@ class Dataset:
             "linestyle_bg": "--",
             "alpha_bg": 1.0,
             "_grid": None,
-            "save_as": None,
             "layout": None,
-            "ax_height": 2.5,
+            "ax_height": 1.8,
             "ax_width": 4.445,
         }
         tmp = self.trim(
@@ -1173,11 +1172,10 @@ class Dataset:
         # Only positional arguments
         /,
         *signal_pairs: tuple[str, str],
-        save_as: str | None = None,
         layout: Literal[
             "constrained", "compressed", "tight", "none"
         ] = "constrained",
-        ax_height: float = 2.5,
+        ax_height: float = 1.8,
         ax_width: float = 4.445,
     ) -> matplotlib.figure.Figure:
         """Plot a signal against another signal in a plane (XY-plot).
@@ -1229,11 +1227,12 @@ class Dataset:
             )
 
         fig.suptitle("XY-plot.")
-        fig.set_layout_engine(layout)
 
-        # Eventually save and return figures.
-        if save_as is not None:
-            save_plot_as(fig, save_as, layout, ax_height, ax_width)  # noqa
+        # Adjust fig size and layout
+        nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
+        ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
+        fig.set_size_inches(ncols * ax_width, nrows * ax_height)
+        fig.set_layout_engine(layout)
 
         return fig
 
@@ -1251,7 +1250,6 @@ class Dataset:
         linestyle_bg: str = "--",
         alpha_bg: float = 1.0,
         _grid: matplotlib.gridspec.GridSpec | None = None,
-        save_as: str | None = None,
         layout: Literal[
             "constrained", "compressed", "tight", "none"
         ] = "constrained",
@@ -1280,15 +1278,14 @@ class Dataset:
 
         Note
         ----
-        The returned figure has a default layout.
-        It is possible to change the layout for example by using the
-        `set_layout_engine` method of matplotlib.Figure.
+        If you want to save the figure on disk, please refer to the
+        *matplotlib* `Figure.savefig()`
 
 
         Example
         -------
         >>> fig = ds.plot() # ds is a dymoval Dataset
-        >>> fig.set_layout_engine("none")
+        >>> fig.savefig("my_plot.svg")
 
 
         Parameters
@@ -1318,14 +1315,12 @@ class Dataset:
             if two signals are passed as a tuple.
         _grid:
             Matplotlib GridSpec where to place the plot. (Used internally)
-        save_as:
-            Save the figure with a specified filename.
         layout:
             Figure layout.
         ax_height:
-            Height of the figure to be saved.
+            Height of the figure.
         ax_width:
-            Width of the figure to be saved.
+            Width of the figure.
         """
 
         # df points to self.dataset.
@@ -1392,11 +1387,11 @@ class Dataset:
         # Shade NaN:s areas
         self._shade_nans(fig.get_axes())
 
+        # Adjust fig size and layout
+        nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
+        ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
+        fig.set_size_inches(ncols * ax_width, nrows * ax_height)
         fig.set_layout_engine(layout)
-
-        # Eventually save and return figures.
-        if save_as is not None:
-            save_plot_as(fig, save_as, layout, ax_height, ax_width)  # noqa
 
         return fig
 
@@ -1409,11 +1404,10 @@ class Dataset:
         alpha: float = 1.0,
         histtype: Literal["bar", "barstacked", "step", "stepfilled"] = "bar",
         _grid: matplotlib.gridspec.GridSpec | None = None,
-        save_as: str | None = None,
         layout: Literal[
             "constrained", "compressed", "tight", "none"
         ] = "constrained",
-        ax_height: float = 2.5,
+        ax_height: float = 1.8,
         ax_width: float = 4.445,
     ) -> matplotlib.figure.Figure:
         """
@@ -1438,14 +1432,12 @@ class Dataset:
             Axes where the input signal coverage plot shall be placed.
         as_out:
             Axes where the output signal coverage plot shall be placed.
-        save_as:
-            Save the figure with a specified filename.
         layout:
             Figure layout.
         ax_height:
-            Height of the figure to be saved.
+            Height of the figure.
         ax_width:
-            Width of the figure to be saved.
+            Width of the figure.
         """
         # df points to self.dataset.
         df = self.dataset
@@ -1527,11 +1519,11 @@ class Dataset:
 
         fig.suptitle("Coverage region.")
 
+        # Adjust fig size and layout
+        nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
+        ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
+        fig.set_size_inches(ncols * ax_width, nrows * ax_height)
         fig.set_layout_engine(layout)
-
-        # Eventually save and return figures.
-        if save_as is not None and _grid is None:
-            save_plot_as(fig, save_as, layout, ax_height, ax_width)  # noqa
 
         return fig
 
@@ -1635,11 +1627,10 @@ class Dataset:
         linestyle_bg: str = "--",
         alpha_bg: float = 1.0,
         _grid: matplotlib.gridspec.GridSpec | None = None,
-        save_as: str | None = None,
         layout: Literal[
             "constrained", "compressed", "tight", "none"
         ] = "constrained",
-        ax_height: float = 2.5,
+        ax_height: float = 1.8,
         ax_width: float = 4.445,
     ) -> matplotlib.figure.Figure:
         """
@@ -1679,27 +1670,24 @@ class Dataset:
             Alpha channel value for the output signals.
         _grid:
             Grid where the spectrum ploat will be placed *(Used only internally.)*
-        save_as:
-            Save the figure with a specified filename.
         layout:
             Figure layout.
         ax_height:
-            Height of the figure to be saved.
+            Height of the figure.
         ax_width:
-            Width of the figure to be saved.
+            Width of the figure.
+
 
         Note
         ----
-        The returned figure has a default layout.
-        It is possible to change the layout for example by using the
-        `set_layout_engine` method of matplotlib.Figure.
+        If you want to save the figure on disk, please refer to the
+        *matplotlib* `Figure.savefig()`
 
 
         Example
         -------
-        >>> fig = ds.plot_spectrum() # ds is a dymoval Dataset
-        >>> fig.set_layout_engine("none")
-
+        >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig.savefig("my_plot.svg")
 
 
         Raises
@@ -2003,11 +1991,14 @@ class Dataset:
         )
         #
 
+        # Adjust fig size and layout
+        nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
+        ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
+        if kind == "amplitude":
+            fig.set_size_inches(ncols * ax_width * 2, nrows * ax_height * 2)
+        else:
+            fig.set_size_inches(ncols * ax_width, nrows * ax_height)
         fig.set_layout_engine(layout)
-
-        # Eventually save and return figures.
-        if save_as is not None:
-            save_plot_as(fig, save_as, layout, ax_height, ax_width)  # noqa
 
         return fig
 
@@ -2235,8 +2226,8 @@ class Dataset:
         Note
         ----
         If you need to heavily manipulate your signals, it is suggested
-        to dump the Dataset into Signals, manipulate them,
-        and then create a brand new Dataset.
+        to dump the Dataset into Signals through :py:meth:`~dymoval.dataset.dump_to_signals()`,
+        manipulate them, and then create a brand new Dataset.
 
 
         Warning
@@ -2734,11 +2725,10 @@ def plot_signals(*signals: Signal) -> matplotlib.figure.Figure:
 def compare_datasets(
     *datasets: Dataset,
     kind: Literal["time", "coverage"] | Spectrum_type = "time",
-    save_as: str | None = None,
     layout: Literal[
         "constrained", "compressed", "tight", "none"
     ] = "constrained",
-    ax_height: float = 2.5,
+    ax_height: float = 1.8,
     ax_width: float = 4.445,
 ) -> matplotlib.figure.Figure:
     """
@@ -2843,10 +2833,10 @@ def compare_datasets(
     _adjust_legend(ds_names, fig.get_axes())
     fig.suptitle(f"Dataset comparison in {kind}.")
 
+    # Adjust fig size and layout
+    nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
+    ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
+    fig.set_size_inches(ncols * ax_width, nrows * ax_height)
     fig.set_layout_engine(layout)
-
-    # Eventually save and return figures.
-    if save_as is not None:
-        save_plot_as(fig, save_as, layout, ax_height, ax_width)  # noqa
 
     return fig

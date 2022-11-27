@@ -86,28 +86,6 @@ class Test_str2list:
         assert sorted(actual) == sorted(expected)
 
 
-class Test_save_plot_as:
-    def test_nominal(self, tmp_path: str) -> None:
-
-        # At least one input and one output
-        t = np.arange(1, 10)
-        u = np.sin(2 * np.pi * 0.1 * t)
-        y = 0.5 * np.sin(2 * np.pi * 0.1 * t)
-        filename = "potato"
-
-        fig, axes = plt.subplots(2, 1, squeeze=False)
-        axes = axes.T.flat
-        axes[0].plot(t, u)
-        axes[1].plot(t, y)
-
-        print("axes.base.shape = ", axes.base.shape)
-
-        tmp_path_str = str(tmp_path)
-        filename = tmp_path_str + "/potato"
-        dmv.save_plot_as(fig, filename, "tight")
-        assert os.path.exists(filename + ".png")
-
-
 class Test_open_tutorial:
     @pytest.mark.open_tutorial
     def test_open_tutorial(self) -> None:

@@ -1067,12 +1067,6 @@ class Test_Dataset_plots:
         _ = ds.plot(overlap=True)
         plt.close("all")
 
-        # save on disk
-        tmp_path_str = str(tmp_path)
-        filename = tmp_path_str + "/potato"
-        _ = ds.plot(save_as=filename, layout="tight")
-        assert os.path.exists(filename + ".png")
-        plt.close("all")
         # =============================
         # plot_coverage
         # =============================
@@ -1100,12 +1094,6 @@ class Test_Dataset_plots:
         with pytest.raises(TypeError):
             _ = ds.plot_coverage(("y1", "u1"))
 
-        # save on disk
-        tmp_path_str = str(tmp_path)
-        filename = tmp_path_str + "/potato"
-        _ = ds.plot_coverage(save_as=filename, layout="tight")
-        plt.close("all")
-        assert os.path.exists(filename + ".png")
 
     @pytest.mark.plots
     def test_plotxy(
@@ -1139,12 +1127,6 @@ class Test_Dataset_plots:
         with pytest.raises(ValueError):
             _ = ds.plotxy(("potato", "u1"))
 
-        # save on disk
-        tmp_path_str = str(tmp_path)
-        filename = tmp_path_str + "/potato"
-        _ = ds.plotxy(save_as=filename, layout="constrained")
-        plt.close("all")
-        assert os.path.exists(filename + ".png")
 
     @pytest.mark.plots
     def test_plot_spectrum(
@@ -1232,12 +1214,6 @@ class Test_Dataset_plots:
         _ = ds.plot_spectrum(kind="psd")
         plt.close("all")
 
-        # save on disk
-        tmp_path_str = str(tmp_path)
-        filename = tmp_path_str + "/potato"
-        _ = ds.plot_spectrum(save_as=filename)
-        assert os.path.exists(filename + ".png")
-        plt.close("all")
 
         # ======= If NaN:s raise =====================
         # good_signals have some NaN:s
@@ -1311,12 +1287,6 @@ class Test_Dataset_plots:
         with pytest.raises(TypeError):
             dmv.compare_datasets(ds, "potato")
 
-        # save on disk
-        tmp_path_str = str(tmp_path)
-        filename = tmp_path_str + "/potato"
-        _ = dmv.compare_datasets(ds, ds1, ds2, save_as=filename, layout="tight")
-        assert os.path.exists(filename + ".png")
-        plt.close("all")
 
 
 class Test_Signal_validation:

@@ -383,11 +383,10 @@ class ValidationSession:
         # Cam be a positional or a keyword arg
         list_sims: str | list[str] | None = None,
         dataset: Literal["in", "out", "both"] | None = None,
-        save_as: str | None = None,
         layout: Literal[
             "constrained", "compressed", "tight", "none"
         ] = "constrained",
-        ax_height: float = 2.5,
+        ax_height: float = 1.8,
         ax_width: float = 4.445,
     ) -> matplotlib.figure.Figure:
         """Plot the stored simulation results.
@@ -397,6 +396,19 @@ class ValidationSession:
         are the same for the corresponding *plot* function of *matplotlib*.
 
         See *matplotlib* docs for more information.
+
+
+        Note
+        ----
+        If you want to save the figure on disk, please refer to the
+        *matplotlib* `Figure.savefig()`
+
+
+        Example
+        -------
+        >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig.savefig("my_plot.svg")
+
 
         Parameters
         ----------
@@ -409,8 +421,6 @@ class ValidationSession:
             - **out**: dataset only the output signals of the dataset.
             - **both**: dataset both the input and the output signals of the dataset.
 
-        save_as:
-            Save the figure with a specified filename.
         layout:
             Figure layout.
         ax_height:
@@ -591,14 +601,12 @@ class ValidationSession:
 
         # Title
         fig.suptitle("Simulations results.")
-        fig.set_layout_engine(layout)
 
-        # ===============================================================
-        # Save and eventually return figures.
-        # ===============================================================
-        # Eventually save and return figures.
-        if save_as is not None:
-            save_plot_as(fig, save_as, layout, ax_height, ax_width)  # noqa
+        # Adjust fig size and layout
+        nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
+        ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
+        fig.set_size_inches(ncols * ax_width, nrows * ax_height)
+        fig.set_layout_engine(layout)
 
         return fig
 
@@ -606,11 +614,10 @@ class ValidationSession:
         self,
         list_sims: str | list[str] | None = None,
         *,
-        save_as: str | None = None,
         layout: Literal[
             "constrained", "compressed", "tight", "none"
         ] = "constrained",
-        ax_height: float = 2.5,
+        ax_height: float = 1.8,
         ax_width: float = 4.445,
     ) -> tuple[matplotlib.figure.Figure, matplotlib.figure.Figure]:
         """Plot the residuals.
@@ -620,17 +627,25 @@ class ValidationSession:
         list_sims :
             List of simulations.
             If empty, all the simulations are plotted.
-        save_as:
-            Save both figures with a specified name.
-            It appends the suffix *_eps_eps* and *_u_eps* to the residuals
-            auto-correlation and to the input-residuals cross-correlation figure,
-            respectively.
         layout:
             Figures layout.
         ax_height:
             Height of the figures to be saved.
         ax_width:
             Width of the figures to be saved.
+
+
+        Note
+        ----
+        If you want to save the figure on disk, please refer to the
+        *matplotlib* `Figure.savefig()`
+
+
+        Example
+        -------
+        >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig.savefig("my_plot.svg")
+
 
         Raises
         ------
@@ -686,6 +701,11 @@ class ValidationSession:
                     ax1[ii, jj].set_title(rf"r_eps{ii}eps_{jj}")
                     ax1[ii, jj].legend()
         fig1.suptitle("Residuals auto-correlation")
+
+        # Adjust fig size and layout
+        nrows = fig1.get_axes()[0].get_gridspec().get_geometry()[0]
+        ncols = fig1.get_axes()[0].get_gridspec().get_geometry()[1]
+        fig1.set_size_inches(ncols * ax_width, nrows * ax_height)
         fig1.set_layout_engine(layout)
 
         # ===============================================================
@@ -709,17 +729,11 @@ class ValidationSession:
                     ax2[ii, jj].legend()
         fig2.suptitle("Input-residuals cross-correlation")
 
+        # Adjust fig size and layout
+        nrows = fig2.get_axes()[0].get_gridspec().get_geometry()[0]
+        ncols = fig2.get_axes()[0].get_gridspec().get_geometry()[1]
+        fig2.set_size_inches(ncols * ax_width, nrows * ax_height)
         fig2.set_layout_engine(layout)
-
-        # Eventually save and return figures.
-        if save_as is not None:
-            save_plot_as(
-                fig1, save_as + "_eps_eps", layout, ax_height, ax_width
-            )  # noqa
-            save_plot_as(
-                fig2, save_as + "_u_eps", layout, ax_height, ax_width
-            )  # noqa
-
         return fig1, fig2
 
     def simulation_signals_list(self, sim_name: str | list[str]) -> list[str]:

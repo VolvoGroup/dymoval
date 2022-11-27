@@ -399,14 +399,6 @@ class Test_Plots:
         plt.close("all")
 
         # =============================
-        # save simulations
-        # =============================
-        tmp_path_str = str(tmp_path)
-        filename = tmp_path_str + "/potato"
-        _ = vs.plot_simulations(save_as=filename)
-        plt.close("all")
-        assert os.path.exists(filename + ".png")
-        # =============================
         # plot simulations raises
         # =============================
         # Test plot - filtered wrong
@@ -436,16 +428,6 @@ class Test_Plots:
 
         _, _ = vs.plot_residuals(["Model 1", "Model 2"])
         plt.close("all")
-        # =============================
-        # save residuals
-        # =============================
-        tmp_path_str = str(tmp_path)
-        filename = tmp_path_str + "/potato"
-        _, _ = vs.plot_residuals(save_as=filename)
-        plt.close("all")
-        # TODO: remove comments
-        assert os.path.exists(filename + "_eps_eps.png")
-        assert os.path.exists(filename + "_u_eps.png")
 
         # =============================
         # plot residuals raises

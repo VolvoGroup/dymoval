@@ -60,49 +60,6 @@ def str2list(x: str | list[str]) -> list[str]:
     return x
 
 
-def save_plot_as(
-    fig: matplotlib.figure.Figure,
-    save_as: str,
-    layout: Literal[
-        "constrained", "compressed", "tight", "none"
-    ] = "constrained",
-    ax_height: float = 2.5,
-    ax_width: float = 4.445,
-) -> None:
-    """Save matplotlib figure on disk.
-
-    You can save pretty much any figure.
-
-
-    Example
-    -------
-    >>> from matplotlib import pyplot as plt
-    >>> import dymoval as dmv
-    >>> fig = plt.gcf() # Get current figure, for a complete list of all opened figures use plt.get_fignums()
-    >>> dmv.save_plot_as("my_fig.png","constrained")
-
-
-    Parameters
-    ----------
-    fig:
-        Figure to be saved.
-    save_as:
-        Filename for the figure to be saved.
-    layout:
-        Type of layout for saving the figure.
-        It can be any of {'constrained', 'compressed', 'tight', 'none'}.
-    """
-    # Get figure layout
-    nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
-    ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
-    fig.set_size_inches(ncols * ax_width, nrows * ax_height)
-
-    fig.set_layout_engine(layout)
-    fig.savefig(save_as)
-    # fig.clf()  # TODO: Do we need this line?!
-    plt.close("all")
-
-
 def open_tutorial() -> tuple[Any, Any]:
     """Open the *Dymoval* tutorial.
 
