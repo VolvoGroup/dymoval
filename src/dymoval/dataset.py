@@ -1906,6 +1906,7 @@ class Dataset:
             # Add another level to specify abs and phase
             df_freq = df_freq.agg([np.abs, lambda x: np.angle(x, deg=True)])
             df_freq = df_freq.rename(columns={"<lambda>": "angle"}, level=3)
+            df_freq = df_freq.rename(columns={"absolute": "abs"}, level=3)
             # df_freq = df_freq.agg([np.abs, np.angle])
 
         elif kind == "power":
