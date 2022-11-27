@@ -718,7 +718,7 @@ class Dataset:
         if kind != "amplitude":
             labels = signals_lst_plain
         else:
-            pass
+            labels = signals_lst_plain
 
         labels_tpl = _list_to_structured_list_of_tuple(signals_tpl, labels)
 
@@ -785,7 +785,11 @@ class Dataset:
                 ylabel=ylabels_tpl[ii][0],
                 ax=axes,
             )
-            line_l, label_l = axes.get_legend_handles_labels()
+            # Grt handle
+            line_l, _ = axes.get_legend_handles_labels()
+            # Update label
+            label_l = [labels_tpl[ii][0]]
+            line_l[0].set_label(*label_l)
             # In case the user wants to overlap plots...
             # If the overlapped plots have the same units, then there is
             # no point in using a secondary_y
@@ -814,10 +818,16 @@ class Dataset:
                     ylabel=ylabel,
                     ax=axes_right,
                 )
+
+                # Get handle (and ignore label)
+                # (in this case only one Line2D and one str)
                 (
                     line_r,
-                    label_r,
+                    _,
                 ) = axes_right.get_legend_handles_labels()  # type:ignore
+                # Update label
+                label_r = [labels_tpl[ii][1]]
+                line_r[0].set_label(*label_r)
 
             # Set nice legend
             axes.legend(line_l + line_r, label_l + label_r)
@@ -827,7 +837,6 @@ class Dataset:
         for ax in axes_all:
             if len(ax.get_lines()) == 0:
                 ax.remove()
-        print(axes.get_legend_handles_labels())
 
         return fig
 
@@ -1250,7 +1259,7 @@ class Dataset:
         # Adjust fig size and layout
         nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
         ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
-        fig.set_size_inches(ncols * ax_width, nrows * ax_height)
+        fig.set_size_inches(ncols * ax_width, nrows * ax_height + 1.25)
         fig.set_layout_engine(layout)
 
         return fig
@@ -1337,9 +1346,9 @@ class Dataset:
         layout:
             Figure layout.
         ax_height:
-            Height of the figure.
+            Approximative height of each subplot.
         ax_width:
-            Width of the figure.
+            Approximative width of each subplot.
         """
 
         # df points to self.dataset.
@@ -1415,7 +1424,7 @@ class Dataset:
         # Adjust fig size and layout
         nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
         ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
-        fig.set_size_inches(ncols * ax_width, nrows * ax_height)
+        fig.set_size_inches(ncols * ax_width, nrows * ax_height + 1.25)
         fig.set_layout_engine(layout)
 
         return fig
@@ -1460,9 +1469,9 @@ class Dataset:
         layout:
             Figure layout.
         ax_height:
-            Height of the figure.
+            Approximative height of each subplot.
         ax_width:
-            Width of the figure.
+            Approximative width of each subplot.
         """
         # df points to self.dataset.
         df = self.dataset
@@ -1547,7 +1556,7 @@ class Dataset:
         # Adjust fig size and layout
         nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
         ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
-        fig.set_size_inches(ncols * ax_width, nrows * ax_height)
+        fig.set_size_inches(ncols * ax_width, nrows * ax_height + 1.25)
         fig.set_layout_engine(layout)
 
         return fig
@@ -1698,9 +1707,9 @@ class Dataset:
         layout:
             Figure layout.
         ax_height:
-            Height of the figure.
+            Approximative height of each subplot.
         ax_width:
-            Width of the figure.
+            Approximative width of each subplot.
 
 
         Note
@@ -1829,10 +1838,12 @@ class Dataset:
                 # abs
                 line_abs_l, _ = axes[0].get_legend_handles_labels()
                 label_abs_l = [f"{s[0]}, abs"]
+                line_abs_l[0].set_label(*label_abs_l)
 
                 # angle
                 line_angle_l, _ = axes[1].get_legend_handles_labels()
                 label_angle_l = [f"{s[0]}, angle"]
+                line_angle_l[0].set_label(*label_angle_l)
 
                 # In case the user wants to overlap plots...
                 # If the overlapped plots have the same units, then there is
@@ -1862,17 +1873,19 @@ class Dataset:
                         ax=axes_right,
                     )
                     # ylabels (units)
-                    if ylabels_tpl[ii][0] != ylabelss_tpl[ii][1]:
+                    if ylabels_tpl[ii][0] != ylabels_tpl[ii][1]:
                         axes_right[0].set_ylabel(f"{ylabels_tpl[ii][1]}")
 
                     # legend (s,abs) and (s,angle) (will be placed at the end)
                     # abs
                     line_abs_r, _ = axes_right[0].get_legend_handles_labels()
                     label_abs_r = [f"{s[1]}, abs"]
+                    line_abs_r[0].set_label(*label_abs_r)
 
                     # angle
                     line_angle_r, _ = axes_right[1].get_legend_handles_labels()
-                    label_angle_r = [f"{s[1]}, abs"]
+                    label_angle_r = [f"{s[1]}, angle"]
+                    line_angle_r[0].set_label(*label_angle_r)
 
                 # legend handling
                 # Set nice legend
@@ -2028,9 +2041,11 @@ class Dataset:
         nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
         ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
         if kind == "amplitude":
-            fig.set_size_inches(ncols * ax_width * 2, nrows * ax_height * 2)
+            fig.set_size_inches(
+                ncols * ax_width * 2, nrows * ax_height * 2 + 1.25
+            )
         else:
-            fig.set_size_inches(ncols * ax_width, nrows * ax_height)
+            fig.set_size_inches(ncols * ax_width, nrows * ax_height + 1.25)
         fig.set_layout_engine(layout)
 
         return fig
@@ -2829,7 +2844,6 @@ def compare_datasets(
             raise TypeError("Input must be a dymoval Dataset type.")
 
     # Arrange figure
-    print(datasets)
     dfs = [ds.dataset.droplevel(level="units", axis=1) for ds in datasets]
     fig, grid = _arrange_fig_axes(*dfs)
     cmap = plt.get_cmap(COLORMAP)
@@ -2869,7 +2883,10 @@ def compare_datasets(
     # Adjust fig size and layout
     nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
     ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
-    fig.set_size_inches(ncols * ax_width, nrows * ax_height)
+    if kind == "amplitude":
+        fig.set_size_inches(ncols * ax_width * 2, nrows * ax_height * 2 + 1.25)
+    else:
+        fig.set_size_inches(ncols * ax_width, nrows * ax_height + 1.25)
     fig.set_layout_engine(layout)
 
     return fig

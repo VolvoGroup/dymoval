@@ -424,9 +424,9 @@ class ValidationSession:
         layout:
             Figure layout.
         ax_height:
-            Height of the figure to be saved.
+            Approximative height of each subplot.
         ax_width:
-            Width of the figure to be saved.
+            Approximative width of each subplot.
         """
         # TODO: could be refactored
         # It uses the left axis for the simulation results and the dataset output.
@@ -605,7 +605,7 @@ class ValidationSession:
         # Adjust fig size and layout
         nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
         ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
-        fig.set_size_inches(ncols * ax_width, nrows * ax_height)
+        fig.set_size_inches(ncols * ax_width, nrows * ax_height + 1.25)
         fig.set_layout_engine(layout)
 
         return fig
@@ -630,9 +630,9 @@ class ValidationSession:
         layout:
             Figures layout.
         ax_height:
-            Height of the figures to be saved.
+            Approximative height of each subplot.
         ax_width:
-            Width of the figures to be saved.
+            Approximative width of each subplot.
 
 
         Note
@@ -705,7 +705,7 @@ class ValidationSession:
         # Adjust fig size and layout
         nrows = fig1.get_axes()[0].get_gridspec().get_geometry()[0]
         ncols = fig1.get_axes()[0].get_gridspec().get_geometry()[1]
-        fig1.set_size_inches(ncols * ax_width, nrows * ax_height)
+        fig1.set_size_inches(ncols * ax_width, nrows * ax_height + 1.25)
         fig1.set_layout_engine(layout)
 
         # ===============================================================
@@ -732,7 +732,7 @@ class ValidationSession:
         # Adjust fig size and layout
         nrows = fig2.get_axes()[0].get_gridspec().get_geometry()[0]
         ncols = fig2.get_axes()[0].get_gridspec().get_geometry()[1]
-        fig2.set_size_inches(ncols * ax_width, nrows * ax_height)
+        fig2.set_size_inches(ncols * ax_width, nrows * ax_height + 1.25)
         fig2.set_layout_engine(layout)
         return fig1, fig2
 
