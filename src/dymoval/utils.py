@@ -66,7 +66,8 @@ def save_plot_as(
     layout: Literal[
         "constrained", "compressed", "tight", "none"
     ] = "constrained",
-    **kwargs: Any,
+    ax_height: float = 2.5,
+    ax_width: float = 4.445,
 ) -> None:
     """Save matplotlib figure on disk.
 
@@ -94,11 +95,11 @@ def save_plot_as(
     # Get figure layout
     nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
     ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
-    fig.set_size_inches(ncols * AX_WIDTH, nrows * AX_HEIGHT)
+    fig.set_size_inches(ncols * ax_width, nrows * ax_height)
 
     fig.set_layout_engine(layout)
-    fig.savefig(save_as, **kwargs)
-    fig.clf()  # TODO: Do we need this line?!
+    fig.savefig(save_as)
+    # fig.clf()  # TODO: Do we need this line?!
     plt.close("all")
 
 

@@ -382,12 +382,13 @@ class ValidationSession:
         self,
         # Cam be a positional or a keyword arg
         list_sims: str | list[str] | None = None,
-        *,
         dataset: Literal["in", "out", "both"] | None = None,
         save_as: str | None = None,
         layout: Literal[
             "constrained", "compressed", "tight", "none"
         ] = "constrained",
+        ax_height: float = 2.5,
+        ax_width: float = 4.445,
     ) -> matplotlib.figure.Figure:
         """Plot the stored simulation results.
 
@@ -409,9 +410,13 @@ class ValidationSession:
             - **both**: dataset both the input and the output signals of the dataset.
 
         save_as:
-            Save the figure with a specified name.
-            The figure is automatically resized with a 16:9-like aspect ratio.
-            You must specify the complete *filename*, including the path.
+            Save the figure with a specified filename.
+        layout:
+            Figure layout.
+        ax_height:
+            Height of the figure to be saved.
+        ax_width:
+            Width of the figure to be saved.
         """
         # TODO: could be refactored
         # It uses the left axis for the simulation results and the dataset output.
@@ -586,11 +591,14 @@ class ValidationSession:
 
         # Title
         fig.suptitle("Simulations results.")
+        fig.set_layout_engine(layout)
+
         # ===============================================================
         # Save and eventually return figures.
         # ===============================================================
+        # Eventually save and return figures.
         if save_as is not None:
-            save_plot_as(fig, save_as, layout)  # noqa
+            save_plot_as(fig, save_as, layout, ax_height, ax_width)  # noqa
 
         return fig
 
@@ -602,6 +610,8 @@ class ValidationSession:
         layout: Literal[
             "constrained", "compressed", "tight", "none"
         ] = "constrained",
+        ax_height: float = 2.5,
+        ax_width: float = 4.445,
     ) -> tuple[matplotlib.figure.Figure, matplotlib.figure.Figure]:
         """Plot the residuals.
 
@@ -615,8 +625,12 @@ class ValidationSession:
             It appends the suffix *_eps_eps* and *_u_eps* to the residuals
             auto-correlation and to the input-residuals cross-correlation figure,
             respectively.
-            The figure is automatically resized with a 16:9 aspect ratio.
-            The *filename* shall include the path.
+        layout:
+            Figures layout.
+        ax_height:
+            Height of the figures to be saved.
+        ax_width:
+            Width of the figures to be saved.
 
         Raises
         ------
@@ -672,6 +686,7 @@ class ValidationSession:
                     ax1[ii, jj].set_title(rf"r_eps{ii}eps_{jj}")
                     ax1[ii, jj].legend()
         fig1.suptitle("Residuals auto-correlation")
+        fig1.set_layout_engine(layout)
 
         # ===============================================================
         # Plot input-residuals cross-correlation
@@ -694,12 +709,16 @@ class ValidationSession:
                     ax2[ii, jj].legend()
         fig2.suptitle("Input-residuals cross-correlation")
 
-        if save_as is not None:
-            ax1 = ax1.flat
-            save_plot_as(fig1, save_as + "_eps_eps", layout)  # noqa
+        fig2.set_layout_engine(layout)
 
-            ax2 = ax2.flat
-            save_plot_as(fig2, save_as + "_u_eps", layout)  # noqa
+        # Eventually save and return figures.
+        if save_as is not None:
+            save_plot_as(
+                fig1, save_as + "_eps_eps", layout, ax_height, ax_width
+            )  # noqa
+            save_plot_as(
+                fig2, save_as + "_u_eps", layout, ax_height, ax_width
+            )  # noqa
 
         return fig1, fig2
 

@@ -424,6 +424,8 @@ class Dataset:
             "_grid": None,
             "save_as": None,
             "layout": None,
+            "ax_height": 2.5,
+            "ax_width": 4.445,
         }
         tmp = self.trim(
             *signals,
@@ -1175,6 +1177,8 @@ class Dataset:
         layout: Literal[
             "constrained", "compressed", "tight", "none"
         ] = "constrained",
+        ax_height: float = 2.5,
+        ax_width: float = 4.445,
     ) -> matplotlib.figure.Figure:
         """Plot a signal against another signal in a plane (XY-plot).
 
@@ -1225,10 +1229,11 @@ class Dataset:
             )
 
         fig.suptitle("XY-plot.")
+        fig.set_layout_engine(layout)
 
         # Eventually save and return figures.
         if save_as is not None:
-            save_plot_as(fig, save_as, layout)  # noqa
+            save_plot_as(fig, save_as, layout, ax_height, ax_width)  # noqa
 
         return fig
 
@@ -1250,6 +1255,8 @@ class Dataset:
         layout: Literal[
             "constrained", "compressed", "tight", "none"
         ] = "constrained",
+        ax_height: float = 2.5,
+        ax_width: float = 4.445,
     ) -> matplotlib.figure.Figure:
         """Plot the Dataset.
 
@@ -1281,7 +1288,7 @@ class Dataset:
         Example
         -------
         >>> fig = ds.plot() # ds is a dymoval Dataset
-        >>> fig.set_layout_engine("constrained")
+        >>> fig.set_layout_engine("none")
 
 
         Parameters
@@ -1312,11 +1319,13 @@ class Dataset:
         _grid:
             Matplotlib GridSpec where to place the plot. (Used internally)
         save_as:
-            Save the figure with a specified name.
-            The figure is automatically resized to try to keep a 16:9 aspect ratio.
-            You must specify the complete *filename*, including the path.
+            Save the figure with a specified filename.
         layout:
-            Before saving the figure, *layout* is applied.
+            Figure layout.
+        ax_height:
+            Height of the figure to be saved.
+        ax_width:
+            Width of the figure to be saved.
         """
 
         # df points to self.dataset.
@@ -1383,9 +1392,11 @@ class Dataset:
         # Shade NaN:s areas
         self._shade_nans(fig.get_axes())
 
+        fig.set_layout_engine(layout)
+
         # Eventually save and return figures.
-        if save_as is not None and _grid is None:
-            save_plot_as(fig, save_as, layout)  # noqa
+        if save_as is not None:
+            save_plot_as(fig, save_as, layout, ax_height, ax_width)  # noqa
 
         return fig
 
@@ -1402,6 +1413,8 @@ class Dataset:
         layout: Literal[
             "constrained", "compressed", "tight", "none"
         ] = "constrained",
+        ax_height: float = 2.5,
+        ax_width: float = 4.445,
     ) -> matplotlib.figure.Figure:
         """
         Plot the dataset coverage as histograms.
@@ -1426,11 +1439,13 @@ class Dataset:
         as_out:
             Axes where the output signal coverage plot shall be placed.
         save_as:
-            Save the figure with a specified name.
-            The figure is automatically resized to try to keep a 16:9 aspect ratio.
-            You must specify the complete *filename*, including the path.
+            Save the figure with a specified filename.
         layout:
-            Before saving the figure, *layout* is applied.
+            Figure layout.
+        ax_height:
+            Height of the figure to be saved.
+        ax_width:
+            Width of the figure to be saved.
         """
         # df points to self.dataset.
         df = self.dataset
@@ -1512,9 +1527,11 @@ class Dataset:
 
         fig.suptitle("Coverage region.")
 
+        fig.set_layout_engine(layout)
+
         # Eventually save and return figures.
         if save_as is not None and _grid is None:
-            save_plot_as(fig, save_as, layout)  # noqa
+            save_plot_as(fig, save_as, layout, ax_height, ax_width)  # noqa
 
         return fig
 
@@ -1622,6 +1639,8 @@ class Dataset:
         layout: Literal[
             "constrained", "compressed", "tight", "none"
         ] = "constrained",
+        ax_height: float = 2.5,
+        ax_width: float = 4.445,
     ) -> matplotlib.figure.Figure:
         """
         Plot the spectrum of the specified signals in the dataset in different format.
@@ -1661,12 +1680,13 @@ class Dataset:
         _grid:
             Grid where the spectrum ploat will be placed *(Used only internally.)*
         save_as:
-            Save the figure with a specified name.
-            The figure is automatically resized to try to keep a 16:9 aspect ratio.
-            You must specify the complete *filename*, including the path.
+            Save the figure with a specified filename.
         layout:
-            Before saving the figure, *layout* is applied.
-
+            Figure layout.
+        ax_height:
+            Height of the figure to be saved.
+        ax_width:
+            Width of the figure to be saved.
 
         Note
         ----
@@ -1678,7 +1698,7 @@ class Dataset:
         Example
         -------
         >>> fig = ds.plot_spectrum() # ds is a dymoval Dataset
-        >>> fig.set_layout_engine("constrained")
+        >>> fig.set_layout_engine("none")
 
 
 
@@ -1983,9 +2003,11 @@ class Dataset:
         )
         #
 
-        # Save and return
+        fig.set_layout_engine(layout)
+
+        # Eventually save and return figures.
         if save_as is not None:
-            save_plot_as(fig, save_as, layout)
+            save_plot_as(fig, save_as, layout, ax_height, ax_width)  # noqa
 
         return fig
 
@@ -2716,6 +2738,8 @@ def compare_datasets(
     layout: Literal[
         "constrained", "compressed", "tight", "none"
     ] = "constrained",
+    ax_height: float = 2.5,
+    ax_width: float = 4.445,
 ) -> matplotlib.figure.Figure:
     """
     Compare different :py:class:`Datasets <dymoval.dataset.Dignal>` graphically
@@ -2819,8 +2843,10 @@ def compare_datasets(
     _adjust_legend(ds_names, fig.get_axes())
     fig.suptitle(f"Dataset comparison in {kind}.")
 
+    fig.set_layout_engine(layout)
+
     # Eventually save and return figures.
     if save_as is not None:
-        save_plot_as(fig, save_as, layout)  # noqa
+        save_plot_as(fig, save_as, layout, ax_height, ax_width)  # noqa
 
     return fig
