@@ -61,11 +61,12 @@ def str2list(x: str | list[str]) -> list[str]:
 def open_tutorial() -> tuple[Any, Any]:
     """Open the *Dymoval* tutorial.
 
-    More precisely, it creates a IPython notebook named
-    dymoval_tutorial.ipynb in your home folder and try to open it.
+    More precisely, it copies a IPython notebook named
+    dymoval_tutorial.ipynb from your installation
+    to your home folder and open it.
 
     If a dymoval_tutorial.ipynb file already exists in your home
-    directory, then it will be overwritten.
+    folder, then it will be overwritten.
 
     """
 

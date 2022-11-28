@@ -157,9 +157,9 @@ def acorr_norm(
     r"""Return the norm of the auto-correlation tensor.
 
     It first compute the *l*-norm of each component
-    :math:`(r_{i,j}(\\tau)) \in R(\\tau), i=1,\\dots p, j=1,\\dots,q`,
-    where :math:`R(\\tau)` is the input tensor.
-    Then, it computes the matrix-norm of the resulting matrix :math:`\\hat R`.
+    `:math:(r_{i,j}(\\tau)) \in R(\\tau), i=1,\\dots p, j=1,\\dots,q`,
+    where `:math: R(\\tau)` is the input tensor.
+    Then, it computes the matrix-norm of the resulting matrix `:math: \\hat R`.
 
 
     Note
@@ -203,9 +203,9 @@ def xcorr_norm(
     r"""Return the norm of the cross-correlation tensor.
 
     It first compute the *l*-norm of each component
-    :math:`(r_{i,j}(\\tau)) \in R(\\tau), i=1,\\dots p, j=1,\\dots,q`,
-    where :math:`R(\\tau)` is the input tensor.
-    Then, it computes the matrix-norm of the resulting matrix :math:`\\hat R`.
+    `:math:(r_{i,j}(\\tau)) \in R(\\tau), i=1,\\dots p, j=1,\\dots,q`,
+    where `:math: R(\\tau)` is the input tensor.
+    Then, it computes the matrix-norm of the resulting matrix `:math: \\hat R`.
 
     Parameters
     ----------
@@ -390,22 +390,19 @@ class ValidationSession:
         """Plot the stored simulation results.
 
         Possible values of the parameters describing the plot aesthetics,
-        such as the *line_color_input* or the *alpha_output*,
+        such as the *linecolor_input* or the *alpha_output*,
         are the same for the corresponding *plot* function of *matplotlib*.
 
-        See *matplotlib* docs for more information.
-
-
-        Note
-        ----
         You are free to manipulate the returned figure as you want by using any
         method of the class `matplotlib.figure.Figure`.
+
         Please, refer to *matplotlib* docs for more info.
 
 
         Example
         -------
         >>> fig = ds.plot() # ds is a dymoval Dataset
+        # The following are methods of the class `matplotlib.figure.Figure`
         >>> fig.set_size_inches(10,5)
         >>> fig.set_layout_engine("constrained")
         >>> fig.savefig("my_plot.svg")
@@ -636,16 +633,16 @@ class ValidationSession:
             Approximative width (inches) of each subplot.
 
 
-        Note
-        ----
         You are free to manipulate the returned figure as you want by using any
         method of the class `matplotlib.figure.Figure`.
+
         Please, refer to *matplotlib* docs for more info.
 
 
         Example
         -------
         >>> fig = ds.plot() # ds is a dymoval Dataset
+        # The following are methods of the class `matplotlib.figure.Figure`
         >>> fig.set_size_inches(10,5)
         >>> fig.set_layout_engine("constrained")
         >>> fig.savefig("my_plot.svg")
@@ -778,6 +775,8 @@ class ValidationSession:
     ) -> ValidationSession:
         """
         Append simulation results.
+        The results are stored in the
+        :py:attr:`Dataset <dymoval.validation.ValidationSession.simulations_results>` attribute.
 
         The validation metrics are automatically computed.
 
