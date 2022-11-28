@@ -8,7 +8,6 @@ Created on Thu Jul 14 11:43:21 2022
 import pytest
 import dymoval as dmv
 from .fixture_data import *  # noqa
-import matplotlib.pyplot as plt
 import os
 
 # import sys

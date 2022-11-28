@@ -10,7 +10,6 @@ from typing import Any
 import random
 import matplotlib
 from matplotlib import pyplot as plt
-import os
 
 
 # import warnings
@@ -1094,7 +1093,6 @@ class Test_Dataset_plots:
         with pytest.raises(TypeError):
             _ = ds.plot_coverage(("y1", "u1"))
 
-
     @pytest.mark.plots
     def test_plotxy(
         self,
@@ -1126,7 +1124,6 @@ class Test_Dataset_plots:
 
         with pytest.raises(ValueError):
             _ = ds.plotxy(("potato", "u1"))
-
 
     @pytest.mark.plots
     def test_plot_spectrum(
@@ -1214,7 +1211,6 @@ class Test_Dataset_plots:
         _ = ds.plot_spectrum(kind="psd")
         plt.close("all")
 
-
         # ======= If NaN:s raise =====================
         # good_signals have some NaN:s
         df, u_names, y_names, u_units, y_units, fixture = good_signals
@@ -1286,7 +1282,6 @@ class Test_Dataset_plots:
 
         with pytest.raises(TypeError):
             dmv.compare_datasets(ds, "potato")
-
 
 
 class Test_Signal_validation:

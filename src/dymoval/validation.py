@@ -383,9 +383,7 @@ class ValidationSession:
         # Cam be a positional or a keyword arg
         list_sims: str | list[str] | None = None,
         dataset: Literal["in", "out", "both"] | None = None,
-        layout: Literal[
-            "constrained", "compressed", "tight", "none"
-        ] = "constrained",
+        layout: Literal["constrained", "compressed", "tight", "none"] = "tight",
         ax_height: float = 1.8,
         ax_width: float = 4.445,
     ) -> matplotlib.figure.Figure:
@@ -400,13 +398,16 @@ class ValidationSession:
 
         Note
         ----
-        If you want to save the figure on disk, please refer to the
-        *matplotlib* `Figure.savefig()`
+        You are free to manipulate the returned figure as you want by using any
+        method of the class `matplotlib.figure.Figure`.
+        Please, refer to *matplotlib* docs for more info.
 
 
         Example
         -------
         >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig.set_size_inches(10,5)
+        >>> fig.set_layout_engine("constrained")
         >>> fig.savefig("my_plot.svg")
 
 
@@ -424,9 +425,9 @@ class ValidationSession:
         layout:
             Figure layout.
         ax_height:
-            Approximative height of each subplot.
+            Approximative height (inches) of each subplot.
         ax_width:
-            Approximative width of each subplot.
+            Approximative width (inches) of each subplot.
         """
         # TODO: could be refactored
         # It uses the left axis for the simulation results and the dataset output.
@@ -492,6 +493,7 @@ class ValidationSession:
                 else:
                     axes = fig.add_subplot(grid[ii], sharex=axes)
                 # Actual plot
+                # labels = columns names
                 df_sim.droplevel(level="units", axis=1).loc[
                     :, (sim, s[0])
                 ].plot(
@@ -508,6 +510,7 @@ class ValidationSession:
                 fig.get_axes()[0].remove()
 
         # Add output plots if requested
+        # labels = columns names
         if dataset == "out" or dataset == "both":
             signals_units = df_val["OUTPUT"].columns
             for ii, s in enumerate(signals_units):
@@ -614,9 +617,7 @@ class ValidationSession:
         self,
         list_sims: str | list[str] | None = None,
         *,
-        layout: Literal[
-            "constrained", "compressed", "tight", "none"
-        ] = "constrained",
+        layout: Literal["constrained", "compressed", "tight", "none"] = "tight",
         ax_height: float = 1.8,
         ax_width: float = 4.445,
     ) -> tuple[matplotlib.figure.Figure, matplotlib.figure.Figure]:
@@ -630,28 +631,30 @@ class ValidationSession:
         layout:
             Figures layout.
         ax_height:
-            Approximative height of each subplot.
+            Approximative height (inches) of each subplot.
         ax_width:
-            Approximative width of each subplot.
+            Approximative width (inches) of each subplot.
 
 
         Note
         ----
-        If you want to save the figure on disk, please refer to the
-        *matplotlib* `Figure.savefig()`
+        You are free to manipulate the returned figure as you want by using any
+        method of the class `matplotlib.figure.Figure`.
+        Please, refer to *matplotlib* docs for more info.
 
 
         Example
         -------
         >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig.set_size_inches(10,5)
+        >>> fig.set_layout_engine("constrained")
         >>> fig.savefig("my_plot.svg")
-
-
-        Raises
-        ------
-        KeyError
-            If the requested simulation list is empty.
         """
+        # Raises
+        # ------
+        # KeyError
+        #     If the requested simulation list is empty.
+
         # Check if you have any simulation available
         self._sim_list_validate()
         if not list_sims:

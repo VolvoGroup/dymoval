@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 """Module containing some useful functions."""
 
-import matplotlib
 import numpy as np
 from .config import *  # noqa
-from matplotlib import pyplot as plt
 import scipy.signal as signal  # noqa
 from typing import Any
 import sys

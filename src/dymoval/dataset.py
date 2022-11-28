@@ -110,12 +110,12 @@ class Dataset:
         The units of the outputs are displayed on the secondary y-axis.
     verbosity:
         Display information depending on its level.
-
-    Raises
-    -----
-    TypeError
-        If the *signals_list* has the wrong datatype.
     """
+
+    #  Raises
+    #  -----
+    #  TypeError
+    #      If the *signals_list* has the wrong datatype.
 
     def __init__(
         self,
@@ -1200,19 +1200,42 @@ class Dataset:
         # Only positional arguments
         /,
         *signal_pairs: tuple[str, str],
-        layout: Literal[
-            "constrained", "compressed", "tight", "none"
-        ] = "constrained",
+        layout: Literal["constrained", "compressed", "tight", "none"] = "tight",
         ax_height: float = 1.8,
         ax_width: float = 4.445,
     ) -> matplotlib.figure.Figure:
         """Plot a signal against another signal in a plane (XY-plot).
 
         The *signal_pairs* shall be passed as tuples.
+        If no args is passed then the function will *zip* the input
+        and output signals.
 
-        You must specify the complete *filename*, including the path.
 
-        If no args is passed zip in and out.
+        Note
+        ----
+        You are free to manipulate the returned figure as you want by using any
+        method of the class `matplotlib.figure.Figure`.
+        Please, refer to *matplotlib* docs for more info.
+
+
+        Example
+        -------
+        >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig.set_size_inches(10,5)
+        >>> fig.set_layout_engine("constrained")
+        >>> fig.savefig("my_plot.svg")
+
+
+        Parameters
+        ----------
+        signals_pairs:
+            Pairs of signals to plot in a XY-diagram.
+        layout:
+            Figure layout.
+        ax_height:
+            Approximative height (inches) of each subplot.
+        ax_width:
+            Approximative width (inches) of each subplot.
         """
 
         # df points to self.dataset.
@@ -1278,9 +1301,7 @@ class Dataset:
         linestyle_bg: str = "--",
         alpha_bg: float = 1.0,
         _grid: matplotlib.gridspec.GridSpec | None = None,
-        layout: Literal[
-            "constrained", "compressed", "tight", "none"
-        ] = "constrained",
+        layout: Literal["constrained", "compressed", "tight", "none"] = "tight",
         ax_height: float = 1.8,
         ax_width: float = 4.445,
     ) -> matplotlib.figure.Figure:
@@ -1306,13 +1327,16 @@ class Dataset:
 
         Note
         ----
-        If you want to save the figure on disk, please refer to the
-        *matplotlib* `Figure.savefig()`
+        You are free to manipulate the returned figure as you want by using any
+        method of the class `matplotlib.figure.Figure`.
+        Please, refer to *matplotlib* docs for more info.
 
 
         Example
         -------
         >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig.set_size_inches(10,5)
+        >>> fig.set_layout_engine("constrained")
         >>> fig.savefig("my_plot.svg")
 
 
@@ -1346,9 +1370,9 @@ class Dataset:
         layout:
             Figure layout.
         ax_height:
-            Approximative height of each subplot.
+            Approximative height (inches) of each subplot.
         ax_width:
-            Approximative width of each subplot.
+            Approximative width (inches) of each subplot.
         """
 
         # df points to self.dataset.
@@ -1438,14 +1462,27 @@ class Dataset:
         alpha: float = 1.0,
         histtype: Literal["bar", "barstacked", "step", "stepfilled"] = "bar",
         _grid: matplotlib.gridspec.GridSpec | None = None,
-        layout: Literal[
-            "constrained", "compressed", "tight", "none"
-        ] = "constrained",
+        layout: Literal["constrained", "compressed", "tight", "none"] = "tight",
         ax_height: float = 1.8,
         ax_width: float = 4.445,
     ) -> matplotlib.figure.Figure:
         """
         Plot the dataset coverage as histograms.
+
+
+        Note
+        ----
+        You are free to manipulate the returned figure as you want by using any
+        method of the class `matplotlib.figure.Figure`.
+        Please, refer to *matplotlib* docs for more info.
+
+
+        Example
+        -------
+        >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig.set_size_inches(10,5)
+        >>> fig.set_layout_engine("constrained")
+        >>> fig.savefig("my_plot.svg")
 
 
         Parameters
@@ -1469,9 +1506,9 @@ class Dataset:
         layout:
             Figure layout.
         ax_height:
-            Approximative height of each subplot.
+            Approximative height (inches) of each subplot.
         ax_width:
-            Approximative width of each subplot.
+            Approximative width (inches) of each subplot.
         """
         # df points to self.dataset.
         df = self.dataset
@@ -1574,11 +1611,12 @@ class Dataset:
         signals:
             The FFT is computed for these signals.
 
-        Raises
-        ------
-        ValueError
-            If the dataset contains *NaN*:s
         """
+        #  Raises
+        #  ------
+        #  ValueError
+        #      If the dataset contains *NaN*:s
+
         # Validation
         u_dict, y_dict = self._classify_signals(*signals)
 
@@ -1661,9 +1699,7 @@ class Dataset:
         linestyle_bg: str = "--",
         alpha_bg: float = 1.0,
         _grid: matplotlib.gridspec.GridSpec | None = None,
-        layout: Literal[
-            "constrained", "compressed", "tight", "none"
-        ] = "constrained",
+        layout: Literal["constrained", "compressed", "tight", "none"] = "tight",
         ax_height: float = 1.8,
         ax_width: float = 4.445,
     ) -> matplotlib.figure.Figure:
@@ -1672,6 +1708,21 @@ class Dataset:
 
         If some signals have *NaN* values, then the FFT cannot be computed and
         an error is raised.
+
+
+        Note
+        ----
+        You are free to manipulate the returned figure as you want by using any
+        method of the class `matplotlib.figure.Figure`.
+        Please, refer to *matplotlib* docs for more info.
+
+
+        Example
+        -------
+        >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig.set_size_inches(10,5)
+        >>> fig.set_layout_engine("constrained")
+        >>> fig.savefig("my_plot.svg")
 
 
         Parameters
@@ -1707,28 +1758,29 @@ class Dataset:
         layout:
             Figure layout.
         ax_height:
-            Approximative height of each subplot.
+            Approximative height (inches) of each subplot.
         ax_width:
-            Approximative width of each subplot.
+            Approximative width (inches) of each subplot.
 
 
         Note
         ----
-        If you want to save the figure on disk, please refer to the
-        *matplotlib* `Figure.savefig()`
+        You are free to manipulate the returned figure as you want by using any
+        method of the class `matplotlib.figure.Figure`.
+        Please, refer to *matplotlib* docs for more info.
 
 
         Example
         -------
         >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig.set_size_inches(10,5)
+        >>> fig.set_layout_engine("constrained")
         >>> fig.savefig("my_plot.svg")
-
-
-        Raises
-        ------
-        ValueError
-            If *kind* doen not match any allowed values.
         """
+        #  Raises
+        #  ------
+        #  ValueError
+        #      If *kind* doen not match any allowed values.
         # ==========================================================
         #  Actual plotting functions
         # ==========================================================
@@ -2178,6 +2230,7 @@ class Dataset:
 
         The low-pass filter is first-order IIR filter.
 
+
         Parameters
         ----------
         *signals:
@@ -2188,14 +2241,14 @@ class Dataset:
             filter whose cutoff frequency is specified by the *cutoff_frequency*
             parameter.
 
-
-        Raises
-        ------
-        TypeError
-            If no arguments are passed.
-        ValueError
-            If any of the passed cut-off frequencies is negative.
         """
+        #  Raises
+        #  ------
+        #  TypeError
+        #      If no arguments are passed.
+        #  ValueError
+        #      If any of the passed cut-off frequencies is negative.
+
         # TODO: can be refactored
         # Safe copy
         ds_temp = deepcopy(self)
@@ -2292,12 +2345,11 @@ class Dataset:
             Additional keyword arguments to pass as keywords arguments to
             the underlying pandas DataFrame *apply* method.
 
-
-        Raises
-        ------
-        ValueError:
-            If the passed signal name does not exist in the current Dataset.
         """
+        #  Raises
+        #  ------
+        #  ValueError:
+        #      If the passed signal name does not exist in the current Dataset.
 
         # Safe copy
         ds_temp = deepcopy(self)
@@ -2410,16 +2462,14 @@ class Dataset:
         return self._add_signals(kind, *signals)
 
     def remove_signals(self, *signals: str) -> Dataset:
-        """Remove signals from dataset.
+        """Remove signals from dataset."""
 
-
-        Raises
-        ------
-        KeyError:
-            If signal(s) not found in the *Dataset* object.
-        KeyError:
-            If the reminder Dataset object has less than one input or one output.
-        """
+        #  Raises
+        #  ------
+        #  KeyError:
+        #      If signal(s) not found in the *Dataset* object.
+        #  KeyError:
+        #      If the reminder Dataset object has less than one input or one output.
 
         ds = deepcopy(self)
 
@@ -2537,20 +2587,20 @@ def validate_signals(*signals: Signal) -> None:
     *signal :
         Signal to be validated.
 
-    Raises
-    ------
-    ValueError
-        If values is not a *1-D numpy ndarray*,
-        or if sampling period must positive or the signals *time_unit* keys are
-        not the same.
-    KeyError
-        If signal attributes are not found or not allowed or if signal names are
-        not unique,
-    IndexError
-        If signal have less than two samples.
-    TypeError
-        If values is not a *1-D numpy ndarray*, or if sampling period is not a *float*.
     """
+    #  Raises
+    #  ------
+    #  ValueError
+    #      If values is not a *1-D numpy ndarray*,
+    #      or if sampling period must positive or the signals *time_unit* keys are
+    #      not the same.
+    #  KeyError
+    #      If signal attributes are not found or not allowed or if signal names are
+    #      not unique,
+    #  IndexError
+    #      If signal have less than two samples.
+    #  TypeError
+    #      If values is not a *1-D numpy ndarray*, or if sampling period is not a *float*.
 
     # Name unicity
     signal_names = [s["name"] for s in signals]
@@ -2621,6 +2671,7 @@ def validate_dataframe(
     - Both the index values and the column values must be *float* and the index values
       must be a a 1D vector of monotonically, equi-spaced, increasing *floats*.
 
+
     Parameters
     ----------
     df :
@@ -2629,12 +2680,11 @@ def validate_dataframe(
         List of input signal names.
     y_names :
         List of output signal names.
-
-    Raises
-    ------
-    Error:
-        Depending on the issue found an appropriate error will be raised.
     """
+    #  Raises
+    #  ------
+    #  Error:
+    #      Depending on the issue found an appropriate error will be raised.
     # ===================================================================
     # Checks performed: Read below
     # ===================================================================
@@ -2732,6 +2782,23 @@ def validate_dataframe(
 def plot_signals(*signals: Signal) -> matplotlib.figure.Figure:
     """Plot :py:class:`Signals <dymoval.dataset.Signal>`.
 
+
+
+    Note
+    ----
+    You are free to manipulate the returned figure as you want by using any
+    method of the class `matplotlib.figure.Figure`.
+    Please, refer to *matplotlib* docs for more info.
+
+
+    Example
+    -------
+    >>> fig = ds.plot() # ds is a dymoval Dataset
+    >>> fig.set_size_inches(10,5)
+    >>> fig.set_layout_engine("constrained")
+    >>> fig.savefig("my_plot.svg")
+
+
     Parameters
     ----------
     *signals :
@@ -2773,15 +2840,28 @@ def plot_signals(*signals: Signal) -> matplotlib.figure.Figure:
 def compare_datasets(
     *datasets: Dataset,
     kind: Literal["time", "coverage"] | Spectrum_type = "time",
-    layout: Literal[
-        "constrained", "compressed", "tight", "none"
-    ] = "constrained",
+    layout: Literal["constrained", "compressed", "tight", "none"] = "tight",
     ax_height: float = 1.8,
     ax_width: float = 4.445,
 ) -> matplotlib.figure.Figure:
     """
     Compare different :py:class:`Datasets <dymoval.dataset.Dignal>` graphically
     by overlapping them.
+
+
+    Note
+    ----
+    You are free to manipulate the returned figure as you want by using any
+    method of the class `matplotlib.figure.Figure`.
+    Please, refer to *matplotlib* docs for more info.
+
+
+    Example
+    -------
+    >>> fig = ds.plot() # ds is a dymoval Dataset
+    >>> fig.set_size_inches(10,5)
+    >>> fig.set_layout_engine("constrained")
+    >>> fig.savefig("my_plot.svg")
 
 
     Parameters

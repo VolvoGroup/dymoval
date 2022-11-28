@@ -5,7 +5,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 from .fixture_data import *  # noqa
 import scipy.signal as signal
-import os
 
 
 class Test_ClassValidationNominal:
