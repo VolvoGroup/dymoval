@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 """Module containing some useful functions."""
 
-import matplotlib
 import numpy as np
 from .config import *  # noqa
-from matplotlib import pyplot as plt
 import scipy.signal as signal  # noqa
 from typing import Any
 import sys
@@ -58,35 +56,6 @@ def str2list(x: str | list[str]) -> list[str]:
     if not isinstance(x, list):
         x = [x]
     return x
-
-
-def save_plot_as(
-    fig: matplotlib.figure.Figure,
-    axes: matplotlib.axes.Axes,
-    name: str,
-    **kwargs: Any,
-) -> None:
-    """Save matplotlib figure on disk.
-
-    Parameters
-    ----------
-    fig:
-        Figure to be saved.
-    axes:
-        Axes flat iterator.
-    name:
-        Figure filename.
-    """
-    # Get Axes layout
-    nrows = axes.base.T.shape[0]
-    ncols = axes.base.T.shape[1]
-    fig.set_size_inches(ncols * AX_WIDTH, nrows * AX_HEIGHT)
-
-    # fig.set_layout_engine("tight")
-    fig.tight_layout()
-    fig.savefig(name, **kwargs)
-    fig.clf()
-    plt.close("all")
 
 
 def open_tutorial() -> tuple[Any, Any]:

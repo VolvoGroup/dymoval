@@ -18,8 +18,6 @@ from .utils import *  # noqa, Type
 from typing import TypedDict, Any, Literal
 from copy import deepcopy
 
-# from itertools import product
-
 
 class Signal(TypedDict):
     """*Signals* are used to represent real-world measurements.
@@ -112,12 +110,12 @@ class Dataset:
         The units of the outputs are displayed on the secondary y-axis.
     verbosity:
         Display information depending on its level.
-
-    Raises
-    -----
-    TypeError
-        If the signals_list has the wrong datatype.
     """
+
+    #  Raises
+    #  -----
+    #  TypeError
+    #      If the *signals_list* has the wrong datatype.
 
     def __init__(
         self,
@@ -133,9 +131,27 @@ class Dataset:
         verbosity: int = 0,
     ) -> None:
 
-        # Initialization by Signals
+        # ==============================
+        # Instance attributes
+        # ==============================
+        # Here are declared but they will be initialized
+        # in the method _new_dataset_from_dataframe()
+        self.name: str = "foo"
+        self.dataset: pd.DataFrame = pd.DataFrame()
+        self.coverage: pd.DataFrame = pd.DataFrame()
+        self.information_level: float = 0.0
+        self._nan_intervals: dict[str, list[np.ndarray]] = {}
+        self.excluded_signals: list[str] = []
+        self.sampling_period: float = 1.0
+
+        # ==============================
+        # Initialization functions
+        # ==============================
+        # Initialization by Signals.
+        # It will call _new_dataset_from_dataframe()
         if all(isinstance(x, dict) for x in signal_list):
-            attr_sign = self._new_dataset_from_signals(
+            self._new_dataset_from_signals(
+                name,
                 signal_list,
                 u_names,
                 y_names,
@@ -146,17 +162,12 @@ class Dataset:
                 overlap,
                 verbosity,
             )
-            (
-                df,
-                Ts,
-                nan_intervals,
-                excluded_signals,
-                dataset_coverage,
-            ) = attr_sign
 
         # Initialization by pandas DataFrame
+        # All the class attributes are initialized inside this function
         elif isinstance(signal_list, pd.DataFrame):
-            attr_df = self._new_dataset_from_dataframe(
+            self._new_dataset_from_dataframe(
+                name,
                 signal_list,
                 u_names,
                 y_names,
@@ -166,32 +177,10 @@ class Dataset:
                 overlap,
                 verbosity,
             )
-            df, Ts, nan_intervals, excluded_signals, dataset_coverage = attr_df
         else:
             raise TypeError(
                 "Input must be a Signal list or a pandas DataFrame type.",
             )
-
-        # ================================================
-        # Class attributes
-        # ================================================
-        # NOTE: You have to use the #: to add a doc description
-        # in class attributes (see sphinx.ext.autodoc)
-
-        self.name: str = name  #: Dataset name.
-        self.dataset: pd.DataFrame = deepcopy(df)  #: Actual dataset.
-        self.coverage: pd.DataFrame = deepcopy(
-            dataset_coverage
-        )  # Docstring below,
-        """Coverage statistics. Mean (vector) and covariance (matrix) of
-        both input and output signals."""
-        self.information_level: float = 0.0  #: *Not implemented yet!*
-        self._nan_intervals: Any = deepcopy(nan_intervals)
-        self.excluded_signals: list[str] = excluded_signals
-        """Signals that could not be re-sampled."""
-        self.sampling_period = np.round(
-            Ts, NUM_DECIMALS
-        )  #: Dataset sampling period.
 
     def __str__(self) -> str:
         return f"Dymoval dataset called '{self.name}'."
@@ -199,30 +188,54 @@ class Dataset:
     # ==============================================
     #   Class methods
     # ==============================================
+
     def _shade_nans(
         self,
-        NaN_intervals: dict[str, list[np.ndarray]],
         axes: matplotlib.axes.Axes,
-        signal_names: list[str],
-        secondary_y: bool = False,
-        color: str = "k",
     ) -> None:
 
+        # Function for cfiltering out only the signals present in the dataset
+        # Note that only signals in the dataset can have NaN:s
+        def filter_signals(
+            avail_signals: list[str], ax: matplotlib.axes.Axes
+        ) -> list[tuple[matplotlib.lines.Line2D, str]]:
+
+            # Implementation
+            lines, labels = ax.get_legend_handles_labels()
+            lines_labels_all = list(zip(lines, labels))
+            lines_labels_filt = []
+            for line_label in lines_labels_all:
+                for s in available_signals:
+                    if s in line_label[1]:  # check if s is in the legend
+                        # if so, we save the associated line (to get the color)
+                        lines_labels_filt.append((line_label[0], s))
+
+            return lines_labels_filt
+
+        # ==============================================
+        # Main function
+        # ==============================================
+        # Reference to self._nan_intervals
+        NaN_intervals = self._nan_intervals
+        # All the signals present in the dataset
+        available_signals = list(self.dataset.columns.get_level_values("names"))
+
         for ii, ax in enumerate(axes):
-            signal_name = signal_names[ii]
-            for idx, val in enumerate(NaN_intervals[signal_name]):
-                if not val.size == 0:
-                    if secondary_y:
-                        ax.right_ax.axvspan(
-                            min(val), max(val), color=color, alpha=0.2
-                        )
-                    else:
+            lines_labels = filter_signals(available_signals, ax)
+            # if lines_labels:  # TODO: maybe this is always verified
+            for line, signal in lines_labels:
+                color = line.get_color()
+                # Every signal may have a disjoint union of NaN intervals
+                for _, val in enumerate(NaN_intervals[signal]):
+                    # Shade only if there is a non-empty interval
+                    if not val.size == 0:
                         ax.axvspan(min(val), max(val), color=color, alpha=0.2)
 
-    def _init_dataset_coverage(
-        self, df: pd.DataFrame
+    def _find_dataset_coverage(
+        self,
     ) -> tuple[pd.Series, pd.DataFrame, pd.Series, pd.DataFrame]:
 
+        df = self.dataset
         u_mean = df["INPUT"].mean(axis=0).round(NUM_DECIMALS)
         u_cov = df["INPUT"].cov().round(NUM_DECIMALS)
         y_mean = df["OUTPUT"].mean(axis=0).round(NUM_DECIMALS)
@@ -232,16 +245,12 @@ class Dataset:
 
     def _find_nan_intervals(
         self,
-        df_ext: pd.DataFrame,
     ) -> dict[str, list[np.ndarray]]:
         # Find index intervals (i.e. time intervals) where columns values
         # are NaN.
         # It requires a dataset with extended columns (MultiIndex))
-        df = df_ext.droplevel(level=["kind", "units"], axis=1)
-
-        # We cannot use self.sampling_period because this function is also used
-        # for instantiating objects of class Dataset.
-        sampling_period = df.index[1] - df.index[0]
+        df = self.dataset.droplevel(level=["kind", "units"], axis=1)
+        sampling_period = self.sampling_period
 
         NaN_index = {}
         NaN_intervals = {}
@@ -253,253 +262,41 @@ class Dataset:
             NaN_intervals[s] = np.split(NaN_index[s], idx + 1)
         return NaN_intervals
 
-    def _init_dataset_time_interval(
+    def _shift_dataset_tin_to_zero(
         self,
-        df_ext: pd.DataFrame,
-        NaN_intervals: dict[str, list[np.ndarray]],
-        tin: float | None = None,
-        tout: float | None = None,
-        overlap: bool = False,
-        full_time_interval: bool = False,
-        verbosity: int = 0,
-    ) -> tuple[pd.DataFrame, dict[str, list[np.ndarray]]]:
-        # We have to trim the signals to have a meaningful dataset
-        # This can be done both graphically or by passing tin and tout
-        # if the user knows them before hand.
-        # Once done, the dataset shall be shifted to the point tin = 0.0.
-
-        def _graph_selection(
-            df_ext: pd.DataFrame,
-            NaN_intervals: dict[str, list[np.ndarray]],
-            overlap: bool,
-        ) -> tuple[float, float]:  # pragma: no cover
-            # Select the time interval graphically
-            # OBS! This part cannot be automatically tested because the it require
-            # manual action from the user (resize window).
-            # Hence, you must test this manually
-            # The keyword to skip the coverage is # pragma: no cover
-            #  ===========================================================
-            # The following code is needed because not all IDE:s
-            # have interactive plot set to ON as default.
-            #
-            is_interactive = plt.isinteractive()
-            plt.ion()
-            #  ===========================================================
-
-            # This is pretty much identical to the method plot() but we have
-            # to use it because the class attributes are not set yet.
-
-            # Number of inputs and outputs
-            p = len(df_ext["INPUT"].columns)
-            q = len(df_ext["OUTPUT"].columns)
-
-            u_units = list(df_ext["INPUT"].columns.get_level_values("units"))
-            y_units = list(df_ext["OUTPUT"].columns.get_level_values("units"))
-
-            if overlap:
-                n = max(p, q)
-                range_out = np.arange(0, q)
-                secondary_y = True
-            else:
-                n = p + q
-                range_out = np.arange(p, p + q)
-                secondary_y = False
-            nrows, ncols = factorize(n)  # noqa
-
-            # Actual plot
-            fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-            axes = axes.T.flat
-            df_ext["INPUT"].droplevel(level="units", axis=1).plot(
-                subplots=True,
-                grid=True,
-                color="b",
-                ylabel=u_units,
-                ax=axes[0:p],
-            )
-            df_ext["OUTPUT"].droplevel(level="units", axis=1).plot(
-                subplots=True,
-                grid=True,
-                ylabel=y_units,
-                color="g",
-                secondary_y=secondary_y,
-                ax=axes[range_out],
-            )
-
-            # Set ylabels
-            for ii, unit in enumerate(u_units):
-                axes[ii].set_ylabel("(" + unit + ")")
-
-            if not sorted(u_units) == sorted(y_units):
-                for jj, unit in enumerate(y_units):
-                    if overlap:
-                        axes[jj].right_ax.set_ylabel("(" + unit + ")")
-                        axes[jj].right_ax.grid(None, axis="y")
-                    else:
-                        axes[p + jj].set_ylabel("(" + unit + ")")
-
-            # Set xlabel
-            xlabel = (
-                f"{df_ext.index.name[0]} ({df_ext.index.name[1]})"  # Time (s)
-            )
-            for ii in range(ncols):
-                axes[nrows - 1 :: nrows][ii].set_xlabel(xlabel)
-            fig.suptitle(
-                "Sampling time "
-                f"= {np.round(df_ext.index[1]-df_ext.index[0],NUM_DECIMALS)}.\n"
-                "Select the dataset time interval by resizing "
-                "the picture."
-            )
-
-            # tight layout
-            # fig.tight_layout()
-
-            # Shade NaN areas
-            # We have to pass NaN_intervals because they are not yet a self attribute
-            self._shade_nans(
-                NaN_intervals,
-                axes[0:p],
-                list(df_ext["INPUT"].droplevel(level="units", axis=1).columns),
-                color="b",
-            )
-
-            self._shade_nans(
-                NaN_intervals,
-                axes[range_out],
-                list(df_ext["OUTPUT"].droplevel(level="units", axis=1).columns),
-                color="g",
-            )
-
-            # Figure closure handler
-            # It can be better done perhaps.
-            def close_event(event):  # type:ignore
-                time_interval = np.round(
-                    axes[0].get_xlim(), NUM_DECIMALS
-                )  # noqa
-                close_event.tin, close_event.tout = time_interval
-                close_event.tin = max(close_event.tin, 0.0)
-                close_event.tout = max(close_event.tout, 0.0)
-                if is_interactive:
-                    plt.ion()
-                else:
-                    plt.ioff()
-
-            close_event.tin = 0.0  # type:ignore
-            close_event.tout = 0.0  # type:ignore
-            fig = axes[-1].get_figure()
-            cid = fig.canvas.mpl_connect("close_event", close_event)
-            fig.canvas.draw()
-            plt.show()
-
-            # =======================================================
-            # This is needed for Spyder to block the prompt while
-            # the figure is opened.
-            # An alternative better solution is welcome!
-            try:
-                while fig.number in plt.get_fignums():
-                    plt.pause(0.1)
-            except:  # noqa
-                plt.close(fig.number)
-                raise
-            # =======================================================
-
-            fig.canvas.mpl_disconnect(cid)
-            tin_sel = close_event.tin  # type:ignore
-            tout_sel = close_event.tout  # type:ignore
-
-            return tin_sel, tout_sel
-
-        def _trim_dataset(
-            df_ext: pd.DataFrame,
-            NaN_intervals: dict[str, list[np.ndarray]],
-            tin: float | None = None,
-            tout: float | None = None,
-        ) -> tuple[pd.DataFrame, dict[str, list[np.ndarray]]]:
-            # ===================================================================
-            # Trim dataset and NaN intervals based on (tin,tout)
-            # ===================================================================
-            df_ext = df_ext.loc[tin:tout, :]  # type:ignore
-            # Trim NaN_intevals
-            # TODO: code repetition
-            for signal_name in NaN_intervals.keys():
-                # In the following, nan_chunks are time-interval.
-                # Note! For a given signal, you may have many nan_chunks.
-                for idx, nan_chunk in enumerate(NaN_intervals[signal_name]):
-                    nan_chunk = np.round(nan_chunk, NUM_DECIMALS)  # noqa
-                    NaN_intervals[signal_name][idx] = nan_chunk[
-                        nan_chunk >= tin
-                    ]
-                    NaN_intervals[signal_name][idx] = nan_chunk[
-                        nan_chunk <= tout
-                    ]
-
-            return df_ext, NaN_intervals
-
-        def _shift_dataset_tin_to_zero(
-            df_ext: pd.DataFrame,
-            NaN_intervals: dict[str, list[np.ndarray]],
-        ) -> tuple[pd.DataFrame, dict[str, list[np.ndarray]]]:
-            # ===================================================================
-            # Shift tin to zero.
-            # ===================================================================
-            tin = df_ext.index[0]
-            timeVectorFromZero = df_ext.index - tin
-            df_ext.index = pd.Index(
-                np.round(timeVectorFromZero, NUM_DECIMALS),
-                name=df_ext.index.name,
-            )
-
-            # Shift also the NaN_intervals to tin = 0.0.
-            for k in NaN_intervals.keys():
-                for idx, nan_chunk in enumerate(NaN_intervals[k]):
-                    nan_chunk_translated = nan_chunk - tin
-                    NaN_intervals[k][idx] = np.round(
-                        nan_chunk_translated, NUM_DECIMALS  # noqa
-                    )
-                    NaN_intervals[k][idx] = nan_chunk_translated[
-                        nan_chunk_translated >= 0.0
-                    ]
-
-            # Adjust the DataFrame accordingly
-            df_ext = df_ext.round(decimals=NUM_DECIMALS)  # noqa
-
-            return df_ext, NaN_intervals
-
-        # =============================================
-        # Time interval selection.
-        # The user can either pass the pair (tin,tout) or
-        # he/she can select it graphically
-        # =============================================
-
-        # Check if info on (tin,tout) is passed
-        if tin is not None and tout is not None:
-            tin_sel = np.round(tin, NUM_DECIMALS)
-            tout_sel = np.round(tout, NUM_DECIMALS)
-        elif full_time_interval:
-            tin_sel = np.round(df_ext.index[0], NUM_DECIMALS)
-            tout_sel = np.round(df_ext.index[-1], NUM_DECIMALS)
-        else:  # pragma: no cover
-            tin_sel, tout_sel = _graph_selection(df_ext, NaN_intervals, overlap)
-
-        if verbosity != 0:
-            print("\ntin = ", tin_sel, "tout =", tout_sel)
-
-        # Once (tin,tout) have been identified, trim the dataset
-        df_ext, NaN_intervals = _trim_dataset(
-            df_ext,
-            NaN_intervals,
-            tin_sel,
-            tout_sel,
+    ) -> None:
+        # ===================================================================
+        # Shift tin to zero.
+        # ===================================================================
+        # The values are already set due to the .loc[tin:tout] done elsewhere
+        # You only need to shift the timestamps in all the time-related attributes
+        tin: float = self.dataset.index[0]
+        timeVectorFromZero: np.ndarray = self.dataset.index - tin
+        new_index = pd.Index(
+            np.round(timeVectorFromZero, NUM_DECIMALS),
+            name=self.dataset.index.name,
         )
+        # Update the index
+        self.dataset.index = new_index
+        self.dataset = self.dataset.round(NUM_DECIMALS)
 
-        # ... and shift it such that tin = 0.0
-        df_ext, NaN_intervals = _shift_dataset_tin_to_zero(
-            df_ext, NaN_intervals
-        )
+        # Shift also the NaN_intervals to tin = 0.0.
+        # Create a reference to self._nan_intervals
+        NaN_intervals = self._nan_intervals
 
-        return df_ext, NaN_intervals
+        for k in NaN_intervals.keys():
+            for idx, nan_chunk in enumerate(NaN_intervals[k]):
+                nan_chunk_translated = nan_chunk - tin
+                NaN_intervals[k][idx] = np.round(
+                    nan_chunk_translated, NUM_DECIMALS  # noqa
+                )
+                NaN_intervals[k][idx] = nan_chunk_translated[
+                    nan_chunk_translated >= 0.0
+                ]
 
     def _new_dataset_from_dataframe(
         self,
+        name: str,
         df: pd.DataFrame,
         u_names: str | list[str],
         y_names: str | list[str],
@@ -508,29 +305,43 @@ class Dataset:
         full_time_interval: bool = False,
         overlap: bool = False,
         verbosity: int = 0,
-    ) -> tuple[
-        pd.DataFrame,
-        float,
-        dict[str, list[np.ndarray]],
-        list[str],
-        tuple[pd.Series, pd.DataFrame, pd.Series, pd.DataFrame],
-    ]:
+        _excluded_signals: list[str] = [],
+    ) -> None:
 
         # ==============================================================
-        # This is the Dataset initializer when the signals are arranged
-        # in a pandas DataFrame
+        # All the class attributes are defined and initialized here
+        #
+        # self.name
+        # self.dataset
+        # self.coverage
+        # self.information_level
+        # self._nan_intervals
+        # self.excluded_signals
+        # self.sampling_period
+        #
         # ==============================================================
 
         # Arguments validation
-        if tin is None and tout is not None:
-            tin = df.index[0]
-        # If only tin is passed, then set tout to the last time sample.
-        if tin is not None and tout is None:
-            tout = df.index[-1]
         if tin and tout and tin > tout:
             raise ValueError(
                 f" Value of tin ( ={tin}) shall be smaller than the value of tout ( ={tout})."
             )
+        # TODO: CHECK IF THE NAMES ARE IN THE AVAIL NAMES
+
+        # NOTE: You have to use the #: to add a doc description
+        # in class attributes (see sphinx.ext.autodoc)
+        # Set easy-to-set attributes
+        self.name = name  #: Dataset name.
+        self.information_level = 0.0  #: *Not implemented yet!*
+        self.sampling_period = np.round(
+            df.index[1] - df.index[0], NUM_DECIMALS
+        )  #: Dataset sampling period.
+
+        # Excluded signals list is either passed by _new_dataset_from_signals()
+        # or it is empty if a dataframe is passed by the user (all the signals
+        # in this case shall be sampled with the same sampling period).
+        self.excluded_signals = _excluded_signals
+        """Signals that could not be re-sampled."""
         # If the user passes a str cast into a list[str]
         u_names = str2list(u_names)
         y_names = str2list(y_names)
@@ -571,37 +382,67 @@ class Dataset:
             u_multicolumns + y_multicolumns, name=levels_name
         )
 
-        # Initialize NaN intervals
-        NaN_intervals = self._find_nan_intervals(df_ext)
+        # Take the whole dataframe as dataset before trimming.
+        self.dataset = df_ext  #: The actual dataset
 
-        # Initialize dataset time interval
-        df_ext, NaN_intervals = self._init_dataset_time_interval(
-            df_ext,
-            NaN_intervals,
-            tin,
-            tout,
-            overlap,
-            full_time_interval,
-            verbosity,
-        )
+        # Initialize NaN intervals, full time interval
+        self._nan_intervals = self._find_nan_intervals()
 
         # Initialize coverage region
-        dataset_coverage = self._init_dataset_coverage(df_ext)
+        self.coverage = self._find_dataset_coverage()  # Docstring below,
+        """Coverage statistics. Mean (vector) and covariance (matrix) of
+        both input and output signals."""
 
-        # The DataFrame has been built with signals sampled with the same period,
-        # therefore there are no excluded signals due to re-sampling
-        excluded_signals: list[str] = []
+        # =============================================
+        # Trim the dataset
+        # =============================================
+        if full_time_interval:
+            tin = np.round(self.dataset.index[0], NUM_DECIMALS)
+            tout = np.round(self.dataset.index[-1], NUM_DECIMALS)
 
-        # Initialize sampling_period
-        # In case user passes a DataFrame we need to compute the sampling period
-        # as it is not explicitly passed.
-        Ts = df_ext.index[1] - df_ext.index[0]
-        df_ext = df_ext.round(NUM_DECIMALS)
+        # All possible names
+        u_names = list(self.dataset["INPUT"].columns.get_level_values("names"))
+        y_names = list(self.dataset["OUTPUT"].columns.get_level_values("names"))
 
-        return df_ext, Ts, NaN_intervals, excluded_signals, dataset_coverage
+        if overlap:
+            # OBS! zip cuts the longest list
+            p = len(u_names) - len(y_names)
+            leftovers = u_names[p + 1 :] if p > 0 else y_names[p + 1 :]
+            signals = list(zip(u_names, y_names)) + leftovers
+        else:
+            signals = []
+
+        # Trim dataset and all the attributes
+        plot_kwargs = {
+            "overlap": overlap,
+            "linecolor_input": "b",
+            "linestyle_fg": "-",
+            "alpha_fg": 1.0,
+            "linecolor_output": "green",
+            "linestyle_bg": "--",
+            "alpha_bg": 1.0,
+            "_grid": None,
+            "layout": None,
+            "ax_height": 1.8,
+            "ax_width": 4.445,
+        }
+        tmp = self.trim(
+            *signals,
+            tin=tin,
+            tout=tout,
+            verbosity=verbosity,
+            # overlap=overlap,
+            **plot_kwargs,
+        )
+
+        # Update the current Dataset instance
+        self.dataset = tmp.dataset
+        self._nan_intervals = tmp._nan_intervals
+        self.coverage = tmp.coverage
 
     def _new_dataset_from_signals(
         self,
+        name: str,
         signal_list: list[Signal],
         u_names: str | list[str],
         y_names: str | list[str],
@@ -611,20 +452,18 @@ class Dataset:
         full_time_interval: bool = False,
         overlap: bool = False,
         verbosity: int = 0,
-    ) -> tuple[
-        pd.DataFrame,
-        float,
-        dict[str, list[np.ndarray]],
-        list[str],
-        tuple[pd.Series, pd.DataFrame, pd.Series, pd.DataFrame],
-    ]:
+    ) -> None:
 
-        # If the user pass a string, we need to convert into list
-        u_names = str2list(u_names)
-        y_names = str2list(y_names)
+        # Do not initialize any class attribute here!
+        # All attributes are initialized in the _new_dataset_from_dataframe() method
 
         # Arguments validation
         validate_signals(*signal_list)
+
+        # If the user pass a single signal as a str,
+        # then we need to convert into a list
+        u_names = str2list(u_names)
+        y_names = str2list(y_names)
 
         # Try to align the sampling periods, whenever possible
         # Note! resampled_signals:list[Signals], whereas
@@ -635,9 +474,7 @@ class Dataset:
 
         Ts = list(resampled_signals)[0]["sampling_period"]
 
-        # Drop excluded signals from u_names and y_names
-        # resampled signals contains all the signals, it is not specified yet
-        # who is input and who is output
+        # Drop excluded signals from u_names and y_names lists
         u_names = [x["name"] for x in resampled_signals if x["name"] in u_names]
         y_names = [x["name"] for x in resampled_signals if x["name"] in y_names]
 
@@ -661,7 +498,7 @@ class Dataset:
         # Single column level but the cols name is a tuple (name,unit)
         index = pd.Index(
             data=np.arange(max_idx) * Ts,
-            name=("Time", f"{resampled_signals[0]['time_unit']}"),
+            name=("Time", resampled_signals[0]["time_unit"]),
         )
         columns_tuples = list(zip(u_names + y_names, u_units + y_units))
         df = pd.DataFrame(
@@ -672,17 +509,11 @@ class Dataset:
 
         # Add some robustness: we validate the built DataFrame, even if
         # it should be correct by construction.
-
         validate_dataframe(df, u_names=u_names, y_names=y_names)
 
         # Call the initializer from DataFrame to get a Dataset object.
-        (
-            df,
-            _,
-            nan_intervals,
-            _,
-            dataset_coverage,
-        ) = self._new_dataset_from_dataframe(
+        self._new_dataset_from_dataframe(
+            name,
             df,
             u_names,
             y_names,
@@ -691,30 +522,25 @@ class Dataset:
             full_time_interval,
             overlap,
             verbosity,
+            _excluded_signals=excluded_signals,
         )
-
-        return df, Ts, nan_intervals, excluded_signals, dataset_coverage
 
     def _classify_signals(
         self,
         *signals: str,
-    ) -> tuple[
-        list[str], list[str], list[str], list[str], list[int], list[int]
-    ]:
+    ) -> tuple[dict[str, str], dict[str, str]]:
         # You pass a list of signal names and the function recognizes who is input
-        # and who is output
-        # Is no argument is passed, then it takes the whole for u_names and y_names
-        # If only input or output signals are passed, then it return an empty list
-        # for the non-returned labels.
+        # and who is output. The dicts are name:unit
+        # Is no argument is passed, then the whole for u_names and y_names is taken
+        # If only input or output signals are passed, then an empty list
+        # for the non-returned labels is returned.
         df = self.dataset
 
         # Separate in from out.
-        # By default take everything
+        # By default, u_names and y_names are all the possible names.
+        # If the user passes some signals, then the full list is.
         u_names = list(df["INPUT"].columns.get_level_values("names"))
         y_names = list(df["OUTPUT"].columns.get_level_values("names"))
-
-        u_units = list(df["INPUT"].columns.get_level_values("units"))
-        y_units = list(df["OUTPUT"].columns.get_level_values("units"))
 
         # Small check. Not very pythonic but still...
         signals_not_found = difference_lists_of_str(
@@ -725,8 +551,9 @@ class Dataset:
                 f"Signal(s) {signals_not_found} not found in the dataset. "
                 "Use 'signal_list()' to get the list of all available signals. "
             )
+        # ========================================================
 
-        # ...then select if signals are passed.
+        # Classify in IN and OUT in case signals are passed.
         if signals:
             u_names = [
                 s
@@ -757,16 +584,18 @@ class Dataset:
             df["OUTPUT"].iloc[:, y_names_idx].columns.get_level_values("units")
         )
 
-        return u_names, y_names, u_units, y_units, u_names_idx, y_names_idx
+        # Collect in dicts as it is cleaner
+        u_dict = dict(zip(u_names, u_units))
+        y_dict = dict(zip(y_names, y_units))
+
+        return u_dict, y_dict
 
     def _validate_name_value_tuples(
         self,
         *signals_values: tuple[str, float],
     ) -> tuple[
-        list[str],
-        list[str],
-        list[str],
-        list[str],
+        dict[str, str],
+        dict[str, str],
         list[tuple[str, float]],
         list[tuple[str, float]],
     ]:
@@ -776,55 +605,240 @@ class Dataset:
         # and the validated tuples.
 
         signals = [s[0] for s in signals_values]
-        u_names, y_names, u_units, y_units, _, _ = self._classify_signals(
-            *signals
-        )
+        u_dict, y_dict = self._classify_signals(*signals)
+
+        u_names = list(u_dict.keys())
+        y_names = list(y_dict.keys())
 
         u_list = [(s[0], s[1]) for s in signals_values if s[0] in u_names]
         y_list = [(s[0], s[1]) for s in signals_values if s[0] in y_names]
 
-        return u_names, y_names, u_units, y_units, u_list, y_list
+        return u_dict, y_dict, u_list, y_list
 
-    def _get_plot_params(
-        self,
-        p: int,
-        q: int,
-        u_names_idx: list[int],
-        y_names_idx: list[int],
-        overlap: bool,
-    ) -> tuple[int, np.ndarray, np.ndarray, list[str], list[str]]:
-        # Return n, range_in, range_out, u_titles, y_titles.
+    def _select_signals_to_plot(
+        self, *signals: str | tuple[str, str] | None, overlap: bool
+    ) -> tuple[
+        dict[str, str], dict[str, str], list[tuple[str, ...]], list[str]
+    ]:
+        # ===================================================
+        # Selection of signals to plot
+        # ===================================================
+        # Returns the signals passed by the user.
+        # The signals passed by the user can be a mixed of tuples and strings
+        # If None has passed, it takes all the signals in the Dataset instance.
+        # overlap parameter override eventual signals passed by the user
 
-        # Input range is always [0:p]
-        range_in = np.arange(0, p)
+        # df points to self.dataset
+        df = self.dataset
+
+        # All possible names
+        u_names = list(df["INPUT"].columns.get_level_values("names"))
+        y_names = list(df["OUTPUT"].columns.get_level_values("names"))
+
         if overlap:
-            n = max(p, q)
-            range_out = np.arange(0, q)
-
-            # Adjust subplot titles
-            m = min(p, q)
-            # Common titles
-            titles_a = ["IN #" + str(ii + 1) for ii in u_names_idx]
-            titles_b = [" - OUT #" + str(ii + 1) for ii in y_names_idx]
-            common_titles = [s1 + s2 for s1, s2 in zip(titles_a, titles_b)]
-
-            if p > q:
-                trail = ["INPUT #" + str(ii + 1) for ii in u_names_idx[m:]]
-                u_titles = common_titles + trail
-                y_titles = []
-            else:
-                trail = ["OUTPUT #" + str(ii + 1) for ii in y_names_idx[m:]]
-                u_titles = []
-                y_titles = common_titles + trail
+            # OBS! zip cuts the longest list, so we have to manually add
+            # the lefotovers
+            p = len(u_names) - len(y_names)
+            leftovers = u_names[p + 1 :] if p > 0 else y_names[p + 1 :]
+            signals_from_user = list(zip(u_names, y_names)) + leftovers
+        # Convert passed tuple[tuple|str] to list[tuple|str]
+        elif signals:
+            signals_from_user = list(signals)
         else:
-            n = p + q
-            range_out = np.arange(p, p + q)
+            signals_from_user = u_names + y_names
 
-            # Adjust titles
-            u_titles = ["INPUT #" + str(ii + 1) for ii in u_names_idx]
-            y_titles = ["OUTPUT #" + str(ii + 1) for ii in y_names_idx]
+        # Make all tuples like [('u0', 'u1'), ('y0',), ('u1', 'y1', 'u0')]
+        # for easier indexining
+        for ii, s in enumerate(signals_from_user):
+            if isinstance(s, str):
+                signals_from_user[ii] = (s,)
 
-        return n, range_in, range_out, u_titles, y_titles
+        # signals_lst_plain, e.g. ['u0', 'u1', 'y0', 'u1', 'y1', 'u0']
+        signals_lst_plain = [item for t in signals_from_user for item in t]
+
+        # validation
+        (
+            u_dict,
+            y_dict,
+        ) = self._classify_signals(*signals_lst_plain)
+
+        return u_dict, y_dict, signals_from_user, signals_lst_plain
+
+    def _create_plot_args(
+        self,
+        kind: Literal["time", "coverage"] | Spectrum_type,
+        u_dict: dict[str, str],
+        y_dict: dict[str, str],
+        signals_lst_plain: list[str],
+        signals_tpl: list[tuple[str, ...]],
+        linecolor_input: str,
+        linecolor_output: str,
+        linestyle_fg: str,
+        linestyle_bg: str,
+    ) -> tuple[
+        list[tuple[str, ...]],
+        list[tuple[str, ...]],
+        list[tuple[str, ...]],
+        list[tuple[str, ...]],
+    ]:
+        # signals_tpl is passed only to be a reference for casting
+        # signals_lst_plain, which is e.g.
+        # signals_lst_plain = ["u1","u2","u3", "y1","y4",...]
+        # to a structure that resemble signals_tpl, e.g.
+        # signals_tpl[("u1","u2"),("u3",), ("y1","y4")...]
+
+        # linecolors
+        linecolors = [
+            linecolor_input if s in u_dict.keys() else linecolor_output
+            for s in signals_lst_plain
+        ]
+        linecolors_tpl = _list_to_structured_list_of_tuple(
+            signals_tpl, linecolors
+        )
+
+        # ylabels (units)
+        s_dict = deepcopy(u_dict)
+        s_dict.update(y_dict)
+        if kind in ["time", "coverage", "amplitude"]:
+            ylabels = [f"({s_dict[s]})" for s in signals_lst_plain]
+        if kind == "power":
+            ylabels = [f"(({s_dict[s]})^2)" for s in signals_lst_plain]
+        elif kind == "psd":
+            ylabels = [f"(({s_dict[s]})^2/Hz)" for s in signals_lst_plain]
+
+        # Create a structure with all tuples e.g. [("u1",),("y1","u3"),("y4",)]
+        ylabels_tpl = _list_to_structured_list_of_tuple(signals_tpl, ylabels)
+
+        # labels (=legend entries)
+        # OBS: each Artist has a label. This is what is used
+        # in the legend. So, for each Artist (e.g. Line2D) you should
+        # set the label with Artist.set_label().
+        # Note that ax.legend(handles,labels) will only display
+        # with what you want, but it won't change the Artist label.
+        if kind != "amplitude":
+            labels = signals_lst_plain
+        else:
+            labels = signals_lst_plain
+
+        labels_tpl = _list_to_structured_list_of_tuple(signals_tpl, labels)
+
+        # Linestyles
+        linestyles_tpl: list[tuple[str, ...]] = []
+        for val in linecolors_tpl:
+            if len(val) == 2:
+                if val[0] == val[1]:
+                    linestyles_tpl.append((linestyle_bg, linestyle_fg))
+                else:
+                    linestyles_tpl.append((linestyle_fg, linestyle_fg))
+            else:
+                linestyles_tpl.append((linestyle_fg,))
+
+        return linecolors_tpl, ylabels_tpl, linestyles_tpl, labels_tpl
+
+    def _plot_actual(
+        self,
+        df: pd.DataFrame,
+        signals_tpl: list[tuple[str, ...]],
+        grid: matplotlib.gridspec.GridSpec,
+        linecolors_tpl: list[tuple[str, ...]],
+        ylabels_tpl: list[tuple[str, ...]],
+        labels_tpl: list[tuple[str, ...]],
+        linestyles_tpl: list[tuple[str, ...]],
+        alpha_fg: float,
+        alpha_bg: float,
+    ) -> matplotlib.figure.Figure:
+
+        # This is the function who makes the actual plot once all the
+        # parameters are set and passed
+        # Adjust passed dataframe.
+
+        # Initialize iteration
+        fig = grid.figure
+        if fig.get_axes():
+            # TODO This indexing shall be improved
+            axes_tpl = _list_to_structured_list_of_tuple(
+                signals_tpl, fig.get_axes()
+            )
+        else:
+            axes_tpl = []
+            axes = fig.add_subplot(grid[0])
+
+        # Iterations
+        for ii, s in enumerate(signals_tpl):
+            # at each iteration a new axes who sharex with the
+            # previously created axes, is created
+            # However, a new axes is created only if it does not
+            # exists in the givem grid position.
+            if len(axes_tpl) > 0:
+                # Reuse existing axes if exist
+                axes = axes_tpl[ii][0]
+            else:
+                # Otherwise create a new axes
+                axes = fig.add_subplot(grid[ii], sharex=axes)
+
+            df.droplevel(level=["kind", "units"], axis=1).loc[:, s[0]].plot(
+                subplots=True,
+                grid=True,
+                color=linecolors_tpl[ii][0],
+                linestyle=linestyles_tpl[ii][0],
+                alpha=alpha_fg,
+                ylabel=ylabels_tpl[ii][0],
+                ax=axes,
+            )
+            # Grt handle
+            line_l, _ = axes.get_legend_handles_labels()
+            # Update label
+            label_l = [labels_tpl[ii][0]]
+            line_l[0].set_label(*label_l)
+            # In case the user wants to overlap plots...
+            # If the overlapped plots have the same units, then there is
+            # no point in using a secondary_y
+            line_r = []
+            label_r = []
+            if len(s) == 2:  # tuple like ("u1","u2")
+                if len(axes_tpl) > 0:  # TODO: this may be alwaye true.
+                    axes_right = axes_tpl[ii][1]
+                else:
+                    # Otherwise create a new axes
+                    axes_right = axes.twinx()
+
+                # If the two signals have the same unit, then show the unit only once
+                if ylabels_tpl[ii][0] == ylabels_tpl[ii][1]:
+                    ylabel = None
+                else:
+                    ylabel = ylabels_tpl[ii][1]
+
+                df.droplevel(level=["kind", "units"], axis=1).loc[:, s[1]].plot(
+                    subplots=True,
+                    grid=False,
+                    legend=False,
+                    color=linecolors_tpl[ii][1],
+                    linestyle=linestyles_tpl[ii][1],
+                    alpha=alpha_bg,
+                    ylabel=ylabel,
+                    ax=axes_right,
+                )
+
+                # Get handle (and ignore label)
+                # (in this case only one Line2D and one str)
+                (
+                    line_r,
+                    _,
+                ) = axes_right.get_legend_handles_labels()  # type:ignore
+                # Update label
+                label_r = [labels_tpl[ii][1]]
+                line_r[0].set_label(*label_r)
+
+            # Set nice legend
+            axes.legend(line_l + line_r, label_l + label_r)
+
+        # Remove dummy axes created at the beginning
+        axes_all = fig.get_axes()
+        for ax in axes_all:
+            if len(ax.get_lines()) == 0:
+                ax.remove()
+
+        return fig
 
     def _fix_sampling_periods(
         self,
@@ -832,46 +846,17 @@ class Dataset:
         target_sampling_period: float | None = None,
         verbosity: int = 0,
     ) -> tuple[list[Signal], list[str]]:
-        # Resample the :py:class:`Signals <dymoval.dataset.Signal>` in the *signal_list*.
-
         # The signals are resampled either with the slowest sampling period as target,
         # or towards the sampling period specified by the *target_sampling_period*
         # parameter, if specified.
 
-        # Nevertheless, signals whose sampling period is not a divisor of the
-        # the target sampling period will not be resampled and a list with the names
-        # of such signals is returned.
-
-        # Parameters
-        # ----------
-        # signal_list :
-        #     List of :py:class:`Signals <dymoval.dataset.Signal>` to be resampled.
-        # target_sampling_period :
-        #     Target sampling period.
-
-        # Raises
-        # ------
-        # ValueError
-        #     If the *target_sampling_period* value is not positive.
-
-        # Returns
-        # -------
-        # resampled_signals:
-        #     List of :py:class:`Signal <dymoval.dataset.Signal>` with adjusted
-        #     sampling period.
-        # excluded_signals:
-        #     List of signal names that could not be resampled.
-        # """
-        # ===========================================================
         # arguments Validation
-        #
         if target_sampling_period is not None:
             if (
                 not isinstance(target_sampling_period, float)
                 or target_sampling_period < 0
             ):
                 raise ValueError("'target_sampling_period' must be positive.")
-        # ==========================================================
 
         # Initialization
         excluded_signals: list[str] = []
@@ -965,12 +950,147 @@ class Dataset:
         )
 
         # Update NaN intervals
-        NaN_intervals = self._find_nan_intervals(df_temp)
+        NaN_intervals = self._find_nan_intervals()
         ds._nan_intervals.update(
             NaN_intervals
         )  # Join two dictionaries through update()
 
         ds.dataset = ds.dataset.round(NUM_DECIMALS)
+        return ds
+
+    def trim(
+        self: Dataset,
+        *signals: str | tuple[str, str] | None,
+        tin: float | None = None,
+        tout: float | None = None,
+        verbosity: int = 0,
+        **kwargs: Any,
+    ) -> Dataset:
+        """
+        Trim the Dataset instance.
+
+        Parameters
+        ----------
+        *signals :
+            Signals to be plotted in case of trimming from a plot.
+        tin :
+            Initial time for trimming.
+        tout :
+            Final time for trimming.
+        verbosity :
+            Depending on its level, more or less info is displayed.
+        **kwargs:
+            kwargs to be passed to the plot() method.
+
+        """
+        # We have to trim the signals to have a meaningful dataset
+        # This can be done both graphically or by passing tin and tout
+        # if the user knows them before hand or by setting full_time_interval = True.
+        # Once done, the dataset shall be automatically shifted to the point tin = 0.0.
+
+        def _graph_selection(
+            ds: Dataset,
+            *signals: str | tuple[str, str] | None,
+            **kwargs: Any,
+        ) -> tuple[float, float]:  # pragma: no cover
+            # Select the time interval graphically
+            # OBS! This part cannot be automatically tested because the it require
+            # manual action from the user (resize window).
+            # Hence, you must test this manually.
+
+            # The following code is needed because not all IDE:s
+            # have interactive plot set to ON as default.
+            is_interactive = plt.isinteractive()
+            plt.ion()
+
+            # Get axes from the plot and use them to extract tin and tout
+            figure = ds.plot(*signals, **kwargs)
+            axes = figure.get_axes()
+
+            # Figure closure handler
+            # It can be better done perhaps.
+            def close_event(event):  # type:ignore
+                time_interval = np.round(
+                    axes[0].get_xlim(), NUM_DECIMALS
+                )  # noqa
+                close_event.tin, close_event.tout = time_interval
+                close_event.tin = max(close_event.tin, 0.0)
+                close_event.tout = max(close_event.tout, 0.0)
+                if is_interactive:
+                    plt.ion()
+                else:
+                    plt.ioff()
+
+            close_event.tin = 0.0  # type:ignore
+            close_event.tout = 0.0  # type:ignore
+            fig = axes[0].get_figure()
+            cid = fig.canvas.mpl_connect("close_event", close_event)
+            fig.canvas.draw()
+            plt.show()
+
+            fig.suptitle(
+                "Sampling time "
+                f"= {np.round(self.dataset.index[1]-self.dataset.index[0],NUM_DECIMALS)} {self.dataset.index.name[1]}.\n"
+                "Select the dataset time interval by resizing "
+                "the picture."
+            )
+
+            # =======================================================
+            # This is needed for Spyder to block the prompt while
+            # the figure is opened.
+            # An alternative better solution is welcome!
+            try:
+                while fig.number in plt.get_fignums():
+                    plt.pause(0.1)
+            except:  # noqa
+                plt.close(fig.number)
+                raise
+            # =======================================================
+
+            fig.canvas.mpl_disconnect(cid)
+            tin_sel = close_event.tin  # type:ignore
+            tout_sel = close_event.tout  # type:ignore
+
+            return np.round(tin_sel, NUM_DECIMALS), np.round(
+                tout_sel, NUM_DECIMALS
+            )
+
+        # =============================================
+        # Trim Dataset main function
+        # The user can either pass the pair (tin,tout) or
+        # he/she can select it graphically if nothing has passed
+        # =============================================
+
+        ds = deepcopy(self)
+        # Check if info on (tin,tout) is passed
+        if tin is None and tout is not None:
+            tin_sel = ds.dataset.index[0]
+            tout_sel = tout
+        # If only tin is passed, then set tout to the last time sample.
+        elif tin is not None and tout is None:
+            tin_sel = tin
+            tout_sel = ds.dataset.index[-1]
+        elif tin is not None and tout is not None:
+            tin_sel = np.round(tin, NUM_DECIMALS)
+            tout_sel = np.round(tout, NUM_DECIMALS)
+        else:  # pragma: no cover
+            tin_sel, tout_sel = _graph_selection(self, *signals, **kwargs)
+
+        if verbosity != 0:
+            print(
+                f"\n tin = {tin_sel}{ds.dataset.index.name[1]}, tout = {tout_sel}{ds.dataset.index.name[1]}"
+            )
+
+        # Now you can trim the dataset and update all the
+        # other time-related attributes
+        ds.dataset = ds.dataset.loc[tin_sel:tout_sel, :]  # type:ignore
+        ds._nan_intervals = ds._find_nan_intervals()
+        ds.coverage = ds._find_dataset_coverage()
+
+        # ... and shift everything such that tin = 0.0
+        ds._shift_dataset_tin_to_zero()
+        ds.dataset = ds.dataset.round(NUM_DECIMALS)
+
         return ds
 
     def dataset_values(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -1054,7 +1174,7 @@ class Dataset:
             sampling_period = self.sampling_period
 
             for ii, val in enumerate(cols):
-                # This is the syntax for defining a dymoval signal
+                # The following is the syntax for defining a dymoval signal
                 temp: dmv.Signal = {
                     "name": names[ii],
                     "values": df.loc[:, val].to_numpy().round(NUM_DECIMALS),
@@ -1072,12 +1192,6 @@ class Dataset:
 
         It is possible to pass an arbitrary number of tuples of the
         form *(signal_name_x,signal_name_y).*
-
-
-        Raises
-        ------
-        ValueError:
-            If any passed signal does not exist in the dataset.
         """
         return list(self.dataset.columns)
 
@@ -1086,11 +1200,51 @@ class Dataset:
         # Only positional arguments
         /,
         *signal_pairs: tuple[str, str],
-        save_as: str | None = None,
-    ) -> matplotlib.axes.Axes:
-        """You must specify the complete *filename*, including the path."""
+        layout: Literal["constrained", "compressed", "tight", "none"] = "tight",
+        ax_height: float = 1.8,
+        ax_width: float = 4.445,
+    ) -> matplotlib.figure.Figure:
+        """Plot a signal against another signal in a plane (XY-plot).
+
+        The *signal_pairs* shall be passed as tuples.
+        If no args is passed then the function will *zip* the input
+        and output signals.
+
+
+        Note
+        ----
+        You are free to manipulate the returned figure as you want by using any
+        method of the class `matplotlib.figure.Figure`.
+        Please, refer to *matplotlib* docs for more info.
+
+
+        Example
+        -------
+        >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig.set_size_inches(10,5)
+        >>> fig.set_layout_engine("constrained")
+        >>> fig.savefig("my_plot.svg")
+
+
+        Parameters
+        ----------
+        signals_pairs:
+            Pairs of signals to plot in a XY-diagram.
+        layout:
+            Figure layout.
+        ax_height:
+            Approximative height (inches) of each subplot.
+        ax_width:
+            Approximative width (inches) of each subplot.
+        """
+
         # df points to self.dataset.
         df = self.dataset
+
+        if not signal_pairs:
+            u_names = list(df["INPUT"].columns.get_level_values("names"))
+            y_names = list(df["OUTPUT"].columns.get_level_values("names"))
+            signal_pairs = tuple(zip(u_names, y_names))
 
         # Check if the passed names exist
         available_names = list(df.columns.get_level_values("names"))
@@ -1102,8 +1256,8 @@ class Dataset:
         if names_not_found:
             raise ValueError(f"Signal(s) {names_not_found} not found.")
 
-        # signal_name:signal_unit dict for the axes labels
-        signal_unit = dict(df.droplevel(level="kind", axis=1).columns)
+        # signal_name:signals_units dict for the axes labels
+        signals_units = dict(df.droplevel(level="kind", axis=1).columns)
 
         # Start the plot ritual
         n = len(signal_pairs)
@@ -1118,196 +1272,217 @@ class Dataset:
                 y=val[1],
                 ax=axes[ii],
                 legend=None,
-                xlabel=f"{val[0]}, ({ signal_unit[val[0]]})",
-                ylabel=f"{val[1]}, ({ signal_unit[val[1]]})",
+                xlabel=f"{val[0]}, ({ signals_units[val[0]]})",
+                ylabel=f"{val[1]}, ({ signals_units[val[1]]})",
                 grid=True,
             )
 
-        # Eventually save and return figures.
-        if save_as is not None and ax is None:
-            save_plot_as(fig, axes, save_as)  # noqa
+        fig.suptitle("XY-plot.")
 
-        return axes.base
+        # Adjust fig size and layout
+        nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
+        ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
+        fig.set_size_inches(ncols * ax_width, nrows * ax_height + 1.25)
+        fig.set_layout_engine(layout)
+
+        return fig
 
     def plot(
         self,
-        # Only positional arguments
         /,
-        *signals: str,
+        # Only positional arguments
+        *signals: str | tuple[str, str] | None,
         # Key-word arguments
         overlap: bool = False,
-        line_color_input: str = "b",
-        linestyle_input: str = "-",
-        alpha_input: float = 1.0,
-        line_color_output: str = "g",
-        linestyle_output: str = "-",
-        alpha_output: float = 1.0,
-        ax: matplotlib.axes.Axes | None = None,
-        p_max: int = 0,
-        save_as: str | None = None,
-    ) -> matplotlib.axes.Axes:
+        linecolor_input: str = "blue",
+        linestyle_fg: str = "-",
+        alpha_fg: float = 1.0,
+        linecolor_output: str = "green",
+        linestyle_bg: str = "--",
+        alpha_bg: float = 1.0,
+        _grid: matplotlib.gridspec.GridSpec | None = None,
+        layout: Literal["constrained", "compressed", "tight", "none"] = "tight",
+        ax_height: float = 1.8,
+        ax_width: float = 4.445,
+    ) -> matplotlib.figure.Figure:
         """Plot the Dataset.
 
+        For each signal pair passed as a *tuple*, the signals will be placed in
+        the same subplot.
+        Signals passed as a string will be plotted in a separate subplot.
+
+        For example, if *ds* is a :py:class:`Dataset <dymoval.dataset.Dataset>`
+        with signals *s1, s2, ... sn*, then
+        *ds.plot(("s1","s2"), "s3", "s4")* will plot *s1* and *s2* on the same subplot
+        and it will plot *s3* and "s4" on separate subplots, thus displaying the
+        total of 3 subplots.
+
+        It is possible to overlap at most two signals (this to avoid adding too many
+        y-axes).
+
         Possible values for the parameters describing the line used in the plot
-        (e.g. *line_color_input* , *alpha_output*. etc).
+        (e.g. *linecolor_input* , *alpha_output*. etc).
         are the same for the corresponding plot function in matplotlib.
+
+
+        Note
+        ----
+        You are free to manipulate the returned figure as you want by using any
+        method of the class `matplotlib.figure.Figure`.
+        Please, refer to *matplotlib* docs for more info.
+
+
+        Example
+        -------
+        >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig.set_size_inches(10,5)
+        >>> fig.set_layout_engine("constrained")
+        >>> fig.savefig("my_plot.svg")
+
 
         Parameters
         ----------
         *signals:
             Signals to be plotted.
         overlap:
-            If true *True* overlaps the input and the output signals plots
+            If *True* overlap input the output signals plots
             pairwise.
+            Eventual passed *signals will be discarded.
             The units of the outputs are displayed on the secondary y-axis.
-        line_color_input:
-            Line color for the input signals.
-        linestyle_input:
-            Line style for the input signals.
-        alpha_input:
-            Alpha channel value for the input signals.
-        line_color_output:
-            Line color for the output signals.
-        linestyle_output:
-            Line style for the output signals.
-        alpha_output:
-            Alpha channel value for the output signals.
-        ax:
-            Matplotlib Axes where to place the plot.
-        p_max:
-            Maximum number of inputs. It is a parameters used internally so
-            it can be left alone.
-        save_as:
-            Save the figure with a specified name.
-            The figure is automatically resized to try to keep a 16:9 aspect ratio.
-            You must specify the complete *filename*, including the path.
+        linecolor_input:
+            Line color of the input signals.
+        linestyle_fg:
+            Linestyle of the first signals of the tuple
+            if two signals are passed as a tuple.
+        alpha_fg:
+            Alpha channel value of the firt signals of the tuple
+            if two signals are passed as a tuple.
+        linecolor_output:
+            Line color of the output signals.
+        linestyle_bg:
+            Linestyle of the second signals of the tuple
+            if two signals are passed as a tuple.
+        alpha_bg:
+            Alpha channel value of the second signals of the tuple
+            if two signals are passed as a tuple.
+        _grid:
+            Matplotlib GridSpec where to place the plot. (Used internally)
+        layout:
+            Figure layout.
+        ax_height:
+            Approximative height (inches) of each subplot.
+        ax_width:
+            Approximative width (inches) of each subplot.
         """
+
         # df points to self.dataset.
         df = self.dataset
 
-        # Arguments validation
+        # ===================================================
+        # Selection of signals to plot
+        # ===================================================
         (
-            u_names,
-            y_names,
-            u_units,
-            y_units,
-            u_names_idx,
-            y_names_idx,
-        ) = self._classify_signals(*signals)
+            u_dict,
+            y_dict,
+            signals_tpl,
+            signals_lst_plain,
+        ) = self._select_signals_to_plot(*signals, overlap=overlap)
 
-        # Input-output length and indices
-        p = len(u_names)
-        q = len(y_names)
-
-        # get some plot parameters based on user preferences
-        n, range_in, range_out, u_titles, y_titles = self._get_plot_params(
-            p, q, u_names_idx, y_names_idx, overlap
+        # ===================================================
+        # Arrange colors, ylabels (=units) and linestyles
+        # ===================================================
+        (
+            linecolors_tpl,
+            ylabels_tpl,
+            linestyles_tpl,
+            labels_tpl,
+        ) = self._create_plot_args(
+            "time",
+            u_dict,
+            y_dict,
+            signals_lst_plain,
+            signals_tpl,
+            linecolor_input,
+            linecolor_output,
+            linestyle_fg,
+            linestyle_bg,
         )
 
-        # Find nrwos and ncols for having a nice plot
-        # having p-rows and q-columns won't make a nice plot,
-        # think to the SISO case for example
-        nrows, ncols = factorize(n)  # noqa
-
-        if overlap:
-            secondary_y = True
+        # ===================================================
+        # Main function
+        # ===================================================
+        # create a figure and a grid first.
+        # Subplots will be dynamically created
+        if not _grid:
+            fig = plt.figure()
+            n = len(signals_tpl)
+            nrows, ncols = factorize(n)  # noqa
+            grid = fig.add_gridspec(nrows, ncols)
         else:
-            secondary_y = False
+            grid = _grid
 
-        # Overwrite axes if you want the plot to be on the figure instantiated by the caller.
-        if ax is None:  # Create new figure and axes
-            fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        else:  # Otherwise use what is passed
-            axes = np.asarray(ax)
-            range_out = np.arange(p_max, p_max + q)
+        # ===================================================
+        # Actual plot
+        # ===================================================
 
-        # Flatten array for more readable code
-        axes = axes.T.flat
+        fig = self._plot_actual(
+            df,
+            signals_tpl,
+            grid,
+            linecolors_tpl,
+            ylabels_tpl,
+            labels_tpl,
+            linestyles_tpl,
+            alpha_fg,
+            alpha_bg,
+        )
 
-        # You need this if in case you want to plot one single signal
-        if u_names:
-            df["INPUT"].droplevel(level="units", axis=1).loc[:, u_names].plot(
-                subplots=True,
-                grid=True,
-                color=line_color_input,
-                linestyle=linestyle_input,
-                alpha=alpha_input,
-                title=u_titles,
-                ax=axes[range_in],
-            )
+        # Title
+        plt.suptitle(
+            f"Dataset '{self.name}'. \n {linecolor_input} lines are inputs and {linecolor_output} lines are outputs."
+        )
 
-            self._shade_nans(
-                self._nan_intervals,
-                axes[range_in],
-                u_names,
-                color=line_color_input,
-            )
+        # Shade NaN:s areas
+        self._shade_nans(fig.get_axes())
 
-        if y_names:
-            df["OUTPUT"].droplevel(level="units", axis=1).loc[:, y_names].plot(
-                subplots=True,
-                grid=True,
-                color=line_color_output,
-                linestyle=linestyle_output,
-                alpha=alpha_output,
-                secondary_y=secondary_y,
-                title=y_titles,
-                legend=y_names,
-                ax=axes[range_out],
-            )
+        # Adjust fig size and layout
+        nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
+        ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
+        fig.set_size_inches(ncols * ax_width, nrows * ax_height + 1.25)
+        fig.set_layout_engine(layout)
 
-            self._shade_nans(
-                self._nan_intervals,
-                axes[range_out],
-                y_names,
-                color=line_color_output,
-            )
-
-        # Set ylabels
-        # input
-        for ii, unit in enumerate(u_units):
-            axes[ii].set_ylabel(f"({unit})")
-
-        # Output
-        if not sorted(u_units) == sorted(y_units):
-            for jj, unit in enumerate(y_units):
-                if overlap:
-                    axes[jj].right_ax.set_ylabel(f"({unit})")
-                    axes[jj].right_ax.grid(None, axis="y")
-                else:
-                    axes[p + jj].set_ylabel(f"({unit})")
-
-        # Set xlabels
-        xlabel = f"{df.index.name[0]} ({df.index.name[1]})"  # Time (s)
-        # Set xlabels only on the last row
-        for ii in range(ncols):
-            axes[nrows - 1 :: nrows][ii].set_xlabel(xlabel)
-        plt.suptitle(f"Dataset {self.name}. ")
-
-        # Tight layout if no axes are passed
-        # if ax is None:
-        #    fig.tight_layout()
-
-        # Eventually save and return figures.
-        if save_as is not None and ax is None:
-            save_plot_as(fig, axes, save_as)  # noqa
-
-        return axes.base
+        return fig
 
     def plot_coverage(
         self,
         *signals: str,
         nbins: int = 100,
-        line_color_input: str = "b",
-        alpha_input: float = 1.0,
-        line_color_output: str = "g",
-        alpha_output: float = 1.0,
-        ax_in: matplotlib.axes.Axes | None = None,
-        ax_out: matplotlib.axes.Axes | None = None,
-        save_as: str | None = None,
-    ) -> tuple[matplotlib.axes.Axes | None, matplotlib.axes.Axes | None]:
+        linecolor_input: str = "b",
+        linecolor_output: str = "g",
+        alpha: float = 1.0,
+        histtype: Literal["bar", "barstacked", "step", "stepfilled"] = "bar",
+        _grid: matplotlib.gridspec.GridSpec | None = None,
+        layout: Literal["constrained", "compressed", "tight", "none"] = "tight",
+        ax_height: float = 1.8,
+        ax_width: float = 4.445,
+    ) -> matplotlib.figure.Figure:
         """
         Plot the dataset coverage as histograms.
+
+
+        Note
+        ----
+        You are free to manipulate the returned figure as you want by using any
+        method of the class `matplotlib.figure.Figure`.
+        Please, refer to *matplotlib* docs for more info.
+
+
+        Example
+        -------
+        >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig.set_size_inches(10,5)
+        >>> fig.set_layout_engine("constrained")
+        >>> fig.savefig("my_plot.svg")
 
 
         Parameters
@@ -1328,115 +1503,100 @@ class Dataset:
             Axes where the input signal coverage plot shall be placed.
         as_out:
             Axes where the output signal coverage plot shall be placed.
-        save as:
-            Save the figures with a specified name.
-            It appends the suffix *_in* and *_out* to the input and output figure,
-            respectively.
-            The *filename* shall include the path.
+        layout:
+            Figure layout.
+        ax_height:
+            Approximative height (inches) of each subplot.
+        ax_width:
+            Approximative width (inches) of each subplot.
         """
-        # Extract dataset
+        # df points to self.dataset.
         df = self.dataset
 
+        sigs = [s for s in signals if not isinstance(s, str)]
+        if len(sigs) > 0:
+            raise TypeError(
+                f"It seems that you are trying to overlap {sigs}. Coverage plots cannot be overlapped."
+            )
+        # ===================================================
+        # Selection of signals to plot
+        # ===================================================
         (
-            u_names,
-            y_names,
-            u_units,
-            y_units,
-            u_names_idx,
-            y_names_idx,
-        ) = self._classify_signals(*signals)
+            u_dict,
+            y_dict,
+            signals_lst,
+            signals_lst_plain,
+        ) = self._select_signals_to_plot(*signals, overlap=False)
 
-        # Remove duplicated labels as they are not needed for coverage
-        # This because you don't need to overlap e.g. (u1,y1), (u1,y2), etc
-        # The following is the way from Python 3.7 you remove items while
-        # preserving the order
-        u_names = list(dict.fromkeys(u_names))
-        u_units = list(dict.fromkeys(u_units))
-        y_names = list(dict.fromkeys(y_names))
-        y_units = list(dict.fromkeys(y_units))
-
-        # Input-output length and indices
-        p = len(u_names)
-        q = len(y_names)
-
-        # get some plot parameters based on user preferences
-        _, _, _, u_titles, y_titles = self._get_plot_params(
-            p, q, u_names_idx, y_names_idx, overlap=False
+        # ===================================================
+        # Arrange colors, ylabels (=units) and linestyles
+        # ===================================================
+        (linecolors_tpl, xlabels_tpl, histtype_tpl, _) = self._create_plot_args(
+            "coverage",
+            u_dict,
+            y_dict,
+            signals_lst_plain,
+            signals_lst,
+            linecolor_input,
+            linecolor_output,
+            histtype,
+            histtype,
         )
 
-        # This if is needed in case the user wants to plot only one signal
-        if u_names:
-            nrows_in, ncols_in = factorize(p)  # noqa
+        # ===================================================
+        # Main function
+        # ===================================================
+        # create a figure and a grid first.
+        # Subplots will be dynamically created
+        if not _grid:
+            fig = plt.figure()
+            n = len(signals_lst)
+            nrows, ncols = factorize(n)  # noqa
+            grid = fig.add_gridspec(nrows, ncols)
+        else:
+            grid = _grid
 
-            if ax_in is None:  # Create new figure and axes
-                fig_in, axes_in = plt.subplots(
-                    nrows_in, ncols_in, squeeze=False
-                )
-            else:  # Otherwise use what is passed
-                axes_in = np.asarray(ax_in)
+        # ===================================================
+        # Actual plot
+        # ===================================================
 
-            axes_in = axes_in.T.flat
-            df["INPUT"].droplevel(level="units", axis=1).loc[:, u_names].hist(
+        # Initialize iteration
+        fig = grid.figure
+        if fig.get_axes():
+            pass
+        else:
+            axes = fig.add_subplot(grid[0])
+        # Iteration
+        for ii, s in enumerate(signals_lst):
+            # at each iteration a new axes who sharex with the
+            # previously created axes, is created
+            if len(fig.get_axes()) > ii:
+                # Reuse existing axes if exists
+                axes = fig.get_axes()[ii]
+            else:
+                # Create a new axes
+                axes = fig.add_subplot(grid[ii], sharex=axes)
+            # Actual plot
+            df.droplevel(level=["kind", "units"], axis=1).loc[:, s[0]].hist(
                 grid=True,
                 bins=nbins,
-                color=line_color_input,
-                alpha=alpha_input,
-                legend=u_names,
-                ax=axes_in[0:p],
+                color=linecolors_tpl[ii][0],
+                legend=True,
+                histtype=histtype_tpl[ii][0],
+                alpha=alpha,
+                ax=axes,
             )
+            axes.set_xlabel(xlabels_tpl[ii][0])
 
-            # Set xlabel
-            for ii, unit in enumerate(u_units):
-                axes_in[ii].set_title(f"INPUT #{u_names_idx[ii]+1}")
-                axes_in[ii].set_xlabel(f"({unit})")
-            plt.suptitle("Coverage region (INPUT).")
+        fig.suptitle("Coverage region.")
 
-            # Tight figure if no ax is passed (e.g. from compare_datasets())
-            # if ax_in is None:
-            #    fig_in.tight_layout()
+        # Adjust fig size and layout
+        nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
+        ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
+        fig.set_size_inches(ncols * ax_width, nrows * ax_height + 1.25)
+        fig.set_layout_engine(layout)
 
-        if y_names:
-            nrows_out, ncols_out = factorize(q)  # noqa
-
-            if ax_out is None:  # Create new figure and axes
-                fig_out, axes_out = plt.subplots(
-                    nrows_out, ncols_out, squeeze=False
-                )
-            else:  # Otherwise use what is passed
-                axes_out = np.asarray(ax_out)
-
-            axes_out = axes_out.T.flat
-            df["OUTPUT"].droplevel(level="units", axis=1).loc[:, y_names].hist(
-                grid=True,
-                bins=nbins,
-                color=line_color_output,
-                alpha=alpha_output,
-                legend=y_names,
-                ax=axes_out[0:q],
-            )
-
-            # Set xlabel, ylabels
-            for ii, unit in enumerate(y_units):
-                axes_out[ii].set_title(f"OUTPUT #{y_names_idx[ii]+1}")
-                axes_out[ii].set_xlabel(f"({unit})")
-            plt.suptitle("Coverage region (OUTPUT).")
-
-            # tight figure if no ax is passed (e.g. from compare_datasets())
-            # if ax_out is None:
-            #    fig_out.tight_layout()
-
-        if save_as is not None:
-            save_plot_as(fig_in, axes_in, save_as + "_in")  # noqa
-            save_plot_as(fig_out, axes_out, save_as + "_out")  # noqa
-
-        # Return
-        if u_names and y_names:
-            return axes_in.base, axes_out.base
-
-        elif u_names and not y_names:
-            return axes_in.base, None
-        else:  # The only option left is not u_names and y_names
-            return None, axes_out.base
+        return fig
 
     def fft(
         self,
@@ -1451,15 +1611,22 @@ class Dataset:
         signals:
             The FFT is computed for these signals.
 
-        Raises
-        ------
-        ValueError
-            If the dataset contains *NaN*:s
         """
+        #  Raises
+        #  ------
+        #  ValueError
+        #      If the dataset contains *NaN*:s
+
         # Validation
-        u_names, y_names, _, _, _, _ = self._classify_signals(*signals)
-        # Remove 'INPUT' 'OUTPUT' columns level from dataframe
-        df_temp = self.dataset.droplevel(level=["kind", "units"], axis=1)
+        u_dict, y_dict = self._classify_signals(*signals)
+
+        # Pointer to DataFrame
+        df_temp = self.dataset
+        Ts = self.sampling_period
+        N = len(self.dataset.index)  # number of samples
+
+        u_names = list(u_dict.keys())
+        y_names = list(y_dict.keys())
 
         # Check if there are any NaN:s
         if df_temp.isna().any(axis=None):
@@ -1471,19 +1638,30 @@ class Dataset:
         # We normalize the fft with N to secure energy balance (Parseval's Theorem),
         # namely it must hold "int_T x(t) = int_F X(f)".
         # See https://stackoverflow.com/questions/20165193/fft-normalization
-        N = len(df_temp.index)
+        # N = len(df_temp.index)
 
-        vals = fft.rfftn(df_temp.loc[:, u_names + y_names], axes=0) / N
+        vals = (
+            fft.rfftn(
+                df_temp.droplevel(level=["kind", "units"], axis=1).loc[
+                    :, u_names + y_names
+                ],
+                axes=0,
+            )
+            / N
+        )
         vals = vals.round(NUM_DECIMALS)
 
         # Create a new Dataframe
-        u_extended_labels = list(zip(["INPUT"] * len(u_names), u_names))
-        y_extended_labels = list(zip(["OUTPUT"] * len(y_names), y_names))
+        u_cols = [col for col in df_temp.columns for u in u_names if u in col]
+        y_cols = [col for col in df_temp.columns for y in y_names if y in col]
         cols = pd.MultiIndex.from_tuples(
-            [*u_extended_labels, *y_extended_labels]
+            u_cols + y_cols, names=df_temp.columns.names
         )
-        df_freq = pd.DataFrame(data=vals.round(NUM_DECIMALS), columns=cols)
+        df_freq = pd.DataFrame(data=vals, columns=cols)
         df_freq = df_freq.T.drop_duplicates().T  # Drop duplicated columns
+
+        # Adjust index
+        # time_units_to_frequency_units conversion
         time2freq_units = {
             "s": "Hz",
             "ms": "kHz",
@@ -1491,31 +1669,60 @@ class Dataset:
             "ns": "GHz",
             "ps": "THz",
         }
-        df_freq.index.name = (
-            f"Frequency ({time2freq_units[df_temp.index.name[1]]})"
-        )
+
+        # If the time unit are in time2freq_units then convert
+        # in frequency units
+        if df_temp.index.name[1] in time2freq_units.keys():
+            new_index_name = (
+                "Frequency",
+                time2freq_units[df_temp.index.name[1]],
+            )
+        else:
+            new_index_name = ("Frequency", "")
+        #
+        f_bins = fft.rfftfreq(N, Ts)
+        # NOTE: I had to use pd.Index to preserve the name and being able to
+        # replace the values
+        df_freq.index = pd.Index(f_bins, name=new_index_name)
 
         return df_freq.round(NUM_DECIMALS)
 
     def plot_spectrum(
         self,
-        *signals: str,
+        *signals: str | tuple[str, str] | None,
         kind: Literal["amplitude", "power", "psd"] = "power",
         overlap: bool = False,
-        line_color_input: str = "b",
-        linestyle_input: str = "-",
-        alpha_input: float = 1.0,
-        line_color_output: str = "g",
-        linestyle_output: str = "-",
-        alpha_output: float = 1.0,
-        ax: matplotlib.axes.Axes | None = None,
-        save_as: str | None = None,
-    ) -> matplotlib.axes.Axes:
+        linecolor_input: str = "blue",
+        linestyle_fg: str = "-",
+        alpha_fg: float = 1.0,
+        linecolor_output: str = "green",
+        linestyle_bg: str = "--",
+        alpha_bg: float = 1.0,
+        _grid: matplotlib.gridspec.GridSpec | None = None,
+        layout: Literal["constrained", "compressed", "tight", "none"] = "tight",
+        ax_height: float = 1.8,
+        ax_width: float = 4.445,
+    ) -> matplotlib.figure.Figure:
         """
         Plot the spectrum of the specified signals in the dataset in different format.
 
         If some signals have *NaN* values, then the FFT cannot be computed and
         an error is raised.
+
+
+        Note
+        ----
+        You are free to manipulate the returned figure as you want by using any
+        method of the class `matplotlib.figure.Figure`.
+        Please, refer to *matplotlib* docs for more info.
+
+
+        Example
+        -------
+        >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig.set_size_inches(10,5)
+        >>> fig.set_layout_engine("constrained")
+        >>> fig.savefig("my_plot.svg")
 
 
         Parameters
@@ -1526,7 +1733,7 @@ class Dataset:
 
             - *amplitude* plot both the amplitude and phase spectrum.
               If the signal has unit V, then the amplitude has unit *V*.
-              Phase is in radians.
+              Phase is in degrees.
             - *power* plot the autopower spectrum.
               If the signal has unit V, then the amplitude has unit *V^2*.
             - *psd* plot the power density spectrum.
@@ -1534,65 +1741,272 @@ class Dataset:
         overlap:
             If true it overlaps the input and the output signals plots.
             The units of the outputs are displayed on the secondary y-axis.
-        line_color_input:
+        linecolor_input:
             Line color for the input signals.
         linestyle_input:
             Line style for the input signals.
         alpha_input:
             Alpha channel value for the input signals.
-        line_color_output:
+        linecolor_output:
             Line color for the output signals.
         linestyle_output:
             Line style for the output signals.
         alpha_output:
             Alpha channel value for the output signals.
-        ax:
-            Axes where the spectrum plot will be placed.
-        save_as:
-            Save the figure with a specified name.
-            The figure is automatically resized with a 16:9 aspect ratio.
-            You must specify the complete *filename*, including the path.
+        _grid:
+            Grid where the spectrum ploat will be placed *(Used only internally.)*
+        layout:
+            Figure layout.
+        ax_height:
+            Approximative height (inches) of each subplot.
+        ax_width:
+            Approximative width (inches) of each subplot.
 
 
-        Raises
-        ------
-        ValueError
-            If *kind* doen not match any allowed values.
+        Note
+        ----
+        You are free to manipulate the returned figure as you want by using any
+        method of the class `matplotlib.figure.Figure`.
+        Please, refer to *matplotlib* docs for more info.
+
+
+        Example
+        -------
+        >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig.set_size_inches(10,5)
+        >>> fig.set_layout_engine("constrained")
+        >>> fig.savefig("my_plot.svg")
         """
-        # validation
-        (
-            u_names,
-            y_names,
-            u_units,
-            y_units,
-            u_names_idx,
-            y_names_idx,
-        ) = self._classify_signals(*signals)
+        #  Raises
+        #  ------
+        #  ValueError
+        #      If *kind* doen not match any allowed values.
+        # ==========================================================
+        #  Actual plotting functions
+        # ==========================================================
 
+        def _plot_abs_angle(
+            df_freq: pd.DataFrame,
+            signals_tpl: list[tuple[str, ...]],
+            grid: matplotlib.gridspec.GridSpec,
+            linecolors_tpl: list[tuple[str, ...]],
+            ylabels_tpl: list[tuple[str, ...]],
+            labels_tpl: list[tuple[str, ...]],
+            linestyles_tpl: list[tuple[str, ...]],
+            alpha_fg: float,
+            alpha_bg: float,
+        ) -> matplotlib.figure.Figure:
+            # In this case each element of the grid has a nested
+            # subgrid of dimension (2,1).
+            # axes scan every element of the subgrid and therefore we
+            # have 2*m*n axes (assuming the grid has dimension (m.n)
+
+            # This is treated a special case because it double the number of axes
+            # on the  same figure.
+            # We tried to make a cleaner code but it ended up in a plethora of
+            # if-then-else and for loops that made the code pretty much unreadable.
+            # One of the reason is that matplotlib is difficult to handle, especially
+            # if you need to shuffle things around. Also, pandas plot, which is built upon
+            # matplotlib won't take iterables in many arguments
+            # (for example df.plot(ylabel=...) can only be a single value, even if you are
+            # plotting multiple columns at once.
+            # Also, to have nested subplots (for plotting abs and angle) you must
+            # use gridspecs.
+
+            # =====================================================
+            # Initialize iteration
+            fig = grid.figure
+            if fig.get_axes():
+                # If axes already exist, use the existings (think to compare_datasets)
+                #
+                # OBS: this part is a bit tricky, so some explanation may be useful.
+                # You have a plain list of axes like [ax1, ax2, ax3, ...].
+                # The even represent the amplitudes whereas the odd the angles axes.
+                # However, you don't know who is left and who is right axes, but you have
+                # such an information contained into signals_tpl.
+                #
+                # Hence, you may want to group the plain axes list by following
+                # the same structure as signals_tpl, like: if
+                #
+                #   signals_tpl = [("u1",),("u2","u3"), ("y1","y2")], then
+                #
+                # you have 10 axes by considering the pairs (abs,angle).
+                # Hence, the axes shall be grouped as
+                #
+                #   axes_tpl = [[ax1 ax2], [ax3, ax4, ax5, ax6],[ax7, ax8, ax9, ax10]]
+                #
+                # so, for each sublist in axes_tpl, the indices are
+                #
+                # 0 - absolute left axes
+                # 1 - angle left axes
+                # (3 - absolute right axes, if any)
+                # (4 - angle right axes, if any)
+                axes_tpl = []
+                axes_iter = iter(fig.get_axes())
+                for val in signals_tpl:
+                    tmp = []
+                    for jj, _ in enumerate(2 * val):
+                        tmp.append(next(axes_iter))
+                    axes_tpl.append(tmp)
+            else:
+                # If no axes available, then create new ones
+                axes_tpl = []
+                inner_grid = grid[0].subgridspec(2, 1)
+                axes = [
+                    fig.add_subplot(inner_grid[0]),
+                    fig.add_subplot(inner_grid[1]),
+                ]
+            # Iterations
+            for ii, s in enumerate(signals_tpl):
+                # At each iteration a new axes is created and it is placed
+                # either into a 1D or 2D list.
+                # Add a subplot(2,1) to each "main" subplots
+                if len(axes_tpl) > 0:
+                    axes = [axes_tpl[ii][0], axes_tpl[ii][1]]
+                else:
+                    inner_grid = grid[ii].subgridspec(2, 1)
+                    axes = [
+                        fig.add_subplot(g, sharex=axes[0]) for g in inner_grid
+                    ]
+                # Two colums per time are being plot: (abs,angle)
+                # If you do ax.legend(handles,my_labels) and then you do
+                # handled, labels = ax.get_legend_handles_labels() pandas will
+                # return the columns names rather than my_labels that you previously set
+                # Hence, we must droplevels until we have only e.g. "u1" as column names
+                df_freq.droplevel(level=[0, 2, 3], axis=1).loc[:, s[0]].plot(
+                    subplots=True,
+                    grid=True,
+                    legend=False,
+                    color=linecolors_tpl[ii][0],
+                    linestyle=linestyles_tpl[ii][0],
+                    alpha=alpha_fg,
+                    ax=axes,
+                )
+                # ylabels (units)
+                axes[0].set_ylabel(f"{ylabels_tpl[ii][0]}")
+                axes[1].set_ylabel("(deg)")
+
+                # legend (s,abs) and (s,angle) (will be placed at the end)
+                # abs
+                line_abs_l, _ = axes[0].get_legend_handles_labels()
+                label_abs_l = [f"{s[0]}, abs"]
+                line_abs_l[0].set_label(*label_abs_l)
+
+                # angle
+                line_angle_l, _ = axes[1].get_legend_handles_labels()
+                label_angle_l = [f"{s[0]}, angle"]
+                line_angle_l[0].set_label(*label_angle_l)
+
+                # In case the user wants to overlap plots...
+                # If the overlapped plots have the same units, then there is
+                # no point in using a secondary_y
+                line_abs_r = []
+                label_abs_r = []
+                line_angle_r = []
+                label_angle_r = []
+                if len(s) == 2:  # tuple like ("u1","u2")
+                    if (
+                        len(axes_tpl) > 0
+                    ):  # TODO: this may be always true. To check.
+                        # indices 3 and 4 represent the abs and phase axes of the
+                        # right axes
+                        axes = [axes_tpl[ii][2], axes_tpl[ii][3]]
+                    else:
+                        axes_right = [axes[0].twinx(), axes[1].twinx()]
+                    df_freq.droplevel(level=[0, 2, 3], axis=1).loc[
+                        :, s[1]
+                    ].plot(
+                        subplots=True,
+                        grid=False,
+                        color=linecolors_tpl[ii][1],
+                        legend=False,
+                        linestyle=linestyles_tpl[ii][1],
+                        alpha=alpha_bg,
+                        ax=axes_right,
+                    )
+                    # ylabels (units)
+                    if ylabels_tpl[ii][0] != ylabels_tpl[ii][1]:
+                        axes_right[0].set_ylabel(f"{ylabels_tpl[ii][1]}")
+
+                    # legend (s,abs) and (s,angle) (will be placed at the end)
+                    # abs
+                    line_abs_r, _ = axes_right[0].get_legend_handles_labels()
+                    label_abs_r = [f"{s[1]}, abs"]
+                    line_abs_r[0].set_label(*label_abs_r)
+
+                    # angle
+                    line_angle_r, _ = axes_right[1].get_legend_handles_labels()
+                    label_angle_r = [f"{s[1]}, angle"]
+                    line_angle_r[0].set_label(*label_angle_r)
+
+                # legend handling
+                # Set nice legend
+                axes[0].legend(
+                    line_abs_l + line_abs_r, label_abs_l + label_abs_r
+                )
+                axes[1].legend(
+                    line_angle_l + line_angle_r,
+                    label_angle_l + label_angle_r,
+                )
+                # Set x_label
+                axes[1].set_xlabel(
+                    f"{df_freq.index.name[0]} ({df_freq.index.name[1]})"
+                )
+
+            # Remove all dummy axes, i.e. axes with no line2D objects
+            # TODO: as seen, inspite you explictely set the legends,
+            # pandas decide what are the legends.
+            # print(fig.get_axes()[2].get_legend_handles_labels())
+            axes_all = fig.get_axes()
+            for ax in axes_all:
+                if len(ax.get_lines()) == 0:
+                    ax.remove()
+
+            return fig
+
+        # ============================================
+        # Main function begin
+        # ============================================
+
+        # A small check
         if kind not in SPECTRUM_KIND:
-            raise ValueError(f"kind must be one of {SPECTRUM_KIND}")
+            raise ValueError(f"Argument 'kind' must be one of {SPECTRUM_KIND}")
 
-        # ====================================
-        # Compute Spectrums
-        # ===================================
+        # ===================================================
+        # Selection of signals
+        # ===================================================
+        (
+            u_dict,
+            y_dict,
+            signals_tpl,
+            signals_lst_plain,
+        ) = self._select_signals_to_plot(*signals, overlap=overlap)
+
+        # ============================================
+        # Compute Spectrums values of selected signals
+        # ============================================
+
         # For real signals, the spectrum is Hermitian anti-simmetric, i.e.
         # the amplitude is symmetric wrt f=0 and the phase is antisymmetric wrt f=0.
         # See e.g. https://ccrma.stanford.edu/~jos/ReviewFourier/Symmetries_Real_Signals.html
-        df_freq = self.fft(*signals)
+        df_freq = self.fft(*signals_lst_plain)
         # Frequency and number of samples
-        Ts = self.sampling_period
-        N = len(self.dataset.index)  # number of samples
+        # Ts = self.sampling_period
+        # N = len(self.dataset.index)  # number of samples
         # Compute frequency bins
-        f_bins = fft.rfftfreq(N, Ts)
+        # f_bins = fft.rfftfreq(N, Ts)
         # Update DataFame index.
         # NOTE: I had to use pd.Index to preserve the name and being able to
         # replace the values
-        df_freq.index = pd.Index(f_bins, name=df_freq.index.name)
+        # df_freq.index = pd.Index(f_bins, name=df_freq.index.name)
 
         # Switch between the kind
         if kind == "amplitude":
             # Add another level to specify abs and phase
-            df_freq = df_freq.agg([np.abs, np.angle])
+            df_freq = df_freq.agg([np.abs, lambda x: np.angle(x, deg=True)])
+            df_freq = df_freq.rename(columns={"<lambda>": "angle"}, level=3)
+            df_freq = df_freq.rename(columns={"absolute": "abs"}, level=3)
+            # df_freq = df_freq.agg([np.abs, np.angle])
 
         elif kind == "power":
             df_freq = df_freq.abs() ** 2
@@ -1602,135 +2016,91 @@ class Dataset:
             # The same happens for the psd.
             df_freq[1:-1] = 2 * df_freq[1:-1]
         elif kind == "psd":
+            Ts = self.sampling_period
+            N = len(self.dataset.index)  # number of samples
             Delta_f = 1 / (Ts * N)  # Size of each frequency bin
             df_freq = df_freq.abs() ** 2 / Delta_f
             df_freq[1:-1] = 2 * df_freq[1:-1]
 
-        # ====================================
-        # Plot Spectrums
-        # ===================================
-        # Adjust input-output lengths and labels for plots.
-
-        p = len(u_names)
-        q = len(y_names)
-
-        # If the spectrum type is amplitude, then we need to plot
-        # abs and phase, so we need to double a number of things
-        if kind == "amplitude":
-            # Adjust (p,q): numbers of input and outputs are doubled
-            # because they contain (abs,angle)
-            p = 2 * p
-            q = 2 * q
-            # Adjust, labels idx, i.e. each entry appears two times
-            u_names_idx = [u for u in u_names_idx for ii in range(2)]
-            y_names_idx = [y for y in y_names_idx for ii in range(2)]
-
-        # get some plot parameters based on user preferences
-        n, range_in, range_out, u_titles, y_titles = self._get_plot_params(
-            p, q, u_names_idx, y_names_idx, overlap
+        # ===================================================
+        # Arrange colors, ylabels (=units) and linestyles
+        # ===================================================
+        (
+            linecolors_tpl,
+            ylabels_tpl,
+            linestyles_tpl,
+            labels_tpl,
+        ) = self._create_plot_args(
+            kind,
+            u_dict,
+            y_dict,
+            signals_lst_plain,
+            signals_tpl,
+            linecolor_input,
+            linecolor_output,
+            linestyle_fg,
+            linestyle_bg,
         )
 
-        # Find nrwos and ncols for the plot
-        nrows, ncols = factorize(n)
-
-        if overlap:
-            secondary_y = True
+        # ===================================================
+        # Actual plot
+        # ===================================================
+        # create a figure and a grid first.
+        # Subplots will be dynamically created
+        if not _grid:
+            fig = plt.figure()
+            n = len(signals_tpl)
+            nrows, ncols = factorize(n)  # noqa
+            grid = fig.add_gridspec(nrows, ncols)
         else:
-            secondary_y = False
+            grid = _grid
 
+        # Switch type of plot: abs_angle (which has double number of Subplots
+        # or the others (power and psd)
+        # Subplots will be added automatically
         if kind == "amplitude":
-            # To have the phase plot below the abs plot, then the number
-            # of rows must be an even number, otherwise the plot got screwed.
-            # OBS: the same code is in compare_datasets()
-            if np.mod(nrows, 2) != 0:
-                nrows -= 1
-                ncols += int(np.ceil(ncols / nrows))
-
-        # Overwrite axes if you want the plot to be on the figure instantiated by the caller.
-        if ax is None:  # Create new figure and axes
-            fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        else:  # Otherwise use what is passed
-            axes = np.asarray(ax)
-
-        # Flatten array for more readable code
-        axes = axes.T.flat
-
-        if u_names:
-            df_freq["INPUT"].loc[:, u_names].plot(
-                subplots=True,
-                grid=True,
-                color=line_color_input,
-                linestyle=linestyle_input,
-                alpha=alpha_input,
-                legend=u_names,
-                title=u_titles,
-                ax=axes[range_in],
+            fig = _plot_abs_angle(
+                df_freq,
+                signals_tpl,
+                grid,
+                linecolors_tpl,
+                ylabels_tpl,
+                labels_tpl,
+                linestyles_tpl,
+                alpha_fg,
+                alpha_bg,
+            )
+        else:
+            fig = self._plot_actual(
+                df_freq,
+                signals_tpl,
+                grid,
+                linecolors_tpl,
+                ylabels_tpl,
+                labels_tpl,
+                linestyles_tpl,
+                alpha_fg,
+                alpha_bg,
             )
 
-        if y_names:
-            df_freq["OUTPUT"].loc[:, y_names].plot(
-                subplots=True,
-                grid=True,
-                color=line_color_output,
-                linestyle=linestyle_output,
-                alpha=alpha_output,
-                secondary_y=secondary_y,
-                legend=y_names,
-                title=y_titles,
-                ax=axes[range_out],
+        # Title
+        fig.suptitle(
+            f"Dataset '{self.name}' {kind} spectrum. \n {linecolor_input} lines are inputs and {linecolor_output} lines are outputs."
+        )
+        #
+
+        # Adjust fig size and layout
+        nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
+        ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
+        if kind == "amplitude":
+            fig.set_size_inches(
+                ncols * ax_width * 2, nrows * ax_height * 2 + 1.25
             )
+        else:
+            fig.set_size_inches(ncols * ax_width, nrows * ax_height + 1.25)
+        fig.set_layout_engine(layout)
 
-        # Set ylabels
-        # input
-        for ii, unit in enumerate(u_units):
-            if kind == "power":
-                axes[ii].set_ylabel(f"({unit}**2)")
-            elif kind == "psd":
-                axes[ii].set_ylabel(f"({unit}**2/Hz)")
-            elif kind == "amplitude":
-                axes[2 * ii].set_ylabel(f"({unit})")
-                axes[2 * ii + 1].set_ylabel("(rad)")
-
-        # Output
-        if not sorted(u_units) == sorted(y_units):
-            for jj, unit in enumerate(y_units):
-                if overlap:
-                    if kind == "power":
-                        axes[jj].right_ax.set_ylabel(f"({unit}**2)")
-                        axes[jj].right_ax.grid(None, axis="y")
-                    elif kind == "psd":
-                        axes[jj].right_ax.set_ylabel(f"({unit}**2/Hz)")
-                        axes[jj].right_ax.grid(None, axis="y")
-                    elif kind == "amplitude":
-                        axes[2 * jj].right_ax.set_ylabel(f"({unit})")
-                        axes[2 * jj].right_ax.grid(None, axis="y")
-                        axes[2 * jj + 1].set_ylabel("(rad)")
-                        axes[2 * jj + 1].right_ax.grid(None, axis="y")
-
-                else:
-                    if kind == "power":
-                        axes[p + jj].set_ylabel(f"({unit}**2)")
-                    elif kind == "psd":
-                        axes[p + jj].set_ylabel(f"({unit}**2/Hz)")
-                    elif kind == "amplitude":
-                        axes[p + 2 * jj].set_ylabel(f"({unit})")
-                        axes[p + 2 * jj + 1].set_ylabel("(rad)")
-
-        # Set xlabel
-        for ii in range(ncols):
-            axes[nrows - 1 :: nrows][ii].set_xlabel(df_freq.index.name)
-
-        plt.suptitle(f"{kind.capitalize()} spectrum.")
-
-        # Tight figure if no ax is passed (e.g. from compare_datasets())
-        # if ax is None:
-        #    fig.tight_layout()
-
-        # Save and return
-        if save_as is not None:
-            save_plot_as(fig, axes, save_as)
-
-        return axes.base
+        return fig
 
     def remove_means(
         self,
@@ -1747,9 +2117,13 @@ class Dataset:
             the input signals in the dataset.
         """
         # Arguments validation
-        u_names, y_names, u_units, y_units, _, _ = self._classify_signals(
-            *signals
-        )
+        u_dict, y_dict = self._classify_signals(*signals)
+
+        u_names = list(u_dict.keys())
+        y_names = list(y_dict.keys())
+
+        u_units = list(u_dict.values())
+        y_units = list(y_dict.values())
 
         # Safe copy
         ds_temp = deepcopy(self)
@@ -1799,20 +2173,24 @@ class Dataset:
             in the dataset.
             The *offset* parameter is the value to remove to the *name* signal.
         """
-
+        # TODO: can be refactored
         # Safe copy
         ds_temp = deepcopy(self)
         df_temp = ds_temp.dataset
 
         # Validate passed arguments
         (
-            u_names,
-            y_names,
-            u_units,
-            y_units,
+            u_dict,
+            y_dict,
             u_list,
             y_list,
         ) = self._validate_name_value_tuples(*signals_values)
+
+        u_names = list(u_dict.keys())
+        y_names = list(y_dict.keys())
+
+        u_units = list(u_dict.values())
+        y_units = list(y_dict.values())
 
         # First adjust the input columns
         if u_list:
@@ -1836,7 +2214,6 @@ class Dataset:
             )
 
         df_temp.round(NUM_DECIMALS)
-        # ds_temp.dataset.loc[:, :] = df_temp.to_numpy().round(NUM_DECIMALS)
 
         return ds_temp
 
@@ -1853,6 +2230,7 @@ class Dataset:
 
         The low-pass filter is first-order IIR filter.
 
+
         Parameters
         ----------
         *signals:
@@ -1863,33 +2241,39 @@ class Dataset:
             filter whose cutoff frequency is specified by the *cutoff_frequency*
             parameter.
 
-
-        Raises
-        ------
-        TypeError
-            If no arguments are passed.
-        ValueError
-            If any of the passed cut-off frequencies is negative.
         """
+        #  Raises
+        #  ------
+        #  TypeError
+        #      If no arguments are passed.
+        #  ValueError
+        #      If any of the passed cut-off frequencies is negative.
+
+        # TODO: can be refactored
         # Safe copy
         ds_temp = deepcopy(self)
         df_temp = ds_temp.dataset
 
         # Validate passed arguments
         (
-            u_names,
-            y_names,
-            u_units,
-            y_units,
+            u_dict,
+            y_dict,
             u_list,
             y_list,
         ) = self._validate_name_value_tuples(*signals_values)
+
+        u_names = list(u_dict.keys())
+        y_names = list(y_dict.keys())
+
+        u_units = list(u_dict.values())
+        y_units = list(y_dict.values())
 
         # Sampling frequency
         fs = 1 / (ds_temp.dataset.index[1] - ds_temp.dataset.index[0])
         N = len(ds_temp.dataset.index)
 
         # INPUT LPF
+        # TODO: Here you may want to refactor a bit.
         if u_list:
             u_fc = [u[1] for u in u_list]
             if any(u_val < 0 for u_val in u_fc):
@@ -1943,8 +2327,8 @@ class Dataset:
         Note
         ----
         If you need to heavily manipulate your signals, it is suggested
-        to dump the Dataset into Signals, manipulate them,
-        and then create a brand new Dataset.
+        to dump the Dataset into Signals through :py:meth:`~dymoval.dataset.dump_to_signals()`,
+        manipulate them, and then create a brand new Dataset.
 
 
         Warning
@@ -1961,12 +2345,11 @@ class Dataset:
             Additional keyword arguments to pass as keywords arguments to
             the underlying pandas DataFrame *apply* method.
 
-
-        Raises
-        ------
-        ValueError:
-            If the passed signal name does not exist in the current Dataset.
         """
+        #  Raises
+        #  ------
+        #  ValueError:
+        #      If the passed signal name does not exist in the current Dataset.
 
         # Safe copy
         ds_temp = deepcopy(self)
@@ -1978,7 +2361,6 @@ class Dataset:
         )
         a, b, c = zip(*signal_function)
         passed_names = list(a)
-        print(passed_names)
         names_not_found = difference_lists_of_str(
             passed_names, available_names
         )  # noqa
@@ -2018,7 +2400,7 @@ class Dataset:
             ds_temp.dataset.columns = new_idx
 
         # Update the coverage
-        ds_temp.coverage = self._init_dataset_coverage(ds_temp.dataset)
+        ds_temp.coverage = self._find_dataset_coverage()
 
         return ds_temp
 
@@ -2080,16 +2462,14 @@ class Dataset:
         return self._add_signals(kind, *signals)
 
     def remove_signals(self, *signals: str) -> Dataset:
-        """Remove signals from dataset.
+        """Remove signals from dataset."""
 
-
-        Raises
-        ------
-        KeyError:
-            If signal(s) not found in the *Dataset* object.
-        KeyError:
-            If the reminder Dataset object has less than one input or one output.
-        """
+        #  Raises
+        #  ------
+        #  KeyError:
+        #      If signal(s) not found in the *Dataset* object.
+        #  KeyError:
+        #      If the reminder Dataset object has less than one input or one output.
 
         ds = deepcopy(self)
 
@@ -2137,14 +2517,43 @@ class Dataset:
 # ====================================================
 # Useful functions
 # ====================================================
+
+
+def _list_to_structured_list_of_tuple(
+    tpl: list[tuple[str, ...]], lst: list[str]
+) -> list[tuple[str, ...]]:
+
+    # Convert a plain list to a list of tuple of a given structure, i.e.
+    # Given tpl = [("a0","a1"),("b0",),("b1","a1","b0"),("a0","a1"),("b0",)]
+    # and lst = ["u0", "u1", "u2", "u3", "u4", "u5", "u6", "u7" , "u8"]
+    # it returns [("u0", "u1"), ("u2",), ("u3", "u4", "u5"), ("u6", "u7") , ("u8",)]
+    R = []
+    idx = 0
+    for ii in [len(jj) for jj in tpl]:
+        R.append(tuple(lst[idx : idx + ii]))
+        idx += ii
+    return R
+
+
 def change_axes_layout(
     fig: matplotlib.axes.Figure,
-    axes: matplotlib.axes.Axes,
     nrows: int,
     ncols: int,
 ) -> tuple[matplotlib.axes.Figure, matplotlib.axes.Axes]:
-    """Change *Axes* layout of an existing Matplotlib *Figure*."""
+    """Change *Axes* layout of an existing Matplotlib *Figure*.
 
+
+    Parameters
+    ----------
+    fig:
+        Reference figure.
+    nrwos:
+        New number or rows.
+    ncols:
+        New number of columns
+    """
+
+    axes = fig.get_axes()
     old_nrows: int = axes.shape[0]
     old_ncols: int = axes.shape[1]
     # Remove all old axes
@@ -2178,20 +2587,20 @@ def validate_signals(*signals: Signal) -> None:
     *signal :
         Signal to be validated.
 
-    Raises
-    ------
-    ValueError
-        If values is not a *1-D numpy ndarray*,
-        or if sampling period must positive or the signals *time_unit* keys are
-        not the same.
-    KeyError
-        If signal attributes are not found or not allowed or if signal names are
-        not unique,
-    IndexError
-        If signal have less than two samples.
-    TypeError
-        If values is not a *1-D numpy ndarray*, or if sampling period is not a *float*.
     """
+    #  Raises
+    #  ------
+    #  ValueError
+    #      If values is not a *1-D numpy ndarray*,
+    #      or if sampling period must positive or the signals *time_unit* keys are
+    #      not the same.
+    #  KeyError
+    #      If signal attributes are not found or not allowed or if signal names are
+    #      not unique,
+    #  IndexError
+    #      If signal have less than two samples.
+    #  TypeError
+    #      If values is not a *1-D numpy ndarray*, or if sampling period is not a *float*.
 
     # Name unicity
     signal_names = [s["name"] for s in signals]
@@ -2262,6 +2671,7 @@ def validate_dataframe(
     - Both the index values and the column values must be *float* and the index values
       must be a a 1D vector of monotonically, equi-spaced, increasing *floats*.
 
+
     Parameters
     ----------
     df :
@@ -2270,12 +2680,11 @@ def validate_dataframe(
         List of input signal names.
     y_names :
         List of output signal names.
-
-    Raises
-    ------
-    Error:
-        Depending on the issue found an appropriate error will be raised.
     """
+    #  Raises
+    #  ------
+    #  Error:
+    #      Depending on the issue found an appropriate error will be raised.
     # ===================================================================
     # Checks performed: Read below
     # ===================================================================
@@ -2370,11 +2779,25 @@ def validate_dataframe(
         raise TypeError("Elements of the DataFrame must be float.")
 
 
-def plot_signals(
-    *signals: Signal,
-) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
-    """
-    Plot :py:class:`Signals <dymoval.dataset.Signal>`.
+def plot_signals(*signals: Signal) -> matplotlib.figure.Figure:
+    """Plot :py:class:`Signals <dymoval.dataset.Signal>`.
+
+
+
+    Note
+    ----
+    You are free to manipulate the returned figure as you want by using any
+    method of the class `matplotlib.figure.Figure`.
+    Please, refer to *matplotlib* docs for more info.
+
+
+    Example
+    -------
+    >>> fig = ds.plot() # ds is a dymoval Dataset
+    >>> fig.set_size_inches(10,5)
+    >>> fig.set_layout_engine("constrained")
+    >>> fig.savefig("my_plot.svg")
+
 
     Parameters
     ----------
@@ -2407,18 +2830,38 @@ def plot_signals(
         ax[ii].set_ylabel(f"({s['signal_unit']})")
 
     fig.suptitle("Raw signals.")
-    # fig.tight_layout()
 
-    return fig, ax.base
+    for ii in range(n, len(ax)):
+        ax[ii].remove()
+
+    return fig
 
 
 def compare_datasets(
     *datasets: Dataset,
     kind: Literal["time", "coverage"] | Spectrum_type = "time",
-) -> None:
+    layout: Literal["constrained", "compressed", "tight", "none"] = "tight",
+    ax_height: float = 1.8,
+    ax_width: float = 4.445,
+) -> matplotlib.figure.Figure:
     """
     Compare different :py:class:`Datasets <dymoval.dataset.Dignal>` graphically
     by overlapping them.
+
+
+    Note
+    ----
+    You are free to manipulate the returned figure as you want by using any
+    method of the class `matplotlib.figure.Figure`.
+    Please, refer to *matplotlib* docs for more info.
+
+
+    Example
+    -------
+    >>> fig = ds.plot() # ds is a dymoval Dataset
+    >>> fig.set_size_inches(10,5)
+    >>> fig.set_layout_engine("constrained")
+    >>> fig.savefig("my_plot.svg")
 
 
     Parameters
@@ -2435,7 +2878,6 @@ def compare_datasets(
         # or other matplotlib Artist (an Artist is everything you can draw
         # on a figure)
 
-        axes = axes.T.flat
         for ii, ax in enumerate(axes):
             handles, labels = ax.get_legend_handles_labels()
             # print(handles)
@@ -2451,152 +2893,80 @@ def compare_datasets(
 
     def _arrange_fig_axes(
         *dfs: pd.DataFrame,
-    ) -> tuple[matplotlib.axes.Figure, matplotlib.axes.Axes, int, int]:
+    ) -> tuple[matplotlib.axes.Figure, matplotlib.gridspec.GridSpec]:
         # When performing many plots on the same figure,
-        # it find the largest number of axes needed
-
-        # Find the larger dataset
-        p_max = max([len(df["INPUT"].columns) for df in dfs])
-        q_max = max([len(df["OUTPUT"].columns) for df in dfs])
-        n = p_max + q_max
+        # this function find number of axes needed
+        # n is the number of total signals, no matter if they are INPUT or OUTPUT
+        n = max(
+            [
+                len(
+                    df.droplevel(level="kind", axis=1).columns.get_level_values(
+                        "names"
+                    )
+                )
+                for df in dfs
+            ]
+        )
 
         # Set nrows and ncols
-        nrows, ncols = factorize(n)
+        fig = plt.figure()
+        nrows, ncols = factorize(n)  # noqa
+        grid = fig.add_gridspec(nrows, ncols)
 
-        # Create a unified figure
-        fig, ax = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        return fig, ax, p_max, q_max
+        return fig, grid
 
     # ========================================
-    #    MAIN IMPLEMENTATION
+    #    Main implementation
     # ========================================
-    # arguments validation
+    # Small check
     for ds in datasets:
         if not isinstance(ds, Dataset):
             raise TypeError("Input must be a dymoval Dataset type.")
 
+    # Arrange figure
+    dfs = [ds.dataset.droplevel(level="units", axis=1) for ds in datasets]
+    fig, grid = _arrange_fig_axes(*dfs)
+    cmap = plt.get_cmap(COLORMAP)
+
     # ========================================
-    # time comparison
+    #   Switch case
     # ========================================
-    if kind == "time" or kind == "all":
-
-        # Arrange figure
-        # Accumulate all the dataframes at signal_name level
-        dfs = [ds.dataset.droplevel(level="units", axis=1) for ds in datasets]
-        fig_time, axes_time, p_max, _ = _arrange_fig_axes(*dfs)
-
-        # Revert axes.ndarray to flatirr
-        # axes_time = axes_time.T.flat
-
+    if kind == "time":
         # All the plots made on the same axis
-        cmap = plt.get_cmap(COLORMAP)
         for ii, ds in enumerate(datasets):
-            axes_time = ds.plot(
-                line_color_input=cmap(ii),
-                line_color_output=cmap(ii),
-                ax=axes_time,
-                p_max=p_max,
+            ds.plot(
+                linecolor_input=cmap(ii),
+                linecolor_output=cmap(ii),
+                _grid=grid,
             )
-
-        # Adjust legend
-        ds_names = [ds.name for ds in datasets]
-        _adjust_legend(ds_names, axes_time)
-        fig_time.suptitle("Dataset comparison")
-        # fig_time.tight_layout()
-
-    # ========================================
-    # coverage comparison
-    # ========================================
-    if kind == "coverage" or kind == "all":
-
-        dfs = [ds.dataset.droplevel(level="units", axis=1) for ds in datasets]
-
-        # The following is a bit of code repetition but I could not come
-        # with a better idea.
-
-        # INPUT
-        p_max = max([len(df["INPUT"].columns) for df in dfs])
-        nrows, ncols = factorize(p_max)
-        fig_cov_in, ax_cov_in = plt.subplots(nrows, ncols, squeeze=False)
-        ax_cov_in = ax_cov_in.T.flat
-
-        # OUTPUT
-        q_max = max([len(df["OUTPUT"].columns) for df in dfs])
-        nrows, ncols = factorize(q_max)
-        fig_cov_out, ax_cov_out = plt.subplots(nrows, ncols, squeeze=False)
-
-        # Actual plot
-        cmap = plt.get_cmap(COLORMAP)  # noqa
+    elif kind == "coverage":
         for ii, ds in enumerate(datasets):
-            axes_cov_in, axes_cov_out = ds.plot_coverage(
-                line_color_input=cmap(ii),
-                line_color_output=cmap(ii),
-                ax_in=ax_cov_in,
-                ax_out=ax_cov_out,
+            ds.plot_coverage(
+                linecolor_input=cmap(ii),
+                linecolor_output=cmap(ii),
+                _grid=grid,
             )
-
-        # Adjust input legend
-        ds_names = [ds.name for ds in datasets]
-        _adjust_legend(ds_names, axes_cov_in)
-        _adjust_legend(ds_names, axes_cov_out)
-
-        fig_cov_in.suptitle("Dataset comparison")
-        fig_cov_out.suptitle("Dataset comparison")
-
-        # fig_cov_in.tight_layout()
-        # fig_cov_out.tight_layout()
-
-    # ========================================
-    # frequency comparison
-    # ========================================
-    if kind in SPECTRUM_KIND or kind == "all":
-        # plot_spectrum won't accept kind = "all"
-        if kind == "all":
-            kind = "power"
-
-        # Arrange figure
-        # Accumulate all the dataframes at signal_name level
-        dfs = [ds.dataset.droplevel(level="units", axis=1) for ds in datasets]
-        fig_freq, axes_freq, p_max, _ = _arrange_fig_axes(*dfs)
-        # axes_freq = axes_freq.T.flat
-
-        if kind == "amplitude":
-            nrows_old: int = axes_freq.shape[0]
-            ncols_old: int = axes_freq.shape[1]
-
-            # Due to (abs,angle) we need to double the number of axes
-            nrows, ncols = factorize(2 * nrows_old * ncols_old)
-
-            # To have the phase plot below the abs plot, then the number
-            # of rows must be an even number, otherwise the plot got screwed.
-            # OBS: the same code is in plot_spectrum()
-            if np.mod(nrows, 2) != 0:
-                nrows -= 1
-                ncols += int(np.ceil(ncols / nrows))
-
-            fig_freq, axes_freq = change_axes_layout(
-                fig_freq, axes_freq, nrows, ncols
-            )
-            # axes_freq = axes_freq.T.flat
-
-        # All datasets plots on the same axes
-        cmap = plt.get_cmap(COLORMAP)  # noqa
+    else:
         for ii, ds in enumerate(datasets):
-            axes_freq = ds.plot_spectrum(
-                line_color_input=cmap(ii),
-                line_color_output=cmap(ii),
-                ax=axes_freq,
-                # p_max=p_max,
-                kind=kind,  # type:ignore
+            ds.plot_spectrum(
+                linecolor_input=cmap(ii),
+                linecolor_output=cmap(ii),
+                _grid=grid,
+                kind=kind,
             )
 
-        # Adjust legend
-        ds_names = [ds.name for ds in datasets]
-        _adjust_legend(ds_names, axes_freq)
-        fig_freq.suptitle("Dataset comparison")
-        # fig_freq.tight_layout()
+    # Adjust legend
+    ds_names = [ds.name for ds in datasets]
+    _adjust_legend(ds_names, fig.get_axes())
+    fig.suptitle(f"Dataset comparison in {kind}.")
 
+    # Adjust fig size and layout
+    nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
+    ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
+    if kind == "amplitude":
+        fig.set_size_inches(ncols * ax_width * 2, nrows * ax_height * 2 + 1.25)
+    else:
+        fig.set_size_inches(ncols * ax_width, nrows * ax_height + 1.25)
+    fig.set_layout_engine(layout)
 
-# def analyze_inout_dataset(df):
-# -	Remove trends. Cannot do.
-# -	(Resample). One line of code with pandas
+    return fig

@@ -12,7 +12,6 @@ from .config import *  # noqa
 from .utils import *  # noqa
 from .dataset import *  # noqa
 from typing import TypedDict, Literal
-from itertools import product
 
 
 class XCorrelation(TypedDict):
@@ -383,10 +382,11 @@ class ValidationSession:
         self,
         # Cam be a positional or a keyword arg
         list_sims: str | list[str] | None = None,
-        *,
         dataset: Literal["in", "out", "both"] | None = None,
-        save_as: str | None = None,
-    ) -> matplotlib.axes.Axes:
+        layout: Literal["constrained", "compressed", "tight", "none"] = "tight",
+        ax_height: float = 1.8,
+        ax_width: float = 4.445,
+    ) -> matplotlib.figure.Figure:
         """Plot the stored simulation results.
 
         Possible values of the parameters describing the plot aesthetics,
@@ -394,6 +394,22 @@ class ValidationSession:
         are the same for the corresponding *plot* function of *matplotlib*.
 
         See *matplotlib* docs for more information.
+
+
+        Note
+        ----
+        You are free to manipulate the returned figure as you want by using any
+        method of the class `matplotlib.figure.Figure`.
+        Please, refer to *matplotlib* docs for more info.
+
+
+        Example
+        -------
+        >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig.set_size_inches(10,5)
+        >>> fig.set_layout_engine("constrained")
+        >>> fig.savefig("my_plot.svg")
+
 
         Parameters
         ----------
@@ -406,11 +422,19 @@ class ValidationSession:
             - **out**: dataset only the output signals of the dataset.
             - **both**: dataset both the input and the output signals of the dataset.
 
-        save_as:
-            Save the figure with a specified name.
-            The figure is automatically resized with a 16:9-like aspect ratio.
-            You must specify the complete *filename*, including the path.
+        layout:
+            Figure layout.
+        ax_height:
+            Approximative height (inches) of each subplot.
+        ax_width:
+            Approximative width (inches) of each subplot.
         """
+        # TODO: could be refactored
+        # It uses the left axis for the simulation results and the dataset output.
+        # If the dataset input is overlapped, then we use the right axes.
+        # However, if the number of inputs "p" is greater than the number of
+        # outputs "q", we use the left axes of the remaining p-q axes since
+        # there is no need to create a pair of axes only for one extra signal.
 
         # ================================================================
         # Validate and arange the plot setup.
@@ -434,162 +458,169 @@ class ValidationSession:
                 )
 
         # Now we start
+        vs = self
         ds_val = self.Dataset
         df_val = ds_val.dataset
         df_sim = self.simulations_results
-        q = len(df_val["OUTPUT"].columns.get_level_values("names"))
         p = len(df_val["INPUT"].columns.get_level_values("names"))
-        u_units = df_val["INPUT"].columns.get_level_values("units")
-        y_units = df_val["OUTPUT"].columns.get_level_values("units")
-
-        if dataset == "in" or dataset == "both":
-            secondary_y = True
-        else:
-            secondary_y = False
-
+        q = len(df_val["OUTPUT"].columns.get_level_values("names"))
         # ================================================================
-        # Start the plot.
+        # Arrange the figure
         # ================================================================
         # Arange figure
+        fig = plt.figure()
         cmap = plt.get_cmap(COLORMAP)
         if dataset == "in" or dataset == "both":
             n = max(p, q)
         else:
             n = q
         nrows, ncols = factorize(n)  # noqa
+        grid = fig.add_gridspec(nrows, ncols)
+        # Set a dummy initial axis
+        axes = fig.add_subplot(grid[0])
 
-        # Plot the simulations output signals
-        fig, axes = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
-        axes = axes.T.flat
-        for ii, sim_name in enumerate(list_sims):
-            # Scan simulation names.
-            df_sim.loc[:, sim_name].plot(
-                subplots=True,
-                grid=True,
-                ax=axes[0:q],
-                secondary_y=secondary_y,
-                color=cmap(ii),
-                title="Simulations results.",
-            )
+        # ================================================================
+        # Start the simulations plots
+        # ================================================================
+        # Iterate through all the simulations
+        sims = list(vs.simulations_names())
+        for kk, sim in enumerate(sims):
+            signals_units = vs.simulation_signals_list(sim)
+            for ii, s in enumerate(signals_units):
+                if kk > 0:
+                    # Second (and higher) roundr of simulations
+                    axes = fig.get_axes()[ii]
+                else:
+                    axes = fig.add_subplot(grid[ii], sharex=axes)
+                # Actual plot
+                # labels = columns names
+                df_sim.droplevel(level="units", axis=1).loc[
+                    :, (sim, s[0])
+                ].plot(
+                    subplots=True,
+                    grid=True,
+                    color=cmap(kk),
+                    legend=True,
+                    ylabel=f"({s[1]})",
+                    xlabel=f"{df_val.index.name[0]} ({df_val.index.name[1]})",
+                    ax=axes,
+                )
+            # At the end of the first iteration drop the dummmy axis
+            if kk == 0:
+                fig.get_axes()[0].remove()
 
-        #  Plot the out dataset (if requested)
+        # Add output plots if requested
+        # labels = columns names
         if dataset == "out" or dataset == "both":
-            df_val.loc[:, "OUTPUT"].plot(
-                subplots=True,
-                grid=True,
-                color="gray",
-                secondary_y=secondary_y,
-                ax=axes[0:q],
-            )
+            signals_units = df_val["OUTPUT"].columns
+            for ii, s in enumerate(signals_units):
+                axes = fig.get_axes()[ii]
+                df_val.droplevel(level="units", axis=1).loc[
+                    :, ("OUTPUT", s[0])
+                ].plot(
+                    subplots=True,
+                    grid=True,
+                    legend=True,
+                    color="gray",
+                    xlabel=f"{df_val.index.name[0]} ({df_val.index.name[1]})",
+                    ax=axes,
+                )
 
-        # Shade NaN:s areas.
-        ds_val._shade_nans(
-            ds_val._nan_intervals,
-            axes[0:q],
-            list(df_val["OUTPUT"].droplevel(level="units", axis=1).columns),
-            secondary_y=secondary_y,
-            color="k",
-        )
+        # Until now, all the axes are on the left side.
+        # Due to that fig.get_axes() returns a list of all axes
+        # and apparently it is not possible to distinguis between
+        # left and right, it is therefore wise to keep track of the
+        # axes on the left side.
+        # Note that len(axes_l) = q, but only until now.
+        # len(axes_l) will change if p>q as we will place the remaining
+        # p-q inputs on the left side axes to save space.
+        axes_l = fig.get_axes()
 
-        # ==========================================================
-        # Legends, labels, etc
-        # ==========================================================
+        # Get labels and handles needed for the legend in all the
+        # axes on the left side.
+        labels_l = []
+        handles_l = []
+        for axes in axes_l:
+            handles, labels = axes.get_legend_handles_labels()
+            labels_l.append(labels)
+            handles_l.append(handles)
 
-        # Set legend
-        q = len(df_val["OUTPUT"].columns.get_level_values("names"))
-        labels = list(df_sim.droplevel(level="units", axis=1).columns)
+        # ===============================================
+        # Input signal handling.
+        # ===============================================
 
-        # Legend for the dataset
-        if dataset == "out" or dataset == "both":
-            labels += product(
-                [ds_val.name],
-                list(df_val["OUTPUT"].columns.get_level_values("names")),
-            )
-
-        # Legend and titles
-        for ii, ax in enumerate(axes[0:q]):
-            new_labels = labels[ii::q]
-            if secondary_y:
-                handles, _ = ax.right_ax.get_legend_handles_labels()
-                ax.right_ax.legend(handles, new_labels)
-                ax.set_title(f"IN/OUT #{ii+1}")
-            else:
-                handles, _ = ax.get_legend_handles_labels()
-                ax.legend(handles, new_labels)
-                ax.set_title(f"OUTPUT #{ii+1}")
-
-        # Set y-labels
-        for jj, unit in enumerate(y_units):
-            ylabel = f"({unit })"
-            if secondary_y:
-                axes[jj].right_ax.set_ylabel(ylabel)
-            else:
-                axes[jj].set_ylabel(ylabel)
-
-        # Set xlabels
-        xlabel = f"{df_val.index.name[0]} ({df_val.index.name[1]})"  # Time (s)
-        for ii in range((nrows - 1) * ncols, nrows * ncols):
-            axes[ii].set_xlabel(xlabel)
-
-        # ==========================================================
-        # INPUT signal hanling
-        # ==========================================================
         if dataset == "in" or dataset == "both":
-            df_val.loc[:, "INPUT"].plot(
-                subplots=True,
-                grid=True,
-                color="gray",
-                linestyle="--",
-                ax=axes[0:p],
-            )
+            signals_units = df_val["INPUT"].columns
+            for ii, s in enumerate(signals_units):
+                # Add a right axes to the existings "q" left axes
+                if ii < q:
+                    # If there are available axes, then
+                    # add a secondary y_axis to it.
+                    axes = fig.get_axes()[ii]
+                    axes_right = axes.twinx()
+                else:
+                    # Otherwise, create a new "left" axis.
+                    # We do this because there is no need of creating
+                    # a pair of two new axes for just one signal
+                    axes = fig.add_subplot(grid[ii], sharex=axes)
+                    axes_right = axes
+                    # Update the list of axis on the left
+                    axes_l.append(axes)
 
-            # Plot the last details: shade NaN:s areas.
-            ds_val._shade_nans(
-                ds_val._nan_intervals,
-                axes[0:p],
-                list(df_val["INPUT"].droplevel(level="units", axis=1).columns),
-                color="k",
-            )
+                # Plot.
+                df_val.droplevel(level="units", axis=1).loc[
+                    :, ("INPUT", s[0])
+                ].plot(
+                    subplots=True,
+                    color="gray",
+                    linestyle="--",
+                    ylabel=f"({s[1]})",
+                    xlabel=f"{df_val.index.name[0]} ({df_val.index.name[1]})",
+                    ax=axes_right,
+                )
 
-            # Set legend
-            u_names = list(df_val["INPUT"].columns.get_level_values("names"))
-            u_labels = list(product([ds_val.name], u_names))
-            for ii in range(p):
-                axes[ii].legend([f"{u_labels[ii][0], u_labels[ii][1]}"])
+                # get labels for legend
+                handles, labels = axes_right.get_legend_handles_labels()
 
-            # Set leftover titles
-            r = p - q
-            if r > 0:
-                for ii in range(r):
-                    axes[q + ii].set_title(f"INPUT #{q+ii+1}")
-            elif r < 0:
-                for ii in range(-r):
-                    axes[p + ii].set_title(f"OUTPUT #{p+ii+1}")
+                # If there are enough axes, then add an entry to the
+                # existing legend, otherwise append new legend for the
+                # newly added axes.
+                if ii < q:
+                    labels_l[ii] += labels
+                    handles_l[ii] += handles
+                else:
+                    labels_l.append(labels)
+                    handles_l.append(handles)
+                    axes_right.grid(True)
+        # ====================================================
 
-            # Set y_labels
-            for ii, unit in enumerate(u_units):
-                axes[ii].set_ylabel("(" + unit + ")")
+        # Shade NaN:s areas
+        if dataset is not None:
+            ds_val._shade_nans(fig.get_axes())
 
-            # Set grid
-            for jj in range(q):
-                axes[jj].grid(None, axis="y")
+        # Write the legend by considering only the left axes
+        for ii, ax in enumerate(axes_l):
+            ax.legend(handles_l[ii], labels_l[ii])
 
-        # fig.tight_layout()
+        # Title
+        fig.suptitle("Simulations results.")
 
-        # ===============================================================
-        # Save and eventually return figures.
-        # ===============================================================
-        if save_as is not None:
-            save_plot_as(fig, axes, save_as)  # noqa
+        # Adjust fig size and layout
+        nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
+        ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
+        fig.set_size_inches(ncols * ax_width, nrows * ax_height + 1.25)
+        fig.set_layout_engine(layout)
 
-        return axes
+        return fig
 
     def plot_residuals(
         self,
         list_sims: str | list[str] | None = None,
         *,
-        save_as: str | None = None,
-    ) -> tuple[matplotlib.axes.Axes, matplotlib.axes.Axes]:
+        layout: Literal["constrained", "compressed", "tight", "none"] = "tight",
+        ax_height: float = 1.8,
+        ax_width: float = 4.445,
+    ) -> tuple[matplotlib.figure.Figure, matplotlib.figure.Figure]:
         """Plot the residuals.
 
         Parameters
@@ -597,19 +628,33 @@ class ValidationSession:
         list_sims :
             List of simulations.
             If empty, all the simulations are plotted.
-        save_as:
-            Save both figures with a specified name.
-            It appends the suffix *_eps_eps* and *_u_eps* to the residuals
-            auto-correlation and to the input-residuals cross-correlation figure,
-            respectively.
-            The figure is automatically resized with a 16:9 aspect ratio.
-            The *filename* shall include the path.
+        layout:
+            Figures layout.
+        ax_height:
+            Approximative height (inches) of each subplot.
+        ax_width:
+            Approximative width (inches) of each subplot.
 
-        Raises
-        ------
-        KeyError
-            If the requested simulation list is empty.
+
+        Note
+        ----
+        You are free to manipulate the returned figure as you want by using any
+        method of the class `matplotlib.figure.Figure`.
+        Please, refer to *matplotlib* docs for more info.
+
+
+        Example
+        -------
+        >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig.set_size_inches(10,5)
+        >>> fig.set_layout_engine("constrained")
+        >>> fig.savefig("my_plot.svg")
         """
+        # Raises
+        # ------
+        # KeyError
+        #     If the requested simulation list is empty.
+
         # Check if you have any simulation available
         self._sim_list_validate()
         if not list_sims:
@@ -659,7 +704,12 @@ class ValidationSession:
                     ax1[ii, jj].set_title(rf"r_eps{ii}eps_{jj}")
                     ax1[ii, jj].legend()
         fig1.suptitle("Residuals auto-correlation")
-        # fig1.tight_layout()
+
+        # Adjust fig size and layout
+        nrows = fig1.get_axes()[0].get_gridspec().get_geometry()[0]
+        ncols = fig1.get_axes()[0].get_gridspec().get_geometry()[1]
+        fig1.set_size_inches(ncols * ax_width, nrows * ax_height + 1.25)
+        fig1.set_layout_engine(layout)
 
         # ===============================================================
         # Plot input-residuals cross-correlation
@@ -681,18 +731,13 @@ class ValidationSession:
                     ax2[ii, jj].set_title(rf"r_u{ii}eps{jj}")
                     ax2[ii, jj].legend()
         fig2.suptitle("Input-residuals cross-correlation")
-        # fig2.tight_layout()
 
-        if save_as is not None:
-            ax1 = ax1.flat
-            # fig1.set_size_inches(q * width, q * height)
-            save_plot_as(fig1, ax1, save_as + "_eps_eps")  # noqa
-
-            ax2 = ax2.flat
-            # fig2.set_size_inches(q * width, p * height)
-            save_plot_as(fig2, ax2, save_as + "_u_eps")  # noqa
-
-        return ax1, ax2
+        # Adjust fig size and layout
+        nrows = fig2.get_axes()[0].get_gridspec().get_geometry()[0]
+        ncols = fig2.get_axes()[0].get_gridspec().get_geometry()[1]
+        fig2.set_size_inches(ncols * ax_width, nrows * ax_height + 1.25)
+        fig2.set_layout_engine(layout)
+        return fig1, fig2
 
     def simulation_signals_list(self, sim_name: str | list[str]) -> list[str]:
         """
@@ -780,13 +825,13 @@ class ValidationSession:
 
         return vs_temp
 
-    def drop_simulation(self, *args: str) -> ValidationSession:
+    def drop_simulation(self, *sims: str) -> ValidationSession:
         """Drop simulation results from the validation session.
 
 
         Parameters
         ----------
-        *args :
+        *sims :
             Name of the simulations to be dropped.
 
         Raises
@@ -799,7 +844,7 @@ class ValidationSession:
         vs_temp = deepcopy(self)
         vs_temp._sim_list_validate()
 
-        for sim_name in args:
+        for sim_name in sims:
             if sim_name not in vs_temp.simulations_names():
                 raise ValueError(f"Simulation {sim_name} not found.")
             vs_temp.simulations_results = vs_temp.simulations_results.drop(
