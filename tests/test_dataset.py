@@ -968,6 +968,67 @@ class Test_Dataset_raise:
         with pytest.raises(KeyError):
             ds._classify_signals(u_name_test, y_name_test)
 
+    def test_name_unicity(self, good_dataframe: pd.DataFrame) -> None:
+        # Check u_names, y_names arguments passed
+        df, u_names, y_names, u_units, y_units, fixture = good_dataframe
+        u_names_test = u_names
+        y_names_test = y_names
+        if fixture == "SISO":  # If SISO the names are obviously unique.
+            u_names = y_names
+            u_names_test = y_names
+        if fixture == "MISO" or fixture == "MIMO":
+            u_names_test[-1] = u_names_test[-2]
+        if fixture == "SIMO" or fixture == "MIMO":
+            y_names_test[0] = y_names_test[1]
+        # Act & Assert
+        with pytest.raises(ValueError):
+            _ = dmv.Dataset("my_dataset", df, u_names_test, y_names)
+        with pytest.raises(ValueError):
+            _ = dmv.Dataset("my_dataset", df, u_names, y_names_test)
+        with pytest.raises(ValueError):
+            _ = dmv.Dataset("my_dataset", df, u_names_test, y_names_test)
+
+    def test_input_or_output_not_found(
+        self, good_dataframe: pd.DataFrame
+    ) -> None:
+        # Check u_names, y_names arguments passed
+        df, u_names, y_names, u_units, y_units, fixture = good_dataframe
+        u_names_test = u_names
+        y_names_test = y_names
+        if fixture == "SISO":  # If SISO the names are obviously unique.
+            u_names_test = "potato"
+        if fixture == "MISO" or fixture == "MIMO":
+            u_names_test[0] = "potato"
+        if fixture == "SIMO" or fixture == "MIMO":
+            y_names_test[0] = "potato"
+        with pytest.raises(ValueError):
+            _ = dmv.Dataset("my_dataset", df, u_names_test, y_names)
+
+    def test_labels_exist_in_dataframe(
+        self, good_dataframe: pd.DataFrame
+    ) -> None:
+        # Nominal values
+        df, u_names, y_names, u_units, y_units, fixture = good_dataframe
+        if fixture == "SISO":
+            u_names = [u_names]
+            y_names = [y_names]
+        if fixture == "MISO":
+            y_names = [y_names]
+        if fixture == "SIMO":
+            u_names = [u_names]
+        u_names[-1] = "potato"
+        with pytest.raises(ValueError):
+            _ = dmv.Dataset("my_dataset", df, u_names, y_names)
+
+    def test_there_is_at_least_one_in_and_one_out(
+        self, good_dataframe: pd.DataFrame
+    ) -> None:
+        # Check u_names, y_names arguments passed
+        df, u_names, y_names, u_units, y_units, _ = good_dataframe
+
+        with pytest.raises(IndexError):
+            _ = dmv.dataset.Dataset("my_dataset", df, u_names, [])
+
 
 #     THIS WON'T RAISE ANYTHING ANY LONGER'
 #     def test__validate_name_value_tuples_raise(self, good_signals: Any) -> None:
@@ -1367,50 +1428,6 @@ class Test_Signal_validation:
 
 
 class Test_validate_dataframe:
-    def test_there_is_at_least_one_in_and_one_out(
-        self, good_dataframe: pd.DataFrame
-    ) -> None:
-        # Check u_names, y_names arguments passed
-        df, u_names, y_names, u_units, y_units, _ = good_dataframe
-        u_names = []
-        with pytest.raises(IndexError):
-            dmv.validate_dataframe(df, u_names, y_names)
-
-    def test_name_unicity(self, good_dataframe: pd.DataFrame) -> None:
-        # Check u_names, y_names arguments passed
-        df, u_names, y_names, u_units, y_units, fixture = good_dataframe
-        u_names_test = u_names
-        y_names_test = y_names
-        if fixture == "SISO":  # If SISO the names are obviously unique.
-            u_names = y_names
-            u_names_test = y_names
-        if fixture == "MISO" or fixture == "MIMO":
-            u_names_test[-1] = u_names_test[-2]
-        if fixture == "SIMO" or fixture == "MIMO":
-            y_names_test[0] = y_names_test[1]
-        with pytest.raises(ValueError):
-            dmv.validate_dataframe(df, u_names_test, y_names)
-        with pytest.raises(ValueError):
-            dmv.validate_dataframe(df, u_names, y_names_test)
-        with pytest.raises(ValueError):
-            dmv.validate_dataframe(df, u_names_test, y_names_test)
-
-    def test_input_or_output_not_found(
-        self, good_dataframe: pd.DataFrame
-    ) -> None:
-        # Check u_names, y_names arguments passed
-        df, u_names, y_names, u_units, y_units, fixture = good_dataframe
-        u_names_test = u_names
-        y_names_test = y_names
-        if fixture == "SISO":  # If SISO the names are obviously unique.
-            u_names_test = "potato"
-        if fixture == "MISO" or fixture == "MIMO":
-            u_names_test[0] = "potato"
-        if fixture == "SIMO" or fixture == "MIMO":
-            y_names_test[0] = "potato"
-        with pytest.raises(ValueError):
-            dmv.validate_dataframe(df, u_names_test, y_names)
-
     def test_indices_are_tuples_of_str(
         self, good_dataframe: pd.DataFrame
     ) -> None:
@@ -1421,43 +1438,42 @@ class Test_validate_dataframe:
         # Check if columns name type is tuples
         df_test = df.rename(columns={("u1", "kPa"): "potato"})
         with pytest.raises(TypeError):
-            dmv.validate_dataframe(df_test, u_names, y_names)
+            dmv.validate_dataframe(df_test)
 
         # Check if index name type is tuples
         df_test.index.name = "potato"
         with pytest.raises(TypeError):
-            dmv.validate_dataframe(df_test, u_names, y_names)
+            dmv.validate_dataframe(df_test)
 
         # Check if tuples elements are str
         df_test = df.rename(columns={("u1", "kPa"): (3, "kPa")})
         with pytest.raises(TypeError):
-            dmv.validate_dataframe(df_test, u_names, y_names)
+            dmv.validate_dataframe(df_test)
 
         df_test = df.rename(columns={("u1", "kPa"): ("u1", 9)})
         with pytest.raises(TypeError):
-            dmv.validate_dataframe(df_test, u_names, y_names)
+            dmv.validate_dataframe(df_test)
 
         df_test.index.name = "potato"
         with pytest.raises(TypeError):
-            dmv.validate_dataframe(df_test, u_names, y_names)
+            dmv.validate_dataframe(df_test)
 
-    #       This is not needed because in case of multi-index is automatically
-    #       covered by the previous test
-    #     def test_dataframe_one_level_indices(
-    #         self, good_dataframe: pd.DataFrame
-    #     ) -> None:
-    #         # Nominal values
-    #         # Check if you have any MultiIndex
-    #         df, u_names, y_names, u_units, y_units, _ = good_dataframe
-    #         df_test = df
-    #         df_test.columns = pd.MultiIndex.from_product([["potato"], df.columns])
-    #         print("df_test = ", df_test.columns)
-    #         with pytest.raises(IndexError):
-    #             dmv.validate_dataframe(df_test, u_names, y_names)
-    #         df_test = df
-    #         df_test.index = pd.MultiIndex.from_product([["potato"], df.index])
-    #         with pytest.raises(IndexError):
-    #             dmv.validate_dataframe(df_test, u_names, y_names)
+    def test_dataframe_one_level_indices(
+        self, good_dataframe: pd.DataFrame
+    ) -> None:
+        # Nominal values
+        # Check if you have any MultiIndex
+        df, u_names, y_names, u_units, y_units, _ = good_dataframe
+        df_test = df
+        df_test.columns = pd.MultiIndex.from_product([["potato"], df.columns])
+        print("df_test = ", df_test.columns)
+        with pytest.raises(TypeError):
+            dmv.validate_dataframe(df_test)
+        df_test = df
+        df_test.index = pd.MultiIndex.from_product([["potato"], df.index])
+        with pytest.raises(TypeError):
+            dmv.validate_dataframe(df_test)
+
     #
     def test_at_least_two_samples_per_signal(
         self, good_dataframe: pd.DataFrame
@@ -1466,37 +1482,21 @@ class Test_validate_dataframe:
         df, u_names, y_names, u_units, y_units, _ = good_dataframe
         df_test = df.head(1)
         with pytest.raises(IndexError):
-            dmv.validate_dataframe(df_test, u_names, y_names)
-
-    def test_labels_exist_in_dataframe(
-        self, good_dataframe: pd.DataFrame
-    ) -> None:
-        # Nominal values
-        df, u_names, y_names, u_units, y_units, fixture = good_dataframe
-        if fixture == "SISO":
-            u_names = [u_names]
-            y_names = [y_names]
-        if fixture == "MISO":
-            y_names = [y_names]
-        if fixture == "SIMO":
-            u_names = [u_names]
-        u_names[-1] = "potato"
-        with pytest.raises(ValueError):
-            dmv.validate_dataframe(df, u_names, y_names)
+            dmv.validate_dataframe(df_test)
 
     def test_index_monotonicity(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal values
         df, u_names, y_names, u_units, y_units, _ = good_dataframe
         df.index.values[0:2] = df.index[0]
         with pytest.raises(ValueError):
-            dmv.validate_dataframe(df, u_names, y_names)
+            dmv.validate_dataframe(df)
 
     def test_values_are_float(self, good_dataframe: pd.DataFrame) -> None:
         # Nominal values
         df, u_names, y_names, u_units, y_units, _ = good_dataframe
         df.iloc[0:1, 0:1] = "potato"
         with pytest.raises(TypeError):
-            dmv.validate_dataframe(df, u_names, y_names)
+            dmv.validate_dataframe(df)
 
 
 class Test_fix_sampling_periods:

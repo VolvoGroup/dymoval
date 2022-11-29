@@ -20,19 +20,27 @@ from copy import deepcopy
 
 
 class Signal(TypedDict):
-    """*Signals* are used to represent real-world measurements.
+    """
+    :py:class:`Signals <dymoval.dataset.Signal>` are used to represent real-world measurements.
+
 
     They are used to instantiate :py:class:`Dataset <dymoval.dataset.Dataset>` objects.
     Before instantiating a :py:class:`Dataset <dymoval.dataset.Dataset>` object, it is good practice
-    to validate Signals through the :py:meth:`~dymoval.dataset.validate_signals` function.
+    to validate
+    :py:class:`Signals <dymoval.dataset.Signal>`
+    through the :py:meth:`~dymoval.dataset.validate_signals` function.
 
-    Although Signals have compulsory attribtues, there is freedom
+    Although
+    :py:class:`Signals <dymoval.dataset.Signal>`
+    have compulsory attribtues, there is freedom
     to append additional ones.
 
 
     Example
     -------
+    >>> # How to create a simple dymoval Signal
     >>> import dymoval as dmv
+    >>>
     >>> my_signal: dmv.Signal = {
     "name": "speed",
     "values": np.random.rand(100),
@@ -40,12 +48,7 @@ class Signal(TypedDict):
     "sampling_period": 0.1,
     "time_unit": "s",
     }
-    >>> # We create a time vector key for plotting the Signal
-    >>> my_signal["time_vec"] = my_signal["sampling_period"]
-    *np.arange(0,len(my_signal["values"]))
-    >>> # Let's plot
-    >>> plt.plot(my_signal["time_vec"], my_signal["values"])
-    >>> plt.show()
+    >>> dmv.plot_signals(my_signal)
 
 
     Attributes
@@ -63,22 +66,118 @@ class Signal(TypedDict):
 
 
 class Dataset:
-    """The *Dataset* class stores the candidate signals to be used as a dataset
+    """The :py:class:`Dataset <dymoval.dataset.Dataset>` class stores
+    the candidate signals to be used as a dataset
     and it provides methods for analyzing and manipulating them.
 
     A :py:class:`Signal <dymoval.dataset.Signal>` list shall be passed
-    to the initializer along with two lists of labels
-    specifying which signal(s) shall be consiedered
-    as **input** and which signal(s) shall be considered as **output**.
+    to the initializer along with:
 
-    The signals list can be either a list
-    of dymoval :py:class:`Signals <dymoval.dataset.Signal>` type or a
-    pandas DataFrame with a well-defined structure.
+    1. the list of signal names that shall be considered as **input**
+    2. the list of signal names that shall be considered as **output**
 
-    Too see how to create a :py:class:`Signal <dymoval.dataset.Signal>`
-    look at :py:meth:`~dymoval.dataset.validate_signals` method, or look at
-    :py:meth:`~dymoval.dataset.validate_dataframe` to see how to create an
-    appropriate *pandas DataFrame* for instantiating a *Dataset* object.
+    The initializer will attempt to resample all the signals to have
+    the same sampling period.
+    Signals that cannot be resampled will be excluded from the
+    :py:class:`Dataset <dymoval.dataset.Dataset>`
+    and will be stored in the
+    :py:attr:`<dymoval.dataset.Dataset.excluded_signals>`
+    attribute.
+
+    Furthermore, all the signals will be trimmed to have the
+    same length.
+
+    If none of **tin, tout** and **full_time_interval** arguments
+    are passed, then the
+    :py:class:`Dataset <dymoval.dataset.Dataset>`
+    time-interval selection is done graphically.
+
+
+    Example
+    -------
+    >>> # How to create a Dataset object from a list of Signals
+    >>>
+    >>> import numpy as np
+    >>> import dymoval as dmv
+    >>>
+    >>> signal_names = [
+    >>>     "SpeedRequest",
+    >>>     "AccelPedalPos",
+    >>>     "OilTemp",
+    >>>     "ActualSpeed",
+    >>>     "SteeringAngleRequest",
+    >>> ]
+    >>> signal_values = np.random.rand(5, 100)
+    >>> signal_units = ["m/s", "%", "°C", "m/s", "deg"]
+    >>> sampling_periods = [0.1, 0.1, 0.1, 0.1, 0.1]
+    >>> # Create dymoval signals
+    >>> signals = []
+    >>> for ii, val in enumerate(signal_names):
+    >>>     tmp: dmv.Signal = {
+    >>>         "name": val,
+    >>>         "values": signal_values[ii],
+    >>>         "signal_unit": signal_units[ii],
+    >>>         "sampling_period": sampling_periods[ii],
+    >>>         "time_unit": "s",
+    >>>     }
+    >>>     signals.append(tmp)
+    >>> # Validate signals
+    >>> dmv.validate_signals(*signals)
+    >>> # Specify which signals are inputs and which signals are output
+    >>> input_labels = ["SpeedRequest", "AccelPedalPos", "SteeringAngleRequest"]
+    >>> output_labels = ["ActualSpeed", "OilTemp"]
+    >>> # Create dymoval Dataset objects
+    >>> ds = dmv.Dataset("my_dataset", signals, input_labels, output_labels)
+    >>>
+    >>> # At this point you can plot, trim, manipulate, analyze, etc you dataset
+    >>> # through the Dataset class methods.
+
+    You can also create :py:class:`Dataset <dymoval.dataset.Dataset>` objects
+    from  *pandas DataFrames* if the DataFrames have a certain structure.
+    Look at :py:meth:`~dymoval.dataset.validate_dataframe`
+    for more information about this option.
+
+
+    Example
+    -------
+    >>> # How to create a Dataset object from a pandas DataFrame
+    >>>
+    >>> import dymoval as dmv
+    >>> import pandas as pd
+    >>>
+    >>> # Signals names, units and values
+    >>> signal_names = [
+    >>>     "SpeedRequest",
+    >>>     "AccelPedalPos",
+    >>>     "OilTemp",
+    >>>     "ActualSpeed",
+    >>>     "SteeringAngleRequest",
+    >>> ]
+    >>> signal_units = ["m/s", "%", "°C", "m/s", "deg"]
+    >>> signal_values = np.random.rand(100, 5)
+    >>>
+    >>> # time axis
+    >>> sampling_period = 0.1
+    >>> timestamps = np.arange(0, 10, sampling_period)
+    >>>
+    >>> # Build a candidate DataFrame
+    >>> cols = list(zip(signal_names, signal_units))
+    >>> index_name = ("Time", "s")
+    >>>
+    >>> # Create dymoval signals
+    >>> df = pd.DataFrame(data=signal_values, columns=cols)
+    >>> df.index = pd.Index(data=timestamps, name=index_name)
+    >>>
+    >>> # Check if the dataframe is suitable for a dymoval Dataset
+    >>> dmv.validate_dataframe(df)
+    >>>
+    >>> # Specify input and output signals
+    >>> input_labels = ["SpeedRequest", "AccelPedalPos", "SteeringAngleRequest"]
+    >>> output_labels = ["ActualSpeed", "OilTemp"]
+    >>>
+    >>> # Create dymoval Dataset objects
+    >>> ds = dmv.Dataset("my_dataset", df, input_labels, output_labels)
+
 
 
     Parameters
@@ -86,17 +185,17 @@ class Dataset:
     name:
         Dataset name.
     signal_list :
-        Signals to be included in the :py:class:`Dataset <dymoval.dataset.Dataset>`.
+        Signals to be included in the :py:class:`Dataset <dymoval.dataset.Dataset>` object.
     u_names :
         List of input signal names. Each signal name must be unique and must be
-        contained in the passed **signal_list**.
+        contained in the passed **signal_list** names.
     y_names :
         List of input signal names. Each signal name must be unique and must be
-        contained in the passed **signal_list**.
+        contained in the passed **signal_list** names.
     target_sampling_period :
         The passed signals will be re-sampled at this sampling period.
         If some signal could not be resampled, then its name will be added in the
-        :py:attr:`~dymoval.dataset.Dataset.excluded_signals` list.
+        :py:attr:`~dymoval.dataset.Dataset.excluded_signals` attr.
     tin :
         Initial time instant of the :py:class:`Dataset <dymoval.dataset.Dataset>`.
     tout :
@@ -109,16 +208,13 @@ class Dataset:
         This is overriden if the parameters **tin** and **tout** are specified.
     overlap :
         If *True* it will overlap the input and output signals plots
-        if the *Dataset* time interval is done graphically.
+        in the
+        :py:class:`Dataset <dymoval.dataset.Dataset>`
+        time interval graphical selection.
         The units of the outputs are displayed on the secondary y-axis.
     verbosity:
         Display information depending on its level.
         Higher numbers correspond to higher verbosity.
-
-
-    Example
-    >>>
-
     """
 
     #  Raises
@@ -329,14 +425,52 @@ class Dataset:
         # self.sampling_period
         #
         # ==============================================================
+        #
+        # =============== Arguments validation ========================
+        validate_dataframe(df)
 
-        # Arguments validation
         if tin and tout and tin > tout:
             raise ValueError(
                 f" Value of tin ( ={tin}) shall be smaller than the value of tout ( ={tout})."
             )
-        # TODO: CHECK IF THE NAMES ARE IN THE AVAIL NAMES
 
+        # If the user passes a str cast into a list[str]
+        u_names = str2list(u_names)
+        y_names = str2list(y_names)
+        # Check that you have at least one input and one output
+        if not u_names or not y_names:
+            raise IndexError(
+                "You need at least one input and one output signal. "
+                "Check 'u_names' and 'y_names'."
+            )
+
+        # Check unicity of signal names
+        if (
+            len(u_names) != len(set(u_names))
+            or len(y_names) != len(set(y_names))
+            or (set(u_names) & set(y_names))  # Non empty intersection
+        ):
+            raise ValueError(
+                "Signal names must be unique. Check 'u_names' and 'y_names'."
+            )
+
+        # Check if u_names and y_names exist in the passed DataFrame
+        available_names, available_units = list(zip(*df.columns))
+        available_names = list(available_names)
+        input_not_found = difference_lists_of_str(
+            u_names, available_names
+        )  # noqa
+        if input_not_found:
+            raise ValueError(f"Input(s) {input_not_found} not found.")
+        # Check output
+        output_not_found = difference_lists_of_str(
+            y_names, available_names
+        )  # noqa
+        if output_not_found:
+            raise ValueError(f"Output(s) {output_not_found} not found.")
+        # ================== End of validation =======================
+
+        # ================= Start to fill in attributes =========
         # NOTE: You have to use the #: to add a doc description
         # in class attributes (see sphinx.ext.autodoc)
         # Set easy-to-set attributes
@@ -351,14 +485,11 @@ class Dataset:
         # in this case shall be sampled with the same sampling period).
         self.excluded_signals = _excluded_signals
         """Signals that could not be re-sampled."""
-        # If the user passes a str cast into a list[str]
-        u_names = str2list(u_names)
-        y_names = str2list(y_names)
+        # ==================================================
 
         # Keep only the signals specified by the user and respect the order
         # This is helpful in case the df is automatically imported e.g.
         # from a large csv but we only want few signals
-        #
         # Filter columns
         u_cols = [u for u in df.columns if u[0] in u_names]
         y_cols = [y for y in df.columns if y[0] in y_names]
@@ -368,14 +499,11 @@ class Dataset:
         y_cols.sort(key=lambda x: y_names.index(x[0]))
         df = df.reindex(columns=u_cols + y_cols)
 
-        # Now we can validae the resulting dataframe
-        validate_dataframe(df, u_names, y_names)
-
         # Fix data and index
         data = df.to_numpy()
         index = df.index
 
-        # Adjust column multiIndex
+        # Adjust column MultiIndex
         u_units = [u[1] for u in df.columns if u[0] in u_names]
         u_kind = ["INPUT"] * len(u_names)
         u_multicolumns = list(zip(u_kind, u_names, u_units))
@@ -515,10 +643,6 @@ class Dataset:
             data=df_data,
             columns=columns_tuples,
         )
-
-        # Add some robustness: we validate the built DataFrame, even if
-        # it should be correct by construction.
-        validate_dataframe(df, u_names=u_names, y_names=y_names)
 
         # Call the initializer from DataFrame to get a Dataset object.
         self._new_dataset_from_dataframe(
@@ -976,23 +1100,26 @@ class Dataset:
         **kwargs: Any,
     ) -> Dataset:
         """
-        Trim the Dataset instance.
+        Trim the Dataset
+        :py:class:`Dataset <dymoval.dataset.Dataset>` object.
 
-        if not *tin* or *tout* are passed, then the selection will
-        be made graphically.
+        If not *tin* or *tout* are passed, then the selection is
+        made graphically.
 
         Parameters
         ----------
         *signals :
             Signals to be plotted in case of trimming from a plot.
         tin :
-            Initial time for trimming.
+            Initial time of the desired time interval
         tout :
-            Final time for trimming.
+            Final time of the desired time interval.
         verbosity :
             Depending on its level, more or less info is displayed.
+            The higher the value, the higher is the verbosity.
         **kwargs:
-            kwargs to be passed to the plot() method.
+            kwargs to be passed to the
+            :py:meth:`Dataset <dymoval.dataset.Dataset.plot>` method.
 
         """
         # We have to trim the signals to have a meaningful dataset
@@ -1107,8 +1234,7 @@ class Dataset:
 
     def dataset_values(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
-        Return the dataset values as a tuple of *numpy ndarrays* corresponding
-        to the tuple *(t,u,y)*.
+        Return the dataset values as a tuple *(t,u,y)* of *numpy ndarrays*.
 
         Returns
         -------
@@ -1166,7 +1292,7 @@ class Dataset:
 
     def dump_to_signals(self) -> dict[Signal_type, list[Signal]]:
         """Dump a :py:class:`Dataset <dymoval.dataset.Dataset>` object
-        into a list of :py:class:`Dataset <dymoval.dataset.Sigansl>`s objects.
+        into a list of :py:class:`Signals <dymoval.dataset.Signal>` objects.
 
 
         Warning
@@ -1201,11 +1327,7 @@ class Dataset:
         return signal_list
 
     def signal_list(self) -> list[tuple[str, str, str]]:
-        """Plot signal y against signal x.
-
-        It is possible to pass an arbitrary number of tuples of the
-        form *(signal_name_x,signal_name_y).*
-        """
+        """Return the list of signals in form *(["INPUT" | "OUTPUT"], name, unit)*"""
         return list(self.dataset.columns)
 
     def plotxy(
@@ -1220,17 +1342,17 @@ class Dataset:
         """Plot a signal against another signal in a plane (XY-plot).
 
         The *signal_pairs* shall be passed as tuples.
-        If no args is passed then the function will *zip* the input
+        If no *signal_pairs* is passed then the function will *zip* the input
         and output signals.
 
-        You are free to manipulate the returned figure as you want by using any
-        method of the class `matplotlib.figure.Figure`.
-        Please, refer to *matplotlib* docs for more info.
+        The method return a `matplotlib.figure.Figure`, so you can perform further
+        plot manipulations by resorting to the *matplotlib* API.
 
 
         Example
         -------
-        >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig = ds.plotxy() # ds is a dymoval Dataset
+        >>> fig = ds.plotxy(("u1","y3"),("u2","y1"))
         # The following are methods of the class `matplotlib.figure.Figure`
         >>> fig.set_size_inches(10,5)
         >>> fig.set_layout_engine("constrained")
@@ -1316,36 +1438,37 @@ class Dataset:
         ax_height: float = 1.8,
         ax_width: float = 4.445,
     ) -> matplotlib.figure.Figure:
-        """Plot the Dataset.
+        """Plot the
+        :py:class:`Dataset <dymoval.dataset.Dataset>`.
 
         If two signals are passed as a  *tuple*, then they will be placed in the
         same subplot.
-
         For example, if *ds* is a :py:class:`Dataset <dymoval.dataset.Dataset>`
         with signals *s1, s2, ... sn*, then
-        *ds.plot(("s1", "s2"), "s3", "s4")* will plot *s1* and *s2* on the same subplot
-        and it will plot *s3* and "s4" on separate subplots, thus displaying the
-        total of 3 subplots.
+        **ds.plot(("s1", "s2"), "s3", "s4")** will plot *s1* and *s2* on the same subplot
+        and it will plot *s3* and *s4* on separate subplots, thus displaying the
+        total of three subplots.
 
 
         Possible values for the parameters describing the line used in the plot
         (e.g. *linecolor_input* , *alpha_output*. etc).
         are the same for the corresponding plot function in matplotlib.
 
-        You are free to manipulate the returned figure as you want by using any
-        method of the class `matplotlib.figure.Figure`.
-        Please, refer to *matplotlib* docs for more info.
+        The method return a `matplotlib.figure.Figure`, so you can perform further
+        plot manipulations by resorting to the *matplotlib* API.
 
 
         Note
         ----
         It is possible to overlap at most two signals (this to avoid adding too many
-        y-axes).
+        y-axes in the same subplot).
 
 
         Example
         -------
         >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig = ds.plot(("u1","y3"),"y1") # Signals u1 and y3 will be placed
+        # in the same subplot whereas y1 will be placed in another subplot
         # The following are methods of the class `matplotlib.figure.Figure`
         >>> fig.set_size_inches(10,5)
         >>> fig.set_layout_engine("constrained")
@@ -1359,23 +1482,23 @@ class Dataset:
         overlap:
             If *True* overlap input the output signals plots
             pairwise.
-            Eventual passed *signals will be discarded.
+            Eventual signals passed as argument will be discarded.
             The units of the outputs are displayed on the secondary y-axis.
         linecolor_input:
             Line color of the input signals.
         linestyle_fg:
-            Linestyle of the first signals of the tuple
+            Line style of the first signal of the tuple
             if two signals are passed as a tuple.
         alpha_fg:
-            Transparency value of the firt signals of the tuple
+            Transparency value of the first signal of the tuple
             if two signals are passed as a tuple.
         linecolor_output:
             Line color of the output signals.
         linestyle_bg:
-            Linestyle of the second signals of the tuple
+            Line style of the second signal of the tuple
             if two signals are passed as a tuple.
         alpha_bg:
-            Transparency value of the second signals of the tuple
+            Transparency value of the second signal of the tuple
             if two signals are passed as a tuple.
         _grid:
             Grid where the spectrum ploat will be placed *(Used only internally.)*
@@ -1479,16 +1602,17 @@ class Dataset:
         ax_width: float = 4.445,
     ) -> matplotlib.figure.Figure:
         """
-        Plot the dataset coverage as histograms.
+        Plot the dataset
+        :py:class:`Dataset <dymoval.dataset.Dataset>` coverage as histograms.
 
-        You are free to manipulate the returned figure as you want by using any
-        method of the class `matplotlib.figure.Figure`.
-        Please, refer to *matplotlib* docs for more info.
+        The method return a `matplotlib.figure.Figure`, so you can perform further
+        plot manipulations by resorting to the *matplotlib* API.
 
 
         Example
         -------
-        >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig = ds.plot_coverage() # ds is a dymoval Dataset
+        >>> fig = ds.plot_coverage("u1","y3","y1")
         # The following are methods of the class `matplotlib.figure.Figure`
         >>> fig.set_size_inches(10,5)
         >>> fig.set_layout_engine("constrained")
@@ -1610,7 +1734,7 @@ class Dataset:
         self,
         *signals: str,
     ) -> pd.DataFrame:
-        """Return the FFT of the dataset as pandas DataFrame.
+        """Return the *FFT* of the dataset as pandas DataFrame.
 
         It only works with real-valued signals.
 
@@ -1717,14 +1841,15 @@ class Dataset:
         If some signals have *NaN* values, then the FFT cannot be computed and
         an error is raised.
 
-        You are free to manipulate the returned figure as you want by using any
-        method of the class `matplotlib.figure.Figure`.
-        Please, refer to *matplotlib* docs for more info.
+
+        The method return a `matplotlib.figure.Figure`, so you can perform further
+        plot manipulations by resorting to the *matplotlib* API.
 
 
         Example
         -------
-        >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig = ds.plot_spectrum() # ds is a dymoval Dataset
+        >>> fig = ds.plot_spectrum(("u1","y3"),"u2", kind ="amplitude")
         # The following are methods of the class `matplotlib.figure.Figure`
         >>> fig.set_size_inches(10,5)
         >>> fig.set_layout_engine("constrained")
@@ -1739,26 +1864,26 @@ class Dataset:
 
             - **amplitude** plot both the amplitude and phase spectrum.
               If the signal has unit V, then the amplitude has unit *V*.
-              Phase is in degrees.
+              Angle is in degrees.
             - **power** plot the auto-power spectrum.
               If the signal has unit V, then the amplitude has unit *V^2*.
             - **psd** plot the power density spectrum.
               If the signal has unit V and the time is *s*, then the amplitude has unit *V^2/Hz*.
         overlap:
-            If true it overlaps the input and the output signals plots.
+            If *True* it overlaps the input and the output signals plots.
             The units of the outputs are displayed on the secondary y-axis.
         linecolor_input:
             Line color of the input signals.
         linestyle_fg:
             Line style of the foreground signal in case of overlapping plots.
         alpha_fg:
-            Transparency value of the foreground signals in case of overlapping plots.
+            Transparency value of the foreground signal in case of overlapping plots.
         linecolor_output:
             Line color for the output signals.
         linestyle_bg:
-            Line style for the background signals in case of overlapping plots.
+            Line style for the background signal in case of overlapping plots.
         alpha_bg:
-            Transparency value of background signals in case of overlapping plots.
+            Transparency value of background signal in case of overlapping plots.
         _grid:
             Grid where the spectrum ploat will be placed *(Used only internally.)*
         layout:
@@ -2170,12 +2295,19 @@ class Dataset:
         The value specified in the *offset* parameter is removed from
         the signal with name *name*.
 
+
+        Example
+        -------
+        >>> fig = ds.remove_offset(("u1",0.4),("u2",-1.5)) # ds is a Dataset
+
+
         Parameters
         ----------
         *signals:
             Tuples of the form *(name, offset)*.
             The *name* parameter must match the name of a signal stored
-            in the dataset.
+            in the
+            :py:class:`Dataset <dymoval.dataset.Dataset>`.
             The *offset* parameter is the value to remove to the *name* signal.
         """
         # TODO: can be refactored
@@ -2229,23 +2361,16 @@ class Dataset:
         """
         Low-pass filter a list of specified signals.
 
-        For each target signal a tuple of the form *(name, cutoff_frequency)*
-        shall be passed as parameter.
-        For multiple signals, the tuples shall be arranged in a list.
-
         The low-pass filter is first-order IIR filter.
 
 
         Parameters
         ----------
-        *signals:
-            Tuples of the form *(name, cutoff_frequency)*.
-            The *name* parameter must match the name of any signal stored
-            in the dataset.
-            Such a signal is filtered with a low-pass
-            filter whose cutoff frequency is specified by the *cutoff_frequency*
-            parameter.
-
+        *signals_values:
+            Tuples of the form *(signal_name, cutoff_frequency)*.
+            The values of *signal_name* are low-pass
+            filtered with a first-order low-pass filter with cutoff frequency
+            *cutoff_frequency*
         """
         #  Raises
         #  ------
@@ -2413,9 +2538,10 @@ class Dataset:
         self,
         **kwargs: Any,
     ) -> Dataset:  # pragma: no cover
-        """Replace NaN:s in the dataset.
+        """Replace *NaN:s* values in the
+        :py:class:`Dataset <dymoval.dataset.Dataset>`.
 
-        It uses pandas *DataFrame.interpolate()* method, so the **kwargs are directly
+        It uses pandas *DataFrame.interpolate()* method, so that the **kwargs are directly
         routed to such a method.
 
 
@@ -2433,32 +2559,30 @@ class Dataset:
         return ds_temp
 
     def add_input(self, *signals: Signal) -> Dataset:
-        """Add input signals to the Dataset object.
+        """Add input signals to the
+        :py:class:`Dataset <dymoval.dataset.Dataset>` object.
 
-        Signals will be trimmed to the length of the Dataset.
+        Signals will be trimmed to the length of the
+        :py:class:`Dataset <dymoval.dataset.Dataset>`.
         Shorter signals will be padded with *NaN:s*.
-
-        Excluded signals are stored in the
-        :py:attr:`<dymoval.dataset.Dataset.excluded_signals>` attribute
-        of the calling :py:class:`Dataset <dymoval.dataset.Dataset>` object.
 
         Parameters
         ----------
         *signals:
-            Input signal to be added.
+            Input signals to be added.
         """
         kind: Signal_type = "INPUT"
         ds = deepcopy(self)
         return ds._add_signals(kind, *signals)
 
     def add_output(self, *signals: Signal) -> Dataset:
-        """Add output signals to the Dataset object.
+        """Add output signals to the
+        :py:class:`Dataset <dymoval.dataset.Dataset>` object.
 
-        Signals will be trimmed to the length of the Dataset.
+        Signals will be trimmed to the length of the
+        :py:class:`Dataset <dymoval.dataset.Dataset>`.
         Shorter signals will be padded with *NaN:s*.
 
-        Excluded signals are stored in the *excluded_signals* attibute
-        of the calling  Dataset.
 
         Parameters
         ----------
@@ -2470,7 +2594,8 @@ class Dataset:
         return ds._add_signals(kind, *signals)
 
     def remove_signals(self, *signals: str) -> Dataset:
-        """Remove signals from dataset.
+        """Remove signals from the
+        :py:class:`Dataset <dymoval.dataset.Dataset>`.
 
         Parameters
         ----------
@@ -2587,17 +2712,25 @@ def change_axes_layout(
 def validate_signals(*signals: Signal) -> None:
     """
     Perform a number of checks to verify that the passed
-    list of :py:class:`Signals <dymoval.dataset.Dataset>`
+    list of :py:class:`Signals <dymoval.dataset.Signal>`
     can be used to create a Dataset.
 
-    Every :py:class:`Signal <dymoval.dataset.Signal>` in the *signal_list*
-    parameter must have all the attributes adequately set.
+    Every :py:class:`Signal <dymoval.dataset.Signal>` in *signals*
+    must have all the attributes adequately set.
 
-    To figure how the attributes shall be set, look at the *RAISES* section below.
+    A :py:class:`Signal <dymoval.dataset.Signal>` is a *TypedDict* with the
+    following keys
+
+    1. name: str
+    2. values: 1D np.array
+    3. signal_unit: str
+    4. sampling_period: float
+    5. time_unit: str
+
 
     Parameters
     ----------
-    *signal :
+    *signals :
         Signal to be validated.
 
     """
@@ -2656,31 +2789,29 @@ def validate_signals(*signals: Signal) -> None:
 
 def validate_dataframe(
     df: pd.DataFrame,
-    u_names: str | list[str],
-    y_names: str | list[str],
 ) -> None:
     """
-    Check if a pandas DataFrame is suitable for instantiating
+    Check if a *pandas DataFrame* is suitable for instantiating
     a :py:class:`Dataset <dymoval.dataset.Dataset>` object.
 
-    The index of the DataFrame shall represent the common timeline for all the
-    signals, whereas the *j-th* column shall represents the realizations
+    The index of the *DataFrame* shall represent the common timeline for all the
+    signals, whereas the *j-th* column values shall represents the realizations
     of the *j-th* signal.
+
+    The column names are tuples of strings of the form *(signal_name,signal_unit)*.
 
     It must be specified which signal(s) are the input through the *u_names* and
     which signal(s) is the output through the  *y_names* parameters.
 
-    The candidate DataFrame shall meet the following requirements
+    The candidate *DataFrame* shall meet the following requirements
 
     - Columns names shall be unique,
     - Columns name shall be a tuple of *str* of the form *(name,unit)*,
     - The index shall represent the common timeline for all  and its
-      name shall be *'(Time, s)'*
+      name shall be *'(Time, time_unit)'*, where *time_unit* is a string.
     - Each signal must have at least two samples (i.e. the DataFrame has at least two rows),
     - Only one index and columns levels are allowed (no *MultiIndex*),
     - There shall be at least two signals representing one input and one output,
-    - Each signal in the *u_names* and *y_names* must be equal to exactly,
-      one column name of the input DataFrame.
     - Both the index values and the column values must be *float* and the index values
       must be a a 1D vector of monotonically, equi-spaced, increasing *floats*.
 
@@ -2689,46 +2820,11 @@ def validate_dataframe(
     ----------
     df :
         DataFrame to be validated.
-    u_names :
-        List of input signal names.
-    y_names :
-        List of output signal names.
     """
     #  Raises
     #  ------
     #  Error:
     #      Depending on the issue found an appropriate error will be raised.
-    # ===================================================================
-    # Checks performed: Read below
-    # ===================================================================
-
-    u_names = str2list(u_names)  # noqa
-    y_names = str2list(y_names)  # noqa
-
-    # ==========================================
-    # u_names and y_names arguments check
-    # ========================================
-
-    # Check that you have at least one input and one output
-    if not u_names or not y_names:
-        raise IndexError(
-            "You need at least one input and one output signal. "
-            "Check 'u_names' and 'y_names'."
-        )
-
-    # Check unicity of signal names
-    if (
-        len(u_names) != len(set(u_names))
-        or len(y_names) != len(set(y_names))
-        or (set(u_names) & set(y_names))  # Non empty intersection
-    ):
-        raise ValueError(
-            "Signal names must be unique. Check 'u_names' and 'y_names'."
-        )
-
-    # ==========================================
-    # DataFrame check
-    # ========================================
 
     # Check that all elements in columns are tuples
     cond1 = all(isinstance(sig, tuple) for sig in df.columns)
@@ -2756,26 +2852,18 @@ def validate_dataframe(
             "Each column name shall be of the form (name,unit), where 'name' and 'unit' are strings."
         )
 
-    # Check that the DataFrame must have only one index and columns levels
-    #     if df.columns.nlevels > 1 or df.index.nlevels > 1:
-    #         raise IndexError(
-    #             "The number index levels must be one for both the index and the columns.",
-    #             "The index shall represent a time vector of equi-distant time instants",
-    #             "and each column shall correspond to one signal values.",
-    #         )
-    #
+    # The following is automatically tested by the previous.
+    #  # Check that the DataFrame must have only one index and columns levels
+    #  if df.columns.nlevels > 1 or df.index.nlevels > 1:
+    #      raise IndexError(
+    #          "The number index levels must be one for both the index and the columns.",
+    #          "The index shall represent a time vector of equi-distant time instants",
+    #          "and each column shall correspond to one signal values.",
+    #      )
+
     # At least two samples
     if df.index.size < 2:
         raise IndexError("A signal needs at least two samples.")
-
-    # Check if u_names and y_names exist in the passed DataFrame
-    input_not_found = difference_lists_of_str(u_names, available_names)  # noqa
-    if input_not_found:
-        raise ValueError(f"Input(s) {input_not_found} not found.")
-    # Check output
-    output_not_found = difference_lists_of_str(y_names, available_names)  # noqa
-    if output_not_found:
-        raise ValueError(f"Output(s) {output_not_found} not found.")
 
     # The index is a 1D vector of monotonically increasing floats.
     # OBS! Builtin methds df.index.is_monotonic_increasing combined with
@@ -2796,17 +2884,13 @@ def plot_signals(*signals: Signal) -> matplotlib.figure.Figure:
     """Plot :py:class:`Signals <dymoval.dataset.Signal>`.
 
 
-
-    Note
-    ----
-    You are free to manipulate the returned figure as you want by using any
-    method of the class `matplotlib.figure.Figure`.
-    Please, refer to *matplotlib* docs for more info.
+    The method return a `matplotlib.figure.Figure`, so you can perform further
+    plot manipulations by resorting to the *matplotlib* API.
 
 
     Example
     -------
-    >>> fig = ds.plot() # ds is a dymoval Dataset
+    >>> fig = dmv.plot_signals(s1,s2,s3) # s1, s2 and s3 are dymoval Signal objects.
     # The following are methods of the class `matplotlib.figure.Figure`
     >>> fig.set_size_inches(10,5)
     >>> fig.set_layout_engine("constrained")
@@ -2859,18 +2943,17 @@ def compare_datasets(
     ax_width: float = 4.445,
 ) -> matplotlib.figure.Figure:
     """
-    Compare different :py:class:`Datasets <dymoval.dataset.Dignal>` graphically
+    Compare different :py:class:`Datasets <dymoval.dataset.Dataset>` graphically
     by overlapping them.
 
-
-    You are free to manipulate the returned figure as you want by using any
-    method of the class `matplotlib.figure.Figure`.
-    Please, refer to *matplotlib* docs for more info.
+    The method return a `matplotlib.figure.Figure`, so you can perform further
+    plot manipulations by resorting to the *matplotlib* API.
 
 
     Example
     -------
-    >>> fig = ds.plot() # ds is a dymoval Dataset
+    >>> import dymoval as dmv
+    >>> fig = dmv.compare_datasets(ds,ds1,ds2, kind="coverage")
     # The following are methods of the class `matplotlib.figure.Figure`
     >>> fig.set_size_inches(10,5)
     >>> fig.set_layout_engine("constrained")
