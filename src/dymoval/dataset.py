@@ -2,7 +2,7 @@
 # the pyproject.toml
 # mypy: show_error_codes
 
-""" Module containing everything related to datasets.
+"""Module containing everything related to datasets.
 Here are defined special datatypes, classes and auxiliary functions.
 """
 from __future__ import annotations
@@ -81,7 +81,7 @@ class Dataset:
     Signals that cannot be resampled will be excluded from the
     :py:class:`Dataset <dymoval.dataset.Dataset>`
     and will be stored in the
-    :py:attr:`<dymoval.dataset.Dataset.excluded_signals>`
+    :py:attr:`<~dymoval.dataset.Dataset.excluded_signals>`
     attribute.
 
     Furthermore, all the signals will be trimmed to have the

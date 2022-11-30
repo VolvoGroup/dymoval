@@ -11,7 +11,7 @@ the created :ref:`Signals <signal>` to instantiate a :ref:`Dataset <Dataset>` ob
 
 .. _signal:
 
-Signal type
+Signals
 -----------
 :ref:`Signal <signal>` are used to represent real-world signals. 
 
@@ -83,6 +83,7 @@ A :ref:`Dataset <Dataset>` object can be instantiated in two ways
    Dataset.apply
    Dataset.low_pass_filter
    Dataset.fft
+   Dataset.trim
 
 .. rubric:: Plotting methods
 .. autosummary::
@@ -91,13 +92,16 @@ A :ref:`Dataset <Dataset>` object can be instantiated in two ways
    Dataset.plotxy
    Dataset.plot_coverage
    Dataset.plot_spectrum
+   change_axes_layout
 
 .. rubric:: Other methods
 .. autosummary::
 
    Dataset.dump_to_signals
+   Dataset.dataset_values
    Dataset.export_to_mat
    Dataset.dataset_values
    Dataset.signal_list
    validate_dataframe
+   compare_datasets
 

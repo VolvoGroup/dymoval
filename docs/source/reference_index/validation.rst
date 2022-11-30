@@ -47,3 +47,10 @@ ValidationSession class
    ValidationSession.simulation_signals_list
    ValidationSession.clear
 
+.. rubric:: Functions
+.. autosummary::
+   
+   acorr_norm
+   rsquared
+   xcorr
+   xcorr_norm

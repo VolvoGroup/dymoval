@@ -32,12 +32,14 @@ It is nor a tool for *System Identification* (but we don't exclude it can happen
 Why dymoval?
 ------------
 
-There plenty amazing packages out there like *pandas*, *numpy*, *scipy*, etc for analyzing data,
+There plenty amazing packages out there like *matplotlib*, *pandas*, *numpy*, *scipy*, etc for analyzing data,
 compute statistics, and so on,  
 but they are huge and the plethora of functionalities they offer may be overwhelming.
 
-*Dymoval* has been thought with engineers in mind, and it offers just the essentials 
-for coping with typical tasks that an engineer needs to carry out.
+*Dymoval* has been built on top of these tools and it aims at providing an extremely easy and intuitive API that shall serve most of the tasks an engineer typically face in his/her daily job.
+
+However, *Dymoval* leaves the door open: most of the functions return objects that can be used straight away with the aforementioned tools without any extra steps.
+Hence, if you need more power, you always get an object that can be immediately handled by some other more powerful tool while operating with *Dymoval*. 
 
 Main Features
 -------------

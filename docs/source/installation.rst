@@ -28,14 +28,17 @@ If not provided, *dymoval* will be installed in a new environment called :code:`
 .. _here: https://github.com/VolvoGroup/dymoval/blob/main/environment.yml
 
 Why not `conda install dymoval`?
-********************************
+--------------------------------
 
 Unfortunately, it is not possible (yet?) to easily build :code:`conda` packages when the project is handled through a :code:`pyproject.toml` file, and therefore the *dymoval* package, which uses a :code:`pyproject.toml` file, is only available through :code:`pip`.
 
 
-Installation From this repo
+Installation from the repo
 ***************************
-Clone this repo and run
+Clone the repo from `the_repo`_  and run
+
+.. _the_repo: https://github.com/VolvoGroup/dymoval
+
 
 .. code-block::
     
@@ -73,20 +76,9 @@ two parameters that you can set.
 
     The used `matplotlib` color map. Check `Matplotlib` docs for possible values. 
 
-.. confval:: ax_height
-    :type: float
-    :default: 2.5
-
-    The subplot height (inches) when you save the figure. The default values are chosen to keep a 16:9 ratio of the overall figure.
-.. confval:: ax_width
-    :type: float
-    :default: 4.445
-
-    The subplot width (inches) when you save the figure. The default values are chosen to keep a 16:9 ratio of the overall figure.
-
-
 These parameters can be set through a :code:`~/.dymoval/config.toml`  file.
 You have to create such a file manually.
+
 A :code:`~/.dymoval/config.toml` could for example include the following content
 
 .. code-block::

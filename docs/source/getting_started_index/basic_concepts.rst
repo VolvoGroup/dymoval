@@ -1,5 +1,5 @@
-Dymoval basic concepts
-======================
+Dymoval support to model validation
+===================================
 
 In :doc:`./model_validation` we discussed the steps needed for performing model validation.
 
