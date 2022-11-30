@@ -1443,7 +1443,7 @@ class Dataset:
 
         If two signals are passed as a  *tuple*, then they will be placed in the
         same subplot.
-        For example, if *ds* is a :py:class:`Dataset <dymoval.dataset.Dataset>`
+        For example, if *ds* is a :py:class:`Dataset <dymoval.dataset.Dataset>` object
         with signals *s1, s2, ... sn*, then
         **ds.plot(("s1", "s2"), "s3", "s4")** will plot *s1* and *s2* on the same subplot
         and it will plot *s3* and *s4* on separate subplots, thus displaying the
@@ -1603,7 +1603,7 @@ class Dataset:
     ) -> matplotlib.figure.Figure:
         """
         Plot the dataset
-        :py:class:`Dataset <dymoval.dataset.Dataset>` coverage as histograms.
+        :py:class:`Dataset <dymoval.dataset.Dataset>` coverage in histograms.
 
         The method return a `matplotlib.figure.Figure`, so you can perform further
         plot manipulations by resorting to the *matplotlib* API.
@@ -1893,10 +1893,6 @@ class Dataset:
         ax_width:
             Approximative width (inches) of each subplot.
 
-
-        You are free to manipulate the returned figure as you want by using any
-        method of the class `matplotlib.figure.Figure`.
-        Please, refer to *matplotlib* docs for more info.
 
 
         Example
@@ -2728,6 +2724,47 @@ def validate_signals(*signals: Signal) -> None:
     5. time_unit: str
 
 
+    Example
+    -------
+    >>> # How to create a Dataset object from a list of Signals
+    >>>
+    >>> import numpy as np
+    >>> import dymoval as dmv
+    >>>
+    >>> signal_names = [
+    >>>     "SpeedRequest",
+    >>>     "AccelPedalPos",
+    >>>     "OilTemp",
+    >>>     "ActualSpeed",
+    >>>     "SteeringAngleRequest",
+    >>> ]
+    >>> signal_values = np.random.rand(5, 100)
+    >>> signal_units = ["m/s", "%", "°C", "m/s", "deg"]
+    >>> sampling_periods = [0.1, 0.1, 0.1, 0.1, 0.1]
+    >>> # Create dymoval signals
+    >>> signals = []
+    >>> for ii, val in enumerate(signal_names):
+    >>>     tmp: dmv.Signal = {
+    >>>         "name": val,
+    >>>         "values": signal_values[ii],
+    >>>         "signal_unit": signal_units[ii],
+    >>>         "sampling_period": sampling_periods[ii],
+    >>>         "time_unit": "s",
+    >>>     }
+    >>>     signals.append(tmp)
+    >>> # Validate signals
+    >>> dmv.validate_signals(*signals)
+    >>> # Specify which signals are inputs and which signals are output
+    >>> input_labels = ["SpeedRequest", "AccelPedalPos", "SteeringAngleRequest"]
+    >>> output_labels = ["ActualSpeed", "OilTemp"]
+    >>> # Create dymoval Dataset objects
+    >>> ds = dmv.Dataset("my_dataset", signals, input_labels, output_labels)
+    >>>
+    >>> # At this point you can plot, trim, manipulate, analyze, etc you dataset
+    >>> # through the Dataset class methods.
+
+
+
     Parameters
     ----------
     *signals :
@@ -2798,7 +2835,7 @@ def validate_dataframe(
     signals, whereas the *j-th* column values shall represents the realizations
     of the *j-th* signal.
 
-    The column names are tuples of strings of the form *(signal_name,signal_unit)*.
+    The column names are tuples of strings of the form *(signal_name, signal_unit)*.
 
     It must be specified which signal(s) are the input through the *u_names* and
     which signal(s) is the output through the  *y_names* parameters.
@@ -2806,7 +2843,7 @@ def validate_dataframe(
     The candidate *DataFrame* shall meet the following requirements
 
     - Columns names shall be unique,
-    - Columns name shall be a tuple of *str* of the form *(name,unit)*,
+    - Columns name shall be a tuple of *str* of the form *(name, unit)*,
     - The index shall represent the common timeline for all  and its
       name shall be *'(Time, time_unit)'*, where *time_unit* is a string.
     - Each signal must have at least two samples (i.e. the DataFrame has at least two rows),
@@ -2814,6 +2851,48 @@ def validate_dataframe(
     - There shall be at least two signals representing one input and one output,
     - Both the index values and the column values must be *float* and the index values
       must be a a 1D vector of monotonically, equi-spaced, increasing *floats*.
+
+
+    Example
+    -------
+    >>> # How to create a Dataset object from a pandas DataFrame
+    >>>
+    >>> import dymoval as dmv
+    >>> import pandas as pd
+    >>>
+    >>> # Signals names, units and values
+    >>> signal_names = [
+    >>>     "SpeedRequest",
+    >>>     "AccelPedalPos",
+    >>>     "OilTemp",
+    >>>     "ActualSpeed",
+    >>>     "SteeringAngleRequest",
+    >>> ]
+    >>> signal_units = ["m/s", "%", "°C", "m/s", "deg"]
+    >>> signal_values = np.random.rand(100, 5)
+    >>>
+    >>> # time axis
+    >>> sampling_period = 0.1
+    >>> timestamps = np.arange(0, 10, sampling_period)
+    >>>
+    >>> # Build a candidate DataFrame
+    >>> cols = list(zip(signal_names, signal_units))
+    >>> index_name = ("Time", "s")
+    >>>
+    >>> # Create dymoval signals
+    >>> df = pd.DataFrame(data=signal_values, columns=cols)
+    >>> df.index = pd.Index(data=timestamps, name=index_name)
+    >>>
+    >>> # Check if the dataframe is suitable for a dymoval Dataset
+    >>> dmv.validate_dataframe(df)
+    >>>
+    >>> # Specify input and output signals
+    >>> input_labels = ["SpeedRequest", "AccelPedalPos", "SteeringAngleRequest"]
+    >>> output_labels = ["ActualSpeed", "OilTemp"]
+    >>>
+    >>> # Create dymoval Dataset objects
+    >>> ds = dmv.Dataset("my_dataset", df, input_labels, output_labels)
+
 
 
     Parameters

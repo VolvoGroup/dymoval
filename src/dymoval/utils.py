@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 def factorize(n: int) -> tuple[int, int]:
-    r"""Find the smallest and closest integers *(a,b)* such that :math: `n \\le ab`."""
+    r"""Find the smallest and closest integers *(a,b)* such that :math:`n \le ab`."""
     a = int(np.ceil(np.sqrt(n)))
     b = int(np.ceil(n / a))
     return a, b
@@ -26,7 +26,7 @@ def difference_lists_of_str(
     r"""Return the strings contained in the list *A* but not in the list *B*.
 
     In set formalism, this function return a list representing the set difference
-    *A \\ ( A & B)*.
+    :math:`A \backslash ( A \cap B)`.
     Note that the operation is not commutative.
 
     Parameters

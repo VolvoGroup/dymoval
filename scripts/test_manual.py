@@ -29,74 +29,7 @@ import matplotlib.pyplot as plt
 #                   "time_unit": str
 #                     }
 # ===========================================================================
-# %%
-
-import dymoval as dmv
-
-signal_names = [
-    "SpeedRequest",
-    "AccelPedalPos",
-    "OilTemp",
-    "ActualSpeed",
-    "SteeringAngleRequest",
-]
-signal_values = np.random.rand(5, 100)
-signal_units = ["m/s", "%", "°C", "m/s", "deg"]
-sampling_periods = [0.1, 0.1, 0.1, 0.1, 0.1]
-# Create dymoval signals
-signals = []
-for ii, val in enumerate(signal_names):
-    tmp: dmv.Signal = {
-        "name": val,
-        "values": signal_values[ii],
-        "signal_unit": signal_units[ii],
-        "sampling_period": sampling_periods[ii],
-        "time_unit": "s",
-    }
-    signals.append(tmp)
-# Specify input and output signals
-input_labels = ["SpeedRequest", "AccelPedalPos", "SteeringAngleRequest"]
-output_labels = ["ActualSpeed", "OilTemp"]
 # Create dymoval Dataset objects
-ds = dmv.Dataset("my_dataset", signals, input_labels, output_labels)
-
-# %%
-import dymoval as dmv
-import pandas as pd
-
-# Signals names, units and values
-signal_names = [
-    "SpeedRequest",
-    "AccelPedalPos",
-    "OilTemp",
-    "ActualSpeed",
-    "SteeringAngleRequest",
-]
-signal_units = ["m/s", "%", "°C", "m/s", "deg"]
-signal_values = np.random.rand(100, 5)
-
-# time axis
-sampling_period = 0.1
-timestamps = np.arange(0, 10, sampling_period)
-
-# Build a candidate DataFrame
-cols = list(zip(signal_names, signal_units))
-index_name = ("Time", "s")
-
-# Create dymoval signals
-df = pd.DataFrame(data=signal_values, columns=cols)
-df.index = pd.Index(data=timestamps, name=index_name)
-
-# Check if the dataframe is suitable for a dymoval Dataset
-dmv.validate_dataframe(df)
-
-# Specify input and output signals
-input_labels = ["SpeedRequest", "AccelPedalPos", "SteeringAngleRequest"]
-output_labels = ["ActualSpeed", "OilTemp"]
-
-# Create dymoval Dataset objects
-ds = dmv.Dataset("my_dataset", df, input_labels, output_labels)
-
 
 # %%
 plt.ion()

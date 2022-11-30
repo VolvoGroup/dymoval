@@ -19,21 +19,20 @@ class XCorrelation(TypedDict):
     # and you have to exclude them in the :automodule:
     """Type used to store MIMO cross-correlations.
 
-    This data structure resembles typical Matlab *structs x* of the form
-    *x.time* and *x.values*.
-
 
     Attributes
     ----------
     values: np.ndarray
         Values of the correlation tensor.
-        It is a *Nxpxq* tensor, where *N* is the number of lags.
+        It is a *Nxpxq* tensor, where *p* is the dimension of the first signals,
+        *q* is the dimension of the second signal and *N* is the number of lags.
+
     """
 
     values: np.ndarray  # values collide with values() method of dict and won't be rendered
     lags: np.ndarray
     """Lags of the cross-correlation.
-    It is a vector of length *N*,where *N* is the number of lags."""
+    It is a vector of length *N*, where *N* is the number of lags."""
 
 
 def xcorr(X: np.ndarray, Y: np.ndarray) -> XCorrelation:
@@ -156,30 +155,30 @@ def acorr_norm(
 ) -> float:
     r"""Return the norm of the auto-correlation tensor.
 
-    It first compute the *l*-norm of each component
-    `:math:(r_{i,j}(\\tau)) \in R(\\tau), i=1,\\dots p, j=1,\\dots,q`,
-    where `:math: R(\\tau)` is the input tensor.
-    Then, it computes the matrix-norm of the resulting matrix `:math: \\hat R`.
+    It first compute the :math:`\ell`-norm of each component
+    :math:`r_{i,j}(\tau) \in R_{x,x}(\tau), i=1,\,\dots\, q, j=1,\dots,q`,
+    where :math:`R_{x,x}(\tau)` is the input tensor.
+    Then, it computes the matrix-norm of the resulting matrix :math:`\hat R_{x,x}`.
 
 
     Note
     ----
     Given that the auto-correlation of the same components for lags = 0
     is always 1 or -1, then the validation metrics could be jeopardized,
-    especially if the l-inf norm is used.
+    especially if the :math:`\ell`-inf norm is used.
     Therefore, the diagonal entries of the sampled auto-correlation matrix
     for lags = 0 is set to 0.0
 
 
     Parameters
     ----------
-    R :
+    Rxx :
         Auto-correlation input tensor.
     l_norm :
-        Type of *l*-norm.
+        Type of :math:`\ell`-norm.
         This parameter is passed to *numpy.linalg.norm()* method.
     matrix_norm :
-        Type of matrx norm with respect to *l*-normed covariance matrix.
+        Type of matrx norm with respect to :math:`\ell`-normed covariance matrix.
         This parameter is passed to *numpy.linalg.norm()* method.
     """
     Rxx = deepcopy(_xcorr_norm_validation(Rxx))
@@ -202,20 +201,20 @@ def xcorr_norm(
 ) -> float:
     r"""Return the norm of the cross-correlation tensor.
 
-    It first compute the *l*-norm of each component
-    `:math:(r_{i,j}(\\tau)) \in R(\\tau), i=1,\\dots p, j=1,\\dots,q`,
-    where `:math: R(\\tau)` is the input tensor.
-    Then, it computes the matrix-norm of the resulting matrix `:math: \\hat R`.
+    It first compute the :math:`\ell`-norm of each component
+    :math:`r_{i,j}(\tau) \in R_{x,y}(\tau), i=1,\,\dots\, p, j=1,\dots,q`,
+    where :math:`R_{x,y}(\tau)` is the input tensor.
+    Then, it computes the matrix-norm of the resulting matrix :math:`\hat R_{x,y}`.
 
     Parameters
     ----------
-    R :
+    Rxy :
         Cross-correlation input tensor.
     l_norm :
-        Type of *l*-norm.
+        Type of :math:`\ell`-norm.
         This parameter is passed to *numpy.linalg.norm()* method.
     matrix_norm :
-        Type of matrx norm with respect to *l*-normed covariance matrix.
+        Type of matrx norm with respect to :math:`\ell`-normed covariance matrix.
         This parameter is passed to *numpy.linalg.norm()* method.
     """
 
@@ -244,7 +243,7 @@ class ValidationSession:
     A *ValidationSession* object is instantiated from a :ref:`Dataset` object.
     A validation session *name* shall be also provided.
 
-    Multiple simulation results can be appended to the *ValidationSession* instance,
+    Multiple simulation results can be appended to the same *ValidationSession* instance,
     but for each ValidationSession instance only a :ref:`Dataset` object is condsidered.
 
     If the :ref:`Dataset` object changes,
@@ -267,7 +266,11 @@ class ValidationSession:
 
         self.simulations_results: pd.DataFrame = pd.DataFrame(
             index=validation_dataset.dataset.index, columns=[[], [], []]
-        )  #: The appended simulation results.
+        )
+        """The appended simulation results.
+        This attribute is automatically set through
+        :py:meth:`~dymoval.validation.ValidationSession.append_simulation`
+        and it should be considered as a *read-only* attribute."""
 
         self.auto_correlation: dict[str, XCorrelation] = {}
         """The auto-correlation tensors.
@@ -401,7 +404,7 @@ class ValidationSession:
 
         Example
         -------
-        >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig = vs.plot_simulations() # ds is a dymoval ValidationSession object
         # The following are methods of the class `matplotlib.figure.Figure`
         >>> fig.set_size_inches(10,5)
         >>> fig.set_layout_engine("constrained")
@@ -641,7 +644,7 @@ class ValidationSession:
 
         Example
         -------
-        >>> fig = ds.plot() # ds is a dymoval Dataset
+        >>> fig = vs.plot_residuals() # vs is a dymoval ValidationSession object
         # The following are methods of the class `matplotlib.figure.Figure`
         >>> fig.set_size_inches(10,5)
         >>> fig.set_layout_engine("constrained")
@@ -776,9 +779,10 @@ class ValidationSession:
         """
         Append simulation results.
         The results are stored in the
-        :py:attr:`Dataset <dymoval.validation.ValidationSession.simulations_results>` attribute.
+        :py:attr:`<dymoval.validation.ValidationSession.simulations_results>` attribute.
 
-        The validation metrics are automatically computed.
+        The validation metrics are automatically computed and stored in the
+        :py:attr:`<dymoval.validation.ValidationSession.validation_results>` attribute.
 
         Parameters
         ----------
@@ -832,14 +836,14 @@ class ValidationSession:
         ----------
         *sims :
             Name of the simulations to be dropped.
-
-        Raises
-        ------
-        KeyError
-            If the simulations list is empty.
-        ValueError
-            If the simulation name is not found.
         """
+        # Raises
+        # ------
+        # KeyError
+        #     If the simulations list is empty.
+        # ValueError
+        #     If the simulation name is not found.
+
         vs_temp = deepcopy(self)
         vs_temp._sim_list_validate()
 
