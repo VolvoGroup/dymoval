@@ -88,7 +88,7 @@ If not provided, *dymoval* will be installed in a new environment called `dymova
 #### Why not `conda install dymoval`?
 Unfortunately, it is not possible (yet?) to easily build `conda` packages when the project is handled through a `pyproject.toml` file, and therefore the *dymoval* package, which uses a `pyproject.toml` file, is only available through `pip`.
 
-
+<!-- comment
 #### Installation From this repo
 Clone this repo and run
 
@@ -101,7 +101,7 @@ or
 
 	cd /path/to/where/you/cloned/this/repo
 	pip install .
-
+-->
 
 ## Getting started
 
@@ -115,6 +115,8 @@ This will copy the `dymoval_tutorial.ipynb` jupyter notebook from your installat
 
 For more info on what is model validation and what is currently implemented in *dymoval* along with the *dymoval* complete API, you can check the [docs](https://volvogroup.github.io/dymoval/). 
 
+> **Note**
+> If your tutorial won't start, you can still download the tutorial IPython notebook from this repo [here.](https://github.com/VolvoGroup/dymoval/blob/main/scripts/tutorial.ipynb) 
 
 ## License
 Dymoval is licensed under [BSD 3](https://github.com/VolvoGroup/dymoval/blob/main/LICENSE) license.
