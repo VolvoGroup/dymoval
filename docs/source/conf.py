@@ -23,7 +23,7 @@ copyright = "2022, U. Tiberi"
 author = "U. Tiberi"
 
 # The full version, including alpha/beta/rc tags
-release = "0.6.0"
+release = "0.6.1"
 
 
 # -- General configuration ---------------------------------------------------

@@ -38,7 +38,7 @@ but they are huge and the plethora of functionalities they offer may be overwhel
 *Dymoval* has been built on top of these tools and it aims at providing an extremely easy and intuitive API that shall serve most of the tasks an engineer typically face in his/her daily job.
 
 However, *Dymoval* leaves the door open: most of the functions return objects that can be used straight away with the aforementioned tools without any extra steps.
-Hence, if you need more power, you always get an object that can be immediately handled by some other more powerful tool while operating with *Dymoval*. 
+Hence, if you need more power, you always get an object that can be immediately handled by some other more powerful tool while using *Dymoval*. 
 
 Main Features
 -------------

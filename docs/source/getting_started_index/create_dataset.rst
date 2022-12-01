@@ -13,7 +13,7 @@ a simple structure and should be able to represent any signal independently of i
 As a first step to use *Dymoval*, each logged signal shall be cast into a *Dymoval* :ref:`Signal <signal>`. 
 Once done, a list of such :ref:`Signals<signal>` can be used to create a :ref:`Dataset<Dataset>` object.
 
-However, when dealing with datasets, several problems may arise: 
+However, when dealing with datasets logged from a "real-world" environment, several problems may arise: 
 
 - not all the logged signals are sampled with the same sampling period, 
 - data loggers are run continuously and for long time and this
@@ -23,7 +23,7 @@ However, when dealing with datasets, several problems may arise:
 - ...
 
 just to cite a few. 
-*Dymoval* provides a number of functions for dealing with :ref:`Dataset <Dataset>` object.
+*Dymoval* provides a number of functions for dealing with :ref:`Dataset <Dataset>` objects.
 Such functions include re-sampling, plot, frequency analysis, filtering and so on. 
 
 Once you have created and adjusted a :ref:`Dataset <Dataset>` object, then you are ready to simulate your model.  

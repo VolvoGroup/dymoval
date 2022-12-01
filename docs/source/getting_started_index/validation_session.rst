@@ -4,7 +4,7 @@ Validate your model
 It is now time to validate your model.
 For performing such a task, *Dymoval* uses :ref:`ValidationSession` objects.
 
-A :ref:`ValidationSession` object is created by using a :ref:`Dataset <Dataset>` as basis.
+A :ref:`ValidationSession` object is created by using a :ref:`Dataset <Dataset>` instance as basis.
 Once instantiated, you can append as many simulated data as you want to the same :ref:`ValidationSession` object. 
 The validation metrics are automatically computed for each simulated dataset against the common stored  :ref:`Dataset <Dataset>`.  
 

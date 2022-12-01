@@ -39,7 +39,8 @@ You would certainly have a dataset with a fairly large covered region but... it 
 
     With reference to the example above, you can imagine to drive the car only at constant speeds 
     in a range from 0 to 180 km/h on a flat road without never accelerating of braking.
-    That is, you make a first run driving (and logging) data at 10 km/h, then a second run at 20 km/h, and so on, until reaching the last run when you drove at 180 km/h.
+    That is, you make a first run driving (and logging) data at a constant speed of 10 km/h, without accelerating nor braking and by staying on a flat road. 
+    Then you perform a second run at a constant speed of 20 km/h, still with the same condition as the previous run, and so on, until reaching the last run when you drove at 180 km/h.
     Your dataset will have a fairly large coverage region, but it will contain little information as in all the runs you drove at a constant speed without accelerating or braking and by staying on a flat road. 
 
 

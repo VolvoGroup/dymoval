@@ -27,7 +27,7 @@ to track your model changes...
 
 ... but there are no automated mechanisms that test your model.
 
-Checking that *"everything still works"* is typically done manually and if your changes cane be 
+Checking that *"everything still works"* is typically done manually and if your changes can be 
 integrated or not is at reviewer discretion. 
 Not robust, nor democratic.  
 

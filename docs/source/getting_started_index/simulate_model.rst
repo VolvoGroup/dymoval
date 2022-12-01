@@ -15,7 +15,7 @@ To facilitate with this task, *Dymoval* allows you to dump :ref:`Dataset <Datase
 .. note::
     Given the popularity of Matlab, *Dymoval* has a builtin function that exports Signals directly in *.mat* format. 
 
-Once you have simulated your model you should import the simulated data into Python and then you are now ready to validate your model, and guess what? 
+Once you have simulated your model you should import the simulated data back into Python and then you are now ready to validate your model, and guess what? 
 *Dymoval* is here for that!
 
 Go to the next Section to discover more. 
