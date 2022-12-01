@@ -50,7 +50,7 @@ Although the tool has been thought with engineers in mind, no one prevents you t
  **Datasets analysis and manipulation**
 - Time and frequency analysis 
 - Physical units
-- Easy to plot
+- Easy plotting of signals
 - Missing data handling
 - Linear filtering
 - Means and offsets removal

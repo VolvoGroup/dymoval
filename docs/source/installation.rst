@@ -4,13 +4,13 @@ Installation & configuration
 Installation
 ------------
 
-By running 
+By running
 
 .. code-block::
 
    pip install dymoval
 
-everything should work, but there are few things to keep in mind.
+everything should work fine, but there are few things to keep in mind.
 
 Typically :code:`conda` handles scientific packages better than `pip`, and given that many *dymoval* dependencies are scientific packages, it is suggested to install all the dependencies through :code:`conda` and then to install *dymoval* through :code:`pip`.
 
@@ -28,13 +28,12 @@ If not provided, *dymoval* will be installed in a new environment called :code:`
 .. _here: https://github.com/VolvoGroup/dymoval/blob/main/environment.yml
 
 Why not `conda install dymoval`?
---------------------------------
-
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Unfortunately, it is not possible (yet?) to easily build :code:`conda` packages when the project is handled through a :code:`pyproject.toml` file, and therefore the *dymoval* package, which uses a :code:`pyproject.toml` file, is only available through :code:`pip`.
 
 
 Installation from the repo
-***************************
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 Clone the repo from `the_repo`_  and run
 
 .. _the_repo: https://github.com/VolvoGroup/dymoval

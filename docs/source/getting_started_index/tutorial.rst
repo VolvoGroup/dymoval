@@ -1,5 +1,5 @@
-Tutorials
-=========
+Tutorial
+========
 
 Now that you learned what is meant with model validation you can play around with *Dymoval*.
 The best way to take familiarity with *Dymoval* is to run any tutorial by typing 

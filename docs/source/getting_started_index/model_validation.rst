@@ -2,26 +2,24 @@ What is model validation?
 =========================
 
 
-.. note::
-   If you are already familiar with the concept of model validation you can skip this Section.
-
+*If you are already familiar with the concept of model validation you can skip this Section.*
 
 Imagine that you are developing a super product or process. At some point, you need to test test it.
 Then, based on the test outcome, you continue your development in a certain direction. 
-Then, at some point you test again... 
+Then, at some point you test your work-product again... 
 and you keep in iterating such a process over and over until you get something good to deploy. 
 
 This is the way things are typically developed. 
 
-However, to run tests in a *target environment*
+However, running tests in a *target environment*
 (i.e. the *real-world environment* where your product - or service - shall be ultimately deployed) has an 
 associated cost both in terms of money and in terms of time. 
-Very often such cost also include personal stress.
+Very often such a cost also include personal stress.
 
 A solution to alleviate such pain would be to run your tests in a *virtual environment* where you have a *model* 
 of your *target environment*. 
-If the tests of your work-product in the virtual environment show good performance, 
-then you *should* get the same performance when you perform the same tests in the target environment.
+If the tests run in the virtual environment show good performance of your work-product, 
+then you *should* get the same good performance when you move to the target environment.
 
 Well, you *should* because the previous statement is true if, and only if, your virtual environment adequately 
 represents the target environment and if it behaves similarly.
@@ -62,7 +60,7 @@ things will work in target environment as they worked in the virtual environment
 
 
    **Example**
-   Let's make an example showing how the steps 1-4 can be applied through a simple real-world example. 
+   Let's show how steps 1-4 can be applied through a simple real-world example. 
 
    Assume that you are developing some cool autonomous driving algorithm that shall be deployed in a car, 
    which represent your *target environment*.
@@ -82,13 +80,13 @@ things will work in target environment as they worked in the virtual environment
 
    Steps 1-4 are carried out in the following way:
 
-   #. Establish a driving route with sufficiently road slope variation. You decide to take a ride on that path by adopting a 
-      nasty driving style with sudden accelerations and abrupt steering movements.  
+   #. You choose a driving route with sufficiently road slope variation. You decide to take a ride on that path by adopting a 
+      nasty driving style with sudden accelerations and abrupt steering movements. Congrats! You just made a Design of Experiment (DoE).  
       
-   #. Take a ride with the target vehicle and drive according to plan. 
-      Log the input signals (i.e. the *accelerator pedal position*, 
+   #. You take a ride with the target vehicle and you drive according to the DoE performed in the previous step. 
+      You log the input signals (i.e. the *accelerator pedal position*, 
       the *steering wheel position* and the *road profile* time-series) along with the output signals (i.e. *longitudinal* and *lateral 
-      speed* time-series) of the vehicle. Such logs represent your *dataset*. 
+      speed* time-series) of the vehicle while driving. Such logs represent your *dataset*. 
       Note how input and output are separated.
 
    #. Feed your model with the input signals that you logged during the drive and log your model output 
@@ -102,7 +100,7 @@ things will work in target environment as they worked in the virtual environment
 
    If you logged data only in the *accelerator pedal position* range [0,40] %, the *steering angle* 
    in the range [-2,2]° and the *road profile was flat* for all the time, then you have to ship such an information
-   along with your model so that the user knows in which region he/she can trust your model.
+   along with your model to a potential model user.
 
 The cost saving when using models is clear, but there is no free lunch. 
 In-fact, the challenge relies in the design of good models.

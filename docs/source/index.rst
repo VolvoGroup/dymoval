@@ -9,12 +9,11 @@ Dymoval (Dynamic Model Validation)
 What is it?
 -----------
 
-*Dymoval* is a Python package for  *validating models* and *analyzing datasets*. 
+*Dymoval* is a Python package for *analyzing datasets* and *validating models*. 
 
 *Dymoval* validates models against some user-provided dataset regardless of the model format (*DNN, transfer function, ODE,* etc.) and the tool 
 used for developing it (*Simulink, Modelica,* etc.). 
 If your development process is done in a CI/CD environment, *Dymoval*'s functions can be easily included in a development pipeline to test your changes. 
-It can be also used to unit-test your models.
 
 *Dymoval* further provides a number of functions for dataset analysis and manipulation.  
 
@@ -27,12 +26,12 @@ You have to develop your models with the tool you prefer.
 
 It is nor a tool for *System Identification* (but we don't exclude it can happen in the future ;-)).
 
-*Dymoval* only checks if your models are good or not. 
+*Dymoval* only checks if your models are good or not but you have to develop your models by yourself in the environment that you prefer.
 
 Why dymoval?
 ------------
 
-There plenty amazing packages out there like *matplotlib*, *pandas*, *numpy*, *scipy*, etc for analyzing data,
+There plenty of amazing packages out there like *matplotlib*, *pandas*, *numpy*, *scipy*, etc for analyzing data,
 compute statistics, and so on,  
 but they are huge and the plethora of functionalities they offer may be overwhelming.
 
@@ -44,10 +43,18 @@ Hence, if you need more power, you always get an object that can be immediately 
 Main Features
 -------------
 
+Datasets analysis and manipulation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Time and frequency analysis 
+- Physical units
+- Easy plot of signals
+- Missing data handling
+- Linear filtering
+- Means and offsets removal
+- Re-sampling
 
 Model validation
-****************
-
+^^^^^^^^^^^^^^^^
 - Validation metrics:
 	- R-square fit
 	- Residuals auto-correlation
@@ -57,16 +64,6 @@ Model validation
 - Work for both SISO and MIMO models
 - Modeling tool independence
 - Easily integrate with CI/CD pipelines.
-
-
-Datasets analysis and manipulation
-**********************************
-
-- Time and frequency analysis 
-- Missing data handling
-- Linear filtering
-- Means and offsets removal
-- Re-sampling
 
 
 Index

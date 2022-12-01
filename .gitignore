@@ -1,5 +1,6 @@
 # Global directories
 __pycache__/
+.ipynb_checkpoints/
 
 # Root directories
 /.benchmarks/

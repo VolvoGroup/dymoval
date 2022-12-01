@@ -29,8 +29,8 @@ provided that the validation results provides good figures.
    information level contained in a given dataset in within its coverage region.
 
 
-It is worth noting that s dataset covering a fairly large region 
-won't necessarily imply information richness.
+It is worth noting that a dataset covering a fairly large region 
+won't necessarily imply *information richness.*
 This happens for example when you take a wide range of values but you stimulate your target environment 
 only with constant inputs in within such a range. 
 You would certainly have a dataset with a fairly large covered region but... it would contain little information.  
@@ -39,7 +39,8 @@ You would certainly have a dataset with a fairly large covered region but... it 
 
     With reference to the example above, you can imagine to drive the car only at constant speeds 
     in a range from 0 to 180 km/h on a flat road without never accelerating of braking.
-    Your dataset will have a fairly large coverage region, but it will contain little information. 
+    That is, you make a first run driving (and logging) data at 10 km/h, then a second run at 20 km/h, and so on, until reaching the last run when you drove at 180 km/h.
+    Your dataset will have a fairly large coverage region, but it will contain little information as in all the runs you drove at a constant speed without accelerating or braking and by staying on a flat road. 
 
 
 

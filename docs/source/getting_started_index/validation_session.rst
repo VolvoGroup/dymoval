@@ -2,8 +2,11 @@ Validate your model
 ===================
 
 It is now time to validate your model.
+For performing such a task, *Dymoval* uses :ref:`ValidationSession` objects.
 
-Here is where *Dymoval* comes into play
+A :ref:`ValidationSession` object is created by using a :ref:`Dataset <Dataset>` as basis.
+Once instantiated, you can append as many simulated data as you want to the same :ref:`ValidationSession` object. 
+The validation metrics are automatically computed for each simulated dataset against the common stored  :ref:`Dataset <Dataset>`.  
 
 
 .. figure:: ../figures/ModelValidationDymoval.svg
@@ -11,31 +14,29 @@ Here is where *Dymoval* comes into play
 
    The model validation process with *Dymoval*. 
  
-*Dymoval* validates your model in terms of 
+
+*Dymoval* validates your models in terms of 
 
 - R-square fit
 - Residuals auto-correlation norm
 - Input-Residuals cross-correlation norm 
 
-and it also return the **coverage region**.
+You can visually inspect both the simulations results with the :py:meth:`~dymoval.validation.ValidationSession.plot_simulations` method and the residuals with the :py:meth:`~dymoval.validation.ValidationSession.plot_residuals` method. 
+
+The **coverage region** can be shown through the :py:meth:`~dymoval.dataset.Dataset.plot_coverage()` of the stored :ref:`Dataset <Dataset>`.
+
+How to interpret the results?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+As a rule of thumbs, your model is as good as the r-squared index is high and the residuals correlation norms are small (possibly less than 1). 
+
+Futhermore
+
+- High values of the residuals auto-correlation -> your **disturbance**-to-output model needs improvement,
+- High values of the input-residuals cross-correlation -> your **input**-to-output model needs improvement.
 
 
-Model validation is done through :ref:`ValidationSession` objects.
+For more information on how to interpret r-squared fit and residuals, feel free to search the web or to read some good System Identification textbook. 
 
-A :ref:`ValidationSession <ValidationSession>` object is created from a :ref:`Dataset <Dataset>` object.
-More precisely, the :ref:`Dataset <Dataset>` object becomes an attribute of the created :ref:`ValidationSession <ValidationSession>` object 
-and therefore you can access all the attributes and methods of the associated :ref:`Dataset object <Dataset>` directly from the 
-created :ref:`ValidationSession <ValidationSession>` object. 
+At this point, you may consider to use *Dymoval* for performing unit-tests on your models and create building pipelines if you are using a CI/CD environment for developing models. 
 
-.. figure:: ../figures/Composition.svg
-   :scale: 50 %
 
-   *Dymoval*  structure. You can access every attributes and methods of an inner object from an outer object. 
-
-Once a :ref:`ValidationSession <ValidationSession>` object is created, then you can append as many simulation results 
-as you want to it and validation metrics are automatically computed against the stored dataset 
-and stored in the attribute :py:attr:`~dymoval.validation.ValidationSession.validation_results`.
-
-It is also possible to visually inspect the residuals through the :py:meth:`~dymoval.validation.ValidationSession.plot_residuals` method.
-
-To know more about the selected validation metrics, feel free to google *R-square* and why alone it is not enough to validate a model. 
