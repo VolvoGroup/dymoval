@@ -10,7 +10,6 @@ import dymoval as dmv
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 # ===========================================================================
 # Assume that we have some measurements from some experiment.
 # Unfortunately, there is some missing data and the signals are not even sampled
