@@ -27,10 +27,10 @@ jobs:
     
     steps:
       - name: Checkout
-        uses: actions/checkout@master
+        uses: actions/checkout@v3
         
       - name: Setup Python
-        uses: actions/setup-python@master
+        uses: actions/setup-python@v4.3.0
         with:
             python-version: '3.10'
         
@@ -65,8 +65,8 @@ jobs:
       matrix:
         os: ["ubuntu-latest", "macos-latest", "windows-latest"]
     steps:
-      - uses: actions/checkout@master
-      - uses: conda-incubator/setup-miniconda@v2.2.0
+      - uses: actions/checkout@v3
+      - uses: conda-incubator/setup-miniconda@v2
         with:
           python-version: "3.10"
           mamba-version: "*"
@@ -108,10 +108,10 @@ jobs:
     
     steps:
       - name: Checkout
-        uses: actions/checkout@master
+        uses: actions/checkout@v3
         
       - name: Setup Python
-        uses: actions/setup-python@master
+        uses: actions/setup-python@v4.3.0
         with:
             python-version: '3.10'
 
@@ -152,7 +152,7 @@ jobs:
         uses: tj-actions/coverage-badge-py@v1.8
 
       - name: Verify Changed files
-        uses: tj-actions/verify-changed-files@v13.1
+        uses: tj-actions/verify-changed-files@v12.0
         id: changed_files
         with:
           files: coverage.svg
