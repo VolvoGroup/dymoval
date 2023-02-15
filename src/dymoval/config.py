@@ -17,7 +17,7 @@ mapping_dict = {
 try:
     import tomllib
 except ModuleNotFoundError:
-    import tomli as tomllib  # type:ignore
+    import tomli as tomllib
 
 try:
     with open(

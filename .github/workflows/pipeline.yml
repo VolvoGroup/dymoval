@@ -66,7 +66,7 @@ jobs:
         os: ["ubuntu-latest", "macos-latest", "windows-latest"]
     steps:
       - uses: actions/checkout@master
-      - uses: conda-incubator/setup-miniconda@master
+      - uses: conda-incubator/setup-miniconda@v2.2.0
         with:
           python-version: "3.10"
           mamba-version: "*"
@@ -149,10 +149,10 @@ jobs:
           coverage report -m
 
       - name: Coverage Badge
-        uses: tj-actions/coverage-badge-py@master
+        uses: tj-actions/coverage-badge-py@v1.8
 
       - name: Verify Changed files
-        uses: tj-actions/verify-changed-files@master
+        uses: tj-actions/verify-changed-files@13.1
         id: changed_files
         with:
           files: coverage.svg
