@@ -11,9 +11,9 @@ jobs:
   pypi_publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@master
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@master
         with:
           python-version: '3.10'
       - name: Install dependencies
@@ -24,7 +24,7 @@ jobs:
         run: python -m hatch build
       - name: Publish package
         if: startsWith(github.ref, 'refs/tags')
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@master
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
@@ -33,7 +33,7 @@ jobs:
     name: Conda skeleton publish
     steps:
       - name: Publish conda package from PyPI package
-        uses: silvxlabs/conda-skeleton-publish@v2
+        uses: silvxlabs/conda-skeleton-publish@master
         with:
           pypi_package: "dymoval"
           python_version: "3.10"
