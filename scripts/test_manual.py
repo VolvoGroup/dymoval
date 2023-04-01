@@ -30,6 +30,24 @@ import matplotlib.pyplot as plt
 # ===========================================================================
 # Create dymoval Dataset objects
 
+
+# %%
+
+a = 3
+b = 4
+
+# %%
+
+c = 5
+
+# %%
+
+d = 6
+e = 7
+
+# %%
+
+
 # %%
 plt.ion()
 # Let's create some Signal
@@ -54,6 +72,7 @@ input_signal_values = [
     np.hstack((np.random.rand(80), nan_intervals, np.random.rand(100))),
 ]
 
+# %%
 
 input_signal_units = ["m/s", "%", "°C"]
 #
@@ -211,3 +230,7 @@ vs.validation_results
 
 # %% At this point we can clear the simulations list
 vs.clear()
+
+# %%
+a = 1
+b = 6
