@@ -360,11 +360,11 @@ class Dataset:
         NaN_index = {}
         NaN_intervals = {}
         for s in list(df.columns):
-            NaN_index[s] = df.loc[df[s].isnull().to_numpy()].index
-            idx = np.where(
-                ~np.isclose(np.diff(NaN_index[s]), sampling_period, atol=ATOL)
-            )[0]
-            NaN_intervals[s] = np.split(NaN_index[s], idx + 1)
+#             NaN_index[s] = df.loc[df[s].isnull().to_numpy()].index
+#             idx = np.where(
+#                 ~np.isclose(np.diff(NaN_index[s]), sampling_period, atol=ATOL)
+#             )[0]
+#             NaN_intervals[s] = np.split(NaN_index[s], idx + 1)
         return NaN_intervals
 
     def _shift_dataset_tin_to_zero(
