@@ -230,7 +230,3 @@ vs.validation_results
 
 # %% At this point we can clear the simulations list
 vs.clear()
-
-# %%
-a = 1
-b = 6
