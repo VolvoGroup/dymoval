@@ -235,7 +235,6 @@ class Dataset:
         overlap: bool = False,
         verbosity: int = 0,
     ) -> None:
-
         # ==============================
         # Instance attributes
         # ==============================
@@ -298,13 +297,11 @@ class Dataset:
         self,
         axes: matplotlib.axes.Axes,
     ) -> None:
-
         # Function for cfiltering out only the signals present in the dataset
         # Note that only signals in the dataset can have NaN:s
         def filter_signals(
             avail_signals: list[str], ax: matplotlib.axes.Axes
         ) -> list[tuple[matplotlib.lines.Line2D, str]]:
-
             # Implementation
             lines, labels = ax.get_legend_handles_labels()
             lines_labels_all = list(zip(lines, labels))
@@ -339,7 +336,6 @@ class Dataset:
     def _find_dataset_coverage(
         self,
     ) -> tuple[pd.Series, pd.DataFrame, pd.Series, pd.DataFrame]:
-
         df = self.dataset
         u_mean = df["INPUT"].mean(axis=0).round(NUM_DECIMALS)
         u_cov = df["INPUT"].cov().round(NUM_DECIMALS)
@@ -360,11 +356,9 @@ class Dataset:
         NaN_index = {}
         NaN_intervals = {}
         for s in list(df.columns):
-#             NaN_index[s] = df.loc[df[s].isnull().to_numpy()].index
-#             idx = np.where(
-#                 ~np.isclose(np.diff(NaN_index[s]), sampling_period, atol=ATOL)
-#             )[0]
-#             NaN_intervals[s] = np.split(NaN_index[s], idx + 1)
+            NaN_index[s] = df.loc[df[s].isnull().to_numpy()].index
+            idx = np.where(~np.isclose(np.diff(NaN_index[s]), sampling_period, atol=ATOL))[0]
+            NaN_intervals[s] = np.split(NaN_index[s], idx + 1)
         return NaN_intervals
 
     def _shift_dataset_tin_to_zero(
@@ -392,12 +386,8 @@ class Dataset:
         for k in NaN_intervals.keys():
             for idx, nan_chunk in enumerate(NaN_intervals[k]):
                 nan_chunk_translated = nan_chunk - tin
-                NaN_intervals[k][idx] = np.round(
-                    nan_chunk_translated, NUM_DECIMALS  # noqa
-                )
-                NaN_intervals[k][idx] = nan_chunk_translated[
-                    nan_chunk_translated >= 0.0
-                ]
+                NaN_intervals[k][idx] = np.round(nan_chunk_translated, NUM_DECIMALS)  # noqa
+                NaN_intervals[k][idx] = nan_chunk_translated[nan_chunk_translated >= 0.0]
 
     def _new_dataset_from_dataframe(
         self,
@@ -412,7 +402,6 @@ class Dataset:
         verbosity: int = 0,
         _excluded_signals: list[str] = [],
     ) -> None:
-
         # ==============================================================
         # All the class attributes are defined and initialized here
         #
@@ -430,19 +419,14 @@ class Dataset:
         validate_dataframe(df)
 
         if tin and tout and tin > tout:
-            raise ValueError(
-                f" Value of tin ( ={tin}) shall be smaller than the value of tout ( ={tout})."
-            )
+            raise ValueError(f" Value of tin ( ={tin}) shall be smaller than the value of tout ( ={tout}).")
 
         # If the user passes a str cast into a list[str]
         u_names = str2list(u_names)
         y_names = str2list(y_names)
         # Check that you have at least one input and one output
         if not u_names or not y_names:
-            raise IndexError(
-                "You need at least one input and one output signal. "
-                "Check 'u_names' and 'y_names'."
-            )
+            raise IndexError("You need at least one input and one output signal. " "Check 'u_names' and 'y_names'.")
 
         # Check unicity of signal names
         if (
@@ -450,22 +434,16 @@ class Dataset:
             or len(y_names) != len(set(y_names))
             or (set(u_names) & set(y_names))  # Non empty intersection
         ):
-            raise ValueError(
-                "Signal names must be unique. Check 'u_names' and 'y_names'."
-            )
+            raise ValueError("Signal names must be unique. Check 'u_names' and 'y_names'.")
 
         # Check if u_names and y_names exist in the passed DataFrame
         available_names, available_units = list(zip(*df.columns))
         available_names = list(available_names)
-        input_not_found = difference_lists_of_str(
-            u_names, available_names
-        )  # noqa
+        input_not_found = difference_lists_of_str(u_names, available_names)  # noqa
         if input_not_found:
             raise ValueError(f"Input(s) {input_not_found} not found.")
         # Check output
-        output_not_found = difference_lists_of_str(
-            y_names, available_names
-        )  # noqa
+        output_not_found = difference_lists_of_str(y_names, available_names)  # noqa
         if output_not_found:
             raise ValueError(f"Output(s) {output_not_found} not found.")
         # ================== End of validation =======================
@@ -476,9 +454,7 @@ class Dataset:
         # Set easy-to-set attributes
         self.name = name  #: Dataset name.
         self.information_level = 0.0  #: *Not implemented yet!*
-        self.sampling_period = np.round(
-            df.index[1] - df.index[0], NUM_DECIMALS
-        )  #: Dataset sampling period.
+        self.sampling_period = np.round(df.index[1] - df.index[0], NUM_DECIMALS)  #: Dataset sampling period.
 
         # Excluded signals list is either passed by _new_dataset_from_signals()
         # or it is empty if a dataframe is passed by the user (all the signals
@@ -515,9 +491,7 @@ class Dataset:
         # Create extended DataFrame
         df_ext = pd.DataFrame(data=data, index=index)
         levels_name = ["kind", "names", "units"]
-        df_ext.columns = pd.MultiIndex.from_tuples(
-            u_multicolumns + y_multicolumns, name=levels_name
-        )
+        df_ext.columns = pd.MultiIndex.from_tuples(u_multicolumns + y_multicolumns, name=levels_name)
 
         # Take the whole dataframe as dataset before trimming.
         self.dataset = df_ext  #: The actual dataset
@@ -590,7 +564,6 @@ class Dataset:
         overlap: bool = False,
         verbosity: int = 0,
     ) -> None:
-
         # Do not initialize any class attribute here!
         # All attributes are initialized in the _new_dataset_from_dataframe() method
 
@@ -615,12 +588,8 @@ class Dataset:
         u_names = [x["name"] for x in resampled_signals if x["name"] in u_names]
         y_names = [x["name"] for x in resampled_signals if x["name"] in y_names]
 
-        u_units = [
-            x["signal_unit"] for x in resampled_signals if x["name"] in u_names
-        ]
-        y_units = [
-            x["signal_unit"] for x in resampled_signals if x["name"] in y_names
-        ]
+        u_units = [x["signal_unit"] for x in resampled_signals if x["name"] in u_names]
+        y_units = [x["signal_unit"] for x in resampled_signals if x["name"] in y_names]
         # Trim the signals to have equal length,
         # then build the DataFrame for inizializing the Dataset class.
         nsamples = [len(x["values"]) for x in resampled_signals]
@@ -676,9 +645,7 @@ class Dataset:
         y_names = list(df["OUTPUT"].columns.get_level_values("names"))
 
         # Small check. Not very pythonic but still...
-        signals_not_found = difference_lists_of_str(
-            list(signals), u_names + y_names
-        )
+        signals_not_found = difference_lists_of_str(list(signals), u_names + y_names)
         if signals_not_found:
             raise KeyError(
                 f"Signal(s) {signals_not_found} not found in the dataset. "
@@ -688,34 +655,16 @@ class Dataset:
 
         # Classify in IN and OUT in case signals are passed.
         if signals:
-            u_names = [
-                s
-                for s in signals
-                if s in df["INPUT"].columns.get_level_values("names")
-            ]
-            y_names = [
-                s
-                for s in signals
-                if s in df["OUTPUT"].columns.get_level_values("names")
-            ]
+            u_names = [s for s in signals if s in df["INPUT"].columns.get_level_values("names")]
+            y_names = [s for s in signals if s in df["OUTPUT"].columns.get_level_values("names")]
 
         # Compute indices
-        u_names_idx = [
-            df["INPUT"].droplevel(level="units", axis=1).columns.get_loc(u)
-            for u in u_names
-        ]
-        y_names_idx = [
-            df["OUTPUT"].droplevel(level="units", axis=1).columns.get_loc(y)
-            for y in y_names
-        ]
+        u_names_idx = [df["INPUT"].droplevel(level="units", axis=1).columns.get_loc(u) for u in u_names]
+        y_names_idx = [df["OUTPUT"].droplevel(level="units", axis=1).columns.get_loc(y) for y in y_names]
 
         # Use the indices to locate the units
-        u_units = list(
-            df["INPUT"].iloc[:, u_names_idx].columns.get_level_values("units")
-        )
-        y_units = list(
-            df["OUTPUT"].iloc[:, y_names_idx].columns.get_level_values("units")
-        )
+        u_units = list(df["INPUT"].iloc[:, u_names_idx].columns.get_level_values("units"))
+        y_units = list(df["OUTPUT"].iloc[:, y_names_idx].columns.get_level_values("units"))
 
         # Collect in dicts as it is cleaner
         u_dict = dict(zip(u_names, u_units))
@@ -726,12 +675,7 @@ class Dataset:
     def _validate_name_value_tuples(
         self,
         *signals_values: tuple[str, float],
-    ) -> tuple[
-        dict[str, str],
-        dict[str, str],
-        list[tuple[str, float]],
-        list[tuple[str, float]],
-    ]:
+    ) -> tuple[dict[str, str], dict[str, str], list[tuple[str, float]], list[tuple[str, float]],]:
         # This function is needed to validate inputs like [("u1",3.2), ("y1", 0.5)]
         # Think for example to the "remove_offset" function.
         # Return both the list of input and output names along their units
@@ -750,9 +694,7 @@ class Dataset:
 
     def _select_signals_to_plot(
         self, *signals: str | tuple[str, str] | None, overlap: bool
-    ) -> tuple[
-        dict[str, str], dict[str, str], list[tuple[str, ...]], list[str]
-    ]:
+    ) -> tuple[dict[str, str], dict[str, str], list[tuple[str, ...]], list[str]]:
         # ===================================================
         # Selection of signals to plot
         # ===================================================
@@ -808,12 +750,7 @@ class Dataset:
         linecolor_output: str,
         linestyle_fg: str,
         linestyle_bg: str,
-    ) -> tuple[
-        list[tuple[str, ...]],
-        list[tuple[str, ...]],
-        list[tuple[str, ...]],
-        list[tuple[str, ...]],
-    ]:
+    ) -> tuple[list[tuple[str, ...]], list[tuple[str, ...]], list[tuple[str, ...]], list[tuple[str, ...]],]:
         # signals_tpl is passed only to be a reference for casting
         # signals_lst_plain, which is e.g.
         # signals_lst_plain = ["u1","u2","u3", "y1","y4",...]
@@ -821,13 +758,8 @@ class Dataset:
         # signals_tpl[("u1","u2"),("u3",), ("y1","y4")...]
 
         # linecolors
-        linecolors = [
-            linecolor_input if s in u_dict.keys() else linecolor_output
-            for s in signals_lst_plain
-        ]
-        linecolors_tpl = _list_to_structured_list_of_tuple(
-            signals_tpl, linecolors
-        )
+        linecolors = [linecolor_input if s in u_dict.keys() else linecolor_output for s in signals_lst_plain]
+        linecolors_tpl = _list_to_structured_list_of_tuple(signals_tpl, linecolors)
 
         # ylabels (units)
         s_dict = deepcopy(u_dict)
@@ -880,7 +812,6 @@ class Dataset:
         alpha_fg: float,
         alpha_bg: float,
     ) -> matplotlib.figure.Figure:
-
         # This is the function who makes the actual plot once all the
         # parameters are set and passed
         # Adjust passed dataframe.
@@ -889,9 +820,7 @@ class Dataset:
         fig = grid.figure
         if fig.get_axes():
             # TODO This indexing shall be improved
-            axes_tpl = _list_to_structured_list_of_tuple(
-                signals_tpl, fig.get_axes()
-            )
+            axes_tpl = _list_to_structured_list_of_tuple(signals_tpl, fig.get_axes())
         else:
             axes_tpl = []
             axes = fig.add_subplot(grid[0])
@@ -985,10 +914,7 @@ class Dataset:
 
         # arguments Validation
         if target_sampling_period is not None:
-            if (
-                not isinstance(target_sampling_period, float)
-                or target_sampling_period < 0
-            ):
+            if not isinstance(target_sampling_period, float) or target_sampling_period < 0:
                 raise ValueError("'target_sampling_period' must be positive.")
 
         # Initialization
@@ -1011,24 +937,18 @@ class Dataset:
             else:
                 excluded_signals.append(s["name"])
 
-        resampled_signals = [
-            s for s in list(signal_list) if not (s["name"] in excluded_signals)
-        ]
+        resampled_signals = [s for s in list(signal_list) if not (s["name"] in excluded_signals)]
         if verbosity != 0:
             print(
                 "\nre-sampled signals =",
                 f"{[s['name'] for s in resampled_signals]}",
             )
-            print(
-                "excluded signals from dataset ="
-                f"{[s for s in excluded_signals]}"
-            )
+            print("excluded signals from dataset =" f"{[s for s in excluded_signals]}")
             print(f"actual sampling period = {target_sampling_period}")
 
         return resampled_signals, excluded_signals
 
     def _add_signals(self, kind: Signal_type, *signals: Signal) -> Dataset:
-
         # Validate the dymoval Signals
         validate_signals(*signals)
 
@@ -1036,11 +956,7 @@ class Dataset:
         ds = deepcopy(self)
 
         # Check if the sampling period is OK
-        signals_ok = [
-            s
-            for s in signals
-            if np.isclose(s["sampling_period"], ds.sampling_period, atol=ATOL)
-        ]
+        signals_ok = [s for s in signals if np.isclose(s["sampling_period"], ds.sampling_period, atol=ATOL)]
         signals_name = [s["name"] for s in signals]
         signals_unit = [s["signal_unit"] for s in signals]
 
@@ -1052,9 +968,7 @@ class Dataset:
 
         # Check if the signal name(s) already exist in the current Dataset
         _, signal_names, _ = zip(*self.signal_list())
-        name_found = [
-            s["name"] for s in signals_ok if s["name"] in signal_names
-        ]
+        name_found = [s["name"] for s in signals_ok if s["name"] in signal_names]
         if name_found:
             raise KeyError(f"Signal(s) {name_found} already exist.")
 
@@ -1078,15 +992,11 @@ class Dataset:
         )
 
         # concatenate new DataFrame containing the added signals
-        ds.dataset = pd.concat([df_temp, ds.dataset], axis=1).sort_index(
-            level="kind", axis=1, sort_remaining=False
-        )
+        ds.dataset = pd.concat([df_temp, ds.dataset], axis=1).sort_index(level="kind", axis=1, sort_remaining=False)
 
         # Update NaN intervals
         NaN_intervals = self._find_nan_intervals()
-        ds._nan_intervals.update(
-            NaN_intervals
-        )  # Join two dictionaries through update()
+        ds._nan_intervals.update(NaN_intervals)  # Join two dictionaries through update()
 
         ds.dataset = ds.dataset.round(NUM_DECIMALS)
         return ds
@@ -1149,9 +1059,7 @@ class Dataset:
             # Figure closure handler
             # It can be better done perhaps.
             def close_event(event):  # type:ignore
-                time_interval = np.round(
-                    axes[0].get_xlim(), NUM_DECIMALS
-                )  # noqa
+                time_interval = np.round(axes[0].get_xlim(), NUM_DECIMALS)  # noqa
                 close_event.tin, close_event.tout = time_interval
                 close_event.tin = max(close_event.tin, 0.0)
                 close_event.tout = max(close_event.tout, 0.0)
@@ -1190,9 +1098,7 @@ class Dataset:
             tin_sel = close_event.tin  # type:ignore
             tout_sel = close_event.tout  # type:ignore
 
-            return np.round(tin_sel, NUM_DECIMALS), np.round(
-                tout_sel, NUM_DECIMALS
-            )
+            return np.round(tin_sel, NUM_DECIMALS), np.round(tout_sel, NUM_DECIMALS)
 
         # =============================================
         # Trim Dataset main function
@@ -1216,9 +1122,7 @@ class Dataset:
             tin_sel, tout_sel = _graph_selection(self, *signals, **kwargs)
 
         if verbosity != 0:
-            print(
-                f"\n tin = {tin_sel}{ds.dataset.index.name[1]}, tout = {tout_sel}{ds.dataset.index.name[1]}"
-            )
+            print(f"\n tin = {tin_sel}{ds.dataset.index.name[1]}, tout = {tout_sel}{ds.dataset.index.name[1]}")
 
         # Now you can trim the dataset and update all the
         # other time-related attributes
@@ -1248,16 +1152,12 @@ class Dataset:
 
         # If there is a scalar input or output to avoid returning a column vector.
         if len(self.dataset["INPUT"].columns.get_level_values("names")) == 1:
-            u_values = (
-                self.dataset["INPUT"].to_numpy().round(NUM_DECIMALS)[:, 0]
-            )
+            u_values = self.dataset["INPUT"].to_numpy().round(NUM_DECIMALS)[:, 0]
         else:
             u_values = self.dataset["INPUT"].to_numpy().round(NUM_DECIMALS)
 
         if len(self.dataset["OUTPUT"].columns.get_level_values("names")) == 1:
-            y_values = (
-                self.dataset["OUTPUT"].to_numpy().round(NUM_DECIMALS)[:, 0]
-            )
+            y_values = self.dataset["OUTPUT"].to_numpy().round(NUM_DECIMALS)[:, 0]
         else:
             y_values = self.dataset["OUTPUT"].to_numpy().round(NUM_DECIMALS)
 
@@ -1383,9 +1283,7 @@ class Dataset:
         available_names = list(df.columns.get_level_values("names"))
         a, b = zip(*signal_pairs)
         passed_names = list(a + b)
-        names_not_found = difference_lists_of_str(
-            passed_names, available_names
-        )  # noqa
+        names_not_found = difference_lists_of_str(passed_names, available_names)  # noqa
         if names_not_found:
             raise ValueError(f"Signal(s) {names_not_found} not found.")
 
@@ -1647,9 +1545,7 @@ class Dataset:
 
         sigs = [s for s in signals if not isinstance(s, str)]
         if len(sigs) > 0:
-            raise TypeError(
-                f"It seems that you are trying to overlap {sigs}. Coverage plots cannot be overlapped."
-            )
+            raise TypeError(f"It seems that you are trying to overlap {sigs}. Coverage plots cannot be overlapped.")
         # ===================================================
         # Selection of signals to plot
         # ===================================================
@@ -1762,9 +1658,7 @@ class Dataset:
 
         # Check if there are any NaN:s
         if df_temp.isna().any(axis=None):
-            raise ValueError(
-                f"Dataset '{self.name}' contains NaN:s. I Cannot compute the FFT."
-            )
+            raise ValueError(f"Dataset '{self.name}' contains NaN:s. I Cannot compute the FFT.")
 
         # Compute FFT. All the input signals are real (dataset only contains float)
         # We normalize the fft with N to secure energy balance (Parseval's Theorem),
@@ -1774,9 +1668,7 @@ class Dataset:
 
         vals = (
             fft.rfftn(
-                df_temp.droplevel(level=["kind", "units"], axis=1).loc[
-                    :, u_names + y_names
-                ],
+                df_temp.droplevel(level=["kind", "units"], axis=1).loc[:, u_names + y_names],
                 axes=0,
             )
             / N
@@ -1786,9 +1678,7 @@ class Dataset:
         # Create a new Dataframe
         u_cols = [col for col in df_temp.columns for u in u_names if u in col]
         y_cols = [col for col in df_temp.columns for y in y_names if y in col]
-        cols = pd.MultiIndex.from_tuples(
-            u_cols + y_cols, names=df_temp.columns.names
-        )
+        cols = pd.MultiIndex.from_tuples(u_cols + y_cols, names=df_temp.columns.names)
         df_freq = pd.DataFrame(data=vals, columns=cols)
         df_freq = df_freq.T.drop_duplicates().T  # Drop duplicated columns
 
@@ -1991,9 +1881,7 @@ class Dataset:
                     axes = [axes_tpl[ii][0], axes_tpl[ii][1]]
                 else:
                     inner_grid = grid[ii].subgridspec(2, 1)
-                    axes = [
-                        fig.add_subplot(g, sharex=axes[0]) for g in inner_grid
-                    ]
+                    axes = [fig.add_subplot(g, sharex=axes[0]) for g in inner_grid]
                 # Two colums per time are being plot: (abs,angle)
                 # If you do ax.legend(handles,my_labels) and then you do
                 # handled, labels = ax.get_legend_handles_labels() pandas will
@@ -2031,17 +1919,13 @@ class Dataset:
                 line_angle_r = []
                 label_angle_r = []
                 if len(s) == 2:  # tuple like ("u1","u2")
-                    if (
-                        len(axes_tpl) > 0
-                    ):  # TODO: this may be always true. To check.
+                    if len(axes_tpl) > 0:  # TODO: this may be always true. To check.
                         # indices 3 and 4 represent the abs and phase axes of the
                         # right axes
                         axes = [axes_tpl[ii][2], axes_tpl[ii][3]]
                     else:
                         axes_right = [axes[0].twinx(), axes[1].twinx()]
-                    df_freq.droplevel(level=[0, 2, 3], axis=1).loc[
-                        :, s[1]
-                    ].plot(
+                    df_freq.droplevel(level=[0, 2, 3], axis=1).loc[:, s[1]].plot(
                         subplots=True,
                         grid=False,
                         color=linecolors_tpl[ii][1],
@@ -2067,17 +1951,13 @@ class Dataset:
 
                 # legend handling
                 # Set nice legend
-                axes[0].legend(
-                    line_abs_l + line_abs_r, label_abs_l + label_abs_r
-                )
+                axes[0].legend(line_abs_l + line_abs_r, label_abs_l + label_abs_r)
                 axes[1].legend(
                     line_angle_l + line_angle_r,
                     label_angle_l + label_angle_r,
                 )
                 # Set x_label
-                axes[1].set_xlabel(
-                    f"{df_freq.index.name[0]} ({df_freq.index.name[1]})"
-                )
+                axes[1].set_xlabel(f"{df_freq.index.name[0]} ({df_freq.index.name[1]})")
 
             # Remove all dummy axes, i.e. axes with no line2D objects
             # TODO: as seen, inspite you explictely set the legends,
@@ -2219,9 +2099,7 @@ class Dataset:
         nrows = fig.get_axes()[0].get_gridspec().get_geometry()[0]
         ncols = fig.get_axes()[0].get_gridspec().get_geometry()[1]
         if kind == "amplitude":
-            fig.set_size_inches(
-                ncols * ax_width * 2, nrows * ax_height * 2 + 1.25
-            )
+            fig.set_size_inches(ncols * ax_width * 2, nrows * ax_height * 2 + 1.25)
         else:
             fig.set_size_inches(ncols * ax_width, nrows * ax_height + 1.25)
         fig.set_layout_engine(layout)
@@ -2260,17 +2138,13 @@ class Dataset:
             zip(["INPUT"] * len(u_names), u_names, u_units),
         )
 
-        df_temp.loc[:, cols] = (
-            df_temp.loc[:, cols] - df_temp.loc[:, cols].mean()
-        )
+        df_temp.loc[:, cols] = df_temp.loc[:, cols] - df_temp.loc[:, cols].mean()
 
         # Remove means from output signals
         cols = list(
             zip(["OUTPUT"] * len(y_names), y_names, y_units),
         )
-        df_temp.loc[:, cols] = (
-            df_temp.loc[:, cols] - df_temp.loc[:, cols].mean()
-        )
+        df_temp.loc[:, cols] = df_temp.loc[:, cols] - df_temp.loc[:, cols].mean()
 
         # round result
         ds_temp.dataset = df_temp.round(NUM_DECIMALS)
@@ -2332,9 +2206,7 @@ class Dataset:
                 zip(["INPUT"] * len(u_names), u_names, u_units),
             )
 
-            df_temp.loc[:, cols] = df_temp.loc[:, cols].apply(
-                lambda x: x.subtract(u_offset), axis=1
-            )
+            df_temp.loc[:, cols] = df_temp.loc[:, cols].apply(lambda x: x.subtract(u_offset), axis=1)
 
         # Then adjust the output columns
         if y_list:
@@ -2342,9 +2214,7 @@ class Dataset:
             cols = list(
                 zip(["OUTPUT"] * len(y_names), y_names, y_units),
             )
-            df_temp.loc[:, cols] = df_temp.loc[:, cols].apply(
-                lambda x: x.subtract(y_offset), axis=1
-            )
+            df_temp.loc[:, cols] = df_temp.loc[:, cols].apply(lambda x: x.subtract(y_offset), axis=1)
 
         df_temp.round(NUM_DECIMALS)
 
@@ -2411,9 +2281,7 @@ class Dataset:
                 y_filt = np.zeros(N)
                 y_filt[0] = u_filt[0]
                 for kk in range(0, N - 1):
-                    y_filt[kk + 1] = (1.0 - fc / fs) * y_filt[kk] + (
-                        fc / fs
-                    ) * u_filt[kk]
+                    y_filt[kk + 1] = (1.0 - fc / fs) * y_filt[kk] + (fc / fs) * u_filt[kk]
                 df_temp.loc[:, ("INPUT", u, u_units[ii])] = y_filt
 
         # OUTPUT
@@ -2429,9 +2297,7 @@ class Dataset:
                 y_filt = np.zeros(N)
                 y_filt[0] = u_filt[0]
                 for kk in range(0, N - 1):
-                    y_filt[kk + 1] = (1.0 - fc / fs) * y_filt[kk] + (
-                        fc / fs
-                    ) * u_filt[kk]
+                    y_filt[kk + 1] = (1.0 - fc / fs) * y_filt[kk] + (fc / fs) * u_filt[kk]
                 df_temp.loc[:, ("OUTPUT", y, y_units[ii])] = y_filt
         # Round value
         ds_temp.dataset = df_temp.round(NUM_DECIMALS)  # noqa
@@ -2482,14 +2348,10 @@ class Dataset:
         level_names = ds_temp.dataset.columns.names
 
         # Check if passed signals exist
-        available_names = list(
-            ds_temp.dataset.columns.get_level_values("names")
-        )
+        available_names = list(ds_temp.dataset.columns.get_level_values("names"))
         a, b, c = zip(*signal_function)
         passed_names = list(a)
-        names_not_found = difference_lists_of_str(
-            passed_names, available_names
-        )  # noqa
+        names_not_found = difference_lists_of_str(passed_names, available_names)  # noqa
         if names_not_found:
             raise ValueError(f"Signal(s) {names_not_found} not found.")
 
@@ -2498,17 +2360,13 @@ class Dataset:
         sig_unit = dict(zip(a, c))
 
         # Selec the whole columns names based on passed signal names
-        cols_idx = [
-            col for col in ds_temp.dataset.columns if col[1] in passed_names
-        ]
+        cols_idx = [col for col in ds_temp.dataset.columns if col[1] in passed_names]
         sig_cols = dict(zip(a, list(cols_idx)))
 
         # Start to apply functions
         for s in passed_names:
             ds_temp.dataset.loc[:, sig_cols[s]] = (
-                ds_temp.dataset.loc[:, sig_cols[s]]
-                .apply(sig_func[s])
-                .round(NUM_DECIMALS)
+                ds_temp.dataset.loc[:, sig_cols[s]].apply(sig_func[s]).round(NUM_DECIMALS)
             )
 
             # Update units.
@@ -2516,13 +2374,9 @@ class Dataset:
             new_col_name = list(sig_cols[s])
             new_col_name[2] = sig_unit[s]
             ds_temp.dataset.columns = ds_temp.dataset.columns.to_flat_index()
-            ds_temp.dataset = ds_temp.dataset.rename(
-                columns={sig_cols[s]: tuple(new_col_name)}
-            )
+            ds_temp.dataset = ds_temp.dataset.rename(columns={sig_cols[s]: tuple(new_col_name)})
 
-            new_idx = pd.MultiIndex.from_tuples(
-                ds_temp.dataset.columns, names=level_names
-            )
+            new_idx = pd.MultiIndex.from_tuples(ds_temp.dataset.columns, names=level_names)
             ds_temp.dataset.columns = new_idx
 
         # Update the coverage
@@ -2610,29 +2464,19 @@ class Dataset:
         available_signals = [s[1] for s in self.signal_list()]
         signals_not_found = [s for s in signals if s not in available_signals]
         if signals_not_found:
-            raise KeyError(
-                f"Signal(s)) {signals_not_found} not found "
-                f"in Dataset '{self.name}'."
-            )
+            raise KeyError(f"Signal(s)) {signals_not_found} not found " f"in Dataset '{self.name}'.")
 
         for s in signals:
             # Input detected
             cond1 = (
                 s in list(ds.dataset["INPUT"].columns.get_level_values("names"))
-                and len(
-                    list(ds.dataset["INPUT"].columns.get_level_values("names"))
-                )
-                > 1
+                and len(list(ds.dataset["INPUT"].columns.get_level_values("names"))) > 1
             )
 
             # Output detected
             cond2 = (
-                s
-                in list(ds.dataset["OUTPUT"].columns.get_level_values("names"))
-                and len(
-                    list(ds.dataset["OUTPUT"].columns.get_level_values("names"))
-                )
-                > 1
+                s in list(ds.dataset["OUTPUT"].columns.get_level_values("names"))
+                and len(list(ds.dataset["OUTPUT"].columns.get_level_values("names"))) > 1
             )
 
             # Remove Signal
@@ -2640,10 +2484,7 @@ class Dataset:
                 ds.dataset = ds.dataset.drop(s, axis=1, level="names")
                 del ds._nan_intervals[s]
             else:
-                raise KeyError(
-                    f"Cannot remove {s}. The dataset must have at least "
-                    "one input and one output."
-                )
+                raise KeyError(f"Cannot remove {s}. The dataset must have at least " "one input and one output.")
 
         return ds
 
@@ -2653,10 +2494,7 @@ class Dataset:
 # ====================================================
 
 
-def _list_to_structured_list_of_tuple(
-    tpl: list[tuple[str, ...]], lst: list[str]
-) -> list[tuple[str, ...]]:
-
+def _list_to_structured_list_of_tuple(tpl: list[tuple[str, ...]], lst: list[str]) -> list[tuple[str, ...]]:
     # Convert a plain list to a list of tuple of a given structure, i.e.
     # Given tpl = [("a0","a1"),("b0",),("b1","a1","b0"),("a0","a1"),("b0",)]
     # and lst = ["u0", "u1", "u2", "u3", "u4", "u5", "u6", "u7" , "u8"]
@@ -2792,13 +2630,9 @@ def validate_signals(*signals: Signal) -> None:
     #
     for s in signals:
         # Check that the user wrote the necessary keys
-        not_found_keys = difference_lists_of_str(
-            list(SIGNAL_KEYS), list(s.keys())
-        )
+        not_found_keys = difference_lists_of_str(list(SIGNAL_KEYS), list(s.keys()))
         if not_found_keys:
-            raise KeyError(
-                f"Key {not_found_keys} not found in signal {s['name']}."
-            )
+            raise KeyError(f"Key {not_found_keys} not found in signal {s['name']}.")
 
         # Check that "values" makes sense
         cond = not isinstance(s["values"], np.ndarray) or s["values"].ndim != 1
@@ -2813,9 +2647,7 @@ def validate_signals(*signals: Signal) -> None:
         # sampling period check
         if not isinstance(s["sampling_period"], float):
             raise TypeError("Key 'sampling_period' must be a positive float.")
-        if s["sampling_period"] < 0.0 or np.isclose(
-            s["sampling_period"], 0.0, atol=ATOL
-        ):
+        if s["sampling_period"] < 0.0 or np.isclose(s["sampling_period"], 0.0, atol=ATOL):
             raise ValueError("Key 'sampling_period' must be a positive float.")
         # Check that all signals have been sampled with the same time_unit
 
@@ -2910,9 +2742,7 @@ def validate_dataframe(
     # Check that each tuple has len == 2
     cond2 = all(len(sig) == 2 for sig in df.columns)
     if not cond1 or not cond2:
-        raise TypeError(
-            "Each column name shall be of the form (name,unit), where 'name' and 'unit' are strings."
-        )
+        raise TypeError("Each column name shall be of the form (name,unit), where 'name' and 'unit' are strings.")
 
     # check if the index is a tuple
     if not isinstance(df.index.name, tuple):
@@ -2927,9 +2757,7 @@ def validate_dataframe(
     cond2 = all(isinstance(unit, str) for unit in available_units)
 
     if not cond1 or not cond2:
-        raise TypeError(
-            "Each column name shall be of the form (name,unit), where 'name' and 'unit' are strings."
-        )
+        raise TypeError("Each column name shall be of the form (name,unit), where 'name' and 'unit' are strings.")
 
     # The following is automatically tested by the previous.
     #  # Check that the DataFrame must have only one index and columns levels
@@ -2991,9 +2819,7 @@ def plot_signals(*signals: Signal) -> matplotlib.figure.Figure:
     fig, ax = plt.subplots(nrows, ncols, squeeze=False, sharex=True)
     ax = ax.T.flat
     for ii, s in enumerate(signals):
-        timeline = np.linspace(
-            0.0, len(s["values"]) * s["sampling_period"], len(s["values"])
-        )
+        timeline = np.linspace(0.0, len(s["values"]) * s["sampling_period"], len(s["values"]))
         ax[ii].plot(timeline, s["values"], label=signal_names[ii])
         ax[ii].text(
             0.8,
@@ -3065,11 +2891,7 @@ def compare_datasets(
             # print(labels)
             # Be sure that your plot show legends!
             if labels:
-                new_labels = [
-                    ds_names[jj] + ", " + labels[jj]
-                    for jj, _ in enumerate(ds_names)
-                    if jj < len(labels)
-                ]
+                new_labels = [ds_names[jj] + ", " + labels[jj] for jj, _ in enumerate(ds_names) if jj < len(labels)]
             ax.legend(handles, new_labels)
 
     def _arrange_fig_axes(
@@ -3078,16 +2900,7 @@ def compare_datasets(
         # When performing many plots on the same figure,
         # this function find number of axes needed
         # n is the number of total signals, no matter if they are INPUT or OUTPUT
-        n = max(
-            [
-                len(
-                    df.droplevel(level="kind", axis=1).columns.get_level_values(
-                        "names"
-                    )
-                )
-                for df in dfs
-            ]
-        )
+        n = max([len(df.droplevel(level="kind", axis=1).columns.get_level_values("names")) for df in dfs])
 
         # Set nrows and ncols
         fig = plt.figure()
