@@ -358,7 +358,6 @@ class Test_Plots:
         )
 
         print(ds.dataset)
-
         name_vs = "my_validation"
         vs = dmv.ValidationSession(name_vs, ds)
 
