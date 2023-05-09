@@ -357,6 +357,7 @@ class Test_Plots:
             name_ds, df, u_names, y_names, full_time_interval=True
         )
 
+        print(ds.dataset)
         name_vs = "my_validation"
         vs = dmv.ValidationSession(name_vs, ds)
 
