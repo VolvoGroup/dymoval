@@ -32,23 +32,6 @@ import matplotlib.pyplot as plt
 
 
 # %%
-
-a = 3
-b = 4
-
-# %%
-
-c = 5
-
-# %%
-
-d = 6
-e = 7
-
-# %%
-
-
-# %%
 plt.ion()
 # Let's create some Signal
 nan_intervals = np.empty(200)

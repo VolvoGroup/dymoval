@@ -361,6 +361,7 @@ class Test_Plots:
 
         name_vs = "my_validation"
         vs = dmv.ValidationSession(name_vs, ds)
+        print(vs.simulations_results)
 
         # Add one model
         sim1_name = "Model 1"
