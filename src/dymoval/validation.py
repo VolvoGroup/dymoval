@@ -822,6 +822,7 @@ class ValidationSession:
             [df_sim, vs_temp.simulations_results], axis=1
         )
 
+        print(vs_temp.simulations_results)
         # Update residuals auto-correlation and cross-correlation attributes
         vs_temp._append_correlations_tensors(sim_name)
         vs_temp._append_validation_results(sim_name)
