@@ -379,6 +379,7 @@ class Test_Plots:
             len(vs.Dataset.dataset["OUTPUT"].values), 1
         )
         vs = vs.append_simulation(sim2_name, sim2_labels, sim2_values)
+        print(vs.simulations_results)
 
         # =============================
         # plot simulations
