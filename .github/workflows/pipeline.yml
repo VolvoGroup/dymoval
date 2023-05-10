@@ -59,6 +59,8 @@ jobs:
           hatch build
 
   mamba_tests:
+    # While pip uses pip freeze, here we tests dymoval with the latest
+    # version of the dependencies.
     name: Tests with conda/mamba
     runs-on: ${{ matrix.os }}
     strategy:
@@ -69,14 +71,11 @@ jobs:
       - uses: actions/checkout@v3
       - uses: conda-incubator/setup-miniconda@v2
         with:
-          auto-update-conda: false
-          activate-environment: explicit-env
-          environment-file: ./conda-lock.yml
-          # python-version: "3.10"
-          # mamba-version: "*"
-          # channels: conda-forge,defaults
-          # channel-priority: true
-          # environment-file: ./environment.yml
+          python-version: "3.10"
+          mamba-version: "*"
+          channels: conda-forge,defaults
+          channel-priority: true
+          environment-file: ./environment.yml
 
       - name: Formatting source code (black)
         uses: psf/black@stable
