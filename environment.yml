@@ -1,9 +1,8 @@
-name: myenv
 channels:
   - conda-forge
   - defaults
 dependencies:
-  - python = 3.10
+  - python=3.10
   - pandas
   - matplotlib
   - control
@@ -20,6 +19,4 @@ dependencies:
   - black
   - flake8
   - coverage
-  - conda-lock
   - h5py
-

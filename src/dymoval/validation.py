@@ -125,7 +125,6 @@ def rsquared(x: np.ndarray, y: np.ndarray) -> float:
 def _xcorr_norm_validation(
     Rxy: XCorrelation,
 ) -> XCorrelation:
-
     R = Rxy["values"]
 
     # MISO or SIMO case
@@ -318,7 +317,6 @@ class ValidationSession:
         l_norm: float | Literal["fro", "nuc"] | None = np.inf,
         matrix_norm: float | Literal["fro", "nuc"] | None = 2,
     ) -> None:
-
         # Extact dataset output values
         df_val = self.Dataset.dataset
         y_values = df_val["OUTPUT"].to_numpy()
@@ -347,7 +345,6 @@ class ValidationSession:
     def _simulation_validation(
         self, sim_name: str, y_names: list[str], y_data: np.ndarray
     ) -> None:
-
         if len(y_names) != len(set(y_names)):
             raise ValueError("Signals name must be unique.")
         if (
@@ -818,9 +815,9 @@ class ValidationSession:
         )
 
         # Concatenate df_sim with the current sim results
-        vs_temp.simulations_results = pd.concat(
-            [df_sim, vs_temp.simulations_results], axis=1
-        )
+        vs_temp.simulations_results = vs_temp.simulations_results.join(
+            df_sim, how="right"
+        ).rename_axis(df_sim.columns.names, axis=1)
 
         # Update residuals auto-correlation and cross-correlation attributes
         vs_temp._append_correlations_tensors(sim_name)

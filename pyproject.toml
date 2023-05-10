@@ -28,7 +28,6 @@ dependencies = [
 "black",
 "flake8",
 "coverage",
-"conda-lock",
 "h5py",
 ]
 
@@ -57,7 +56,6 @@ keywords = [
 
 # For developers
 [project.optional-dependencies]
-
 build = ["hatch"]
 
 
@@ -66,12 +64,11 @@ build = ["hatch"]
 "Documentation" = "https://volvogroup.github.io/dymoval/"
 "Bug Tracker" = "https://github.com/VolvoGroup/dymoval/issues"
 
-
 # =======================
 # Hatch settings
 # =======================
 
-[tool.hatch.envs.myenv]
+[tool.hatch.envs.dymoval_dev]
 type = "conda"
 command = "conda"
 conda-forge = true
@@ -86,13 +83,14 @@ exclude = [
 "scripts" = "dymoval/scripts"
 
 # ===================================
-# Formatting, type check, unit-test 
+# Formatting, type check, unit-test
 # ===================================
 # black
 [tool.black]
 target-version = ['py310']
 line-length = 80
-exclude = ["scripts", "docs"]
+# exclude = ["scripts", "docs"]
+exclude = '''/(scripts|docs)/'''
 
 # mypy
 [tool.mypy]
@@ -114,7 +112,6 @@ module = [
     "utils",
     "config",
 ]
-
 
 # pytest
 [tool.pytest.ini_options]

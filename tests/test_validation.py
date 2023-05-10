@@ -357,8 +357,11 @@ class Test_Plots:
             name_ds, df, u_names, y_names, full_time_interval=True
         )
 
+        print(ds.dataset)
+
         name_vs = "my_validation"
         vs = dmv.ValidationSession(name_vs, ds)
+        print(vs.simulations_results)
 
         # Add one model
         sim1_name = "Model 1"
@@ -379,6 +382,7 @@ class Test_Plots:
             len(vs.Dataset.dataset["OUTPUT"].values), 1
         )
         vs = vs.append_simulation(sim2_name, sim2_labels, sim2_values)
+        print(vs.simulations_results)
 
         # =============================
         # plot simulations

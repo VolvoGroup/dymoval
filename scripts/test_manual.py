@@ -30,6 +30,7 @@ import matplotlib.pyplot as plt
 # ===========================================================================
 # Create dymoval Dataset objects
 
+
 # %%
 plt.ion()
 # Let's create some Signal
@@ -54,6 +55,7 @@ input_signal_values = [
     np.hstack((np.random.rand(80), nan_intervals, np.random.rand(100))),
 ]
 
+# %%
 
 input_signal_units = ["m/s", "%", "°C"]
 #
@@ -123,6 +125,7 @@ dmv.validate_signals(*signal_list)
 
 # ... and you can visually inspect them through the function dmv.plot_signals
 dmv.plot_signals(*signal_list)
+plt.pause(0.0001)
 
 # The signals to be included in a dataset must have the same sampling period,
 # so you may need to re-sample your signals.
@@ -162,10 +165,12 @@ ds = ds.remove_NaNs()
 # At this point we can visually inspect the resulting Dataset.
 # Note how the areas where the NaN:s have been replaced are shaded.
 ax = ds.plot()
+plt.pause(0.0001)
 
 # %% We can also inspect the Dataset coverage region
 
 ds.plot_coverage()
+plt.pause(0.0001)
 
 # Other methods of the class Dataset are self-explanatory.
 #
@@ -180,7 +185,6 @@ ds.plot_coverage()
 #
 # To create a dymoval ValidationSession we only need to pass a dymoval Dataset.
 vs = dmv.ValidationSession("my_validation", ds)
-
 # %% Now Pretend that we built two models and we have want to validate them.
 
 sim1_name = "Model 1"
@@ -188,7 +192,6 @@ sim1_labels = ["my_y1", "my_y2"]
 sim1_values = vs.Dataset.dataset["OUTPUT"].values + np.random.rand(
     len(vs.Dataset.dataset["OUTPUT"].values), 2
 )
-
 
 sim2_name = "Model 2"
 sim2_labels = ["your_y1", "your_y2"]
@@ -204,6 +207,7 @@ vs = vs.append_simulation(sim2_name, sim2_labels, sim2_values)
 
 # %% We can visually inspect the results...
 vs.plot_simulations()
+plt.pause(0.0001)
 
 # %% ... or we can get validation metrics
 
