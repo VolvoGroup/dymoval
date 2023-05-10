@@ -36,6 +36,10 @@ jobs:
 
       - name: Formatting source code (black)
         uses: psf/black@stable
+        with:
+            options: "--check --verbose"
+            src: "./src"
+            jupyter: true
 
       - name: Install dependencies (pip)
         run: |
@@ -58,7 +62,7 @@ jobs:
           python -m pip install .[build]
           hatch build
 
-  mamba_tests:
+  conda_tests:
     # While pip uses pip freeze, here we tests dymoval with the latest
     # version of the dependencies.
     # In environment.yml no version is specified whereas in
@@ -86,6 +90,10 @@ jobs:
 
       - name: Formatting source code (black)
         uses: psf/black@stable
+        with:
+            options: "--check --verbose"
+            src: "./src"
+            jupyter: true
 
       - name: (bash) Run all the tests on bash (flake8, mypy, pytest, sphinx)
         shell: bash -l {0}
@@ -105,6 +113,10 @@ jobs:
 
       - name: Formatting source code (black)
         uses: psf/black@stable
+        with:
+            options: "--check --verbose"
+            src: "./src"
+            jupyter: true
 
       - name: (powershell) Run all the tests on Powershell (flake8, mypy, pytest, sphinx)
         shell: pwsh
