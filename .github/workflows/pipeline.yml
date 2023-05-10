@@ -37,7 +37,6 @@ jobs:
       - name: Formatting source code (black)
         uses: psf/black@stable
         with:
-            options: "--check --verbose --line-length 80"
             src: "./src/dymoval"
 
       - name: Install dependencies (pip)
@@ -90,7 +89,6 @@ jobs:
       - name: Formatting source code (black)
         uses: psf/black@stable
         with:
-            options: "--check --verbose --line-length 80"
             src: "./src/dymoval"
 
       - name: (bash) Run all the tests on bash (flake8, mypy, pytest, sphinx)
@@ -112,7 +110,6 @@ jobs:
       - name: Formatting source code (black)
         uses: psf/black@stable
         with:
-            options: "--check --verbose --line-length 80"
             src: "./src/dymoval"
 
       - name: (powershell) Run all the tests on Powershell (flake8, mypy, pytest, sphinx)
