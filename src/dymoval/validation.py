@@ -125,7 +125,6 @@ def rsquared(x: np.ndarray, y: np.ndarray) -> float:
 def _xcorr_norm_validation(
     Rxy: XCorrelation,
 ) -> XCorrelation:
-
     R = Rxy["values"]
 
     # MISO or SIMO case
@@ -318,7 +317,6 @@ class ValidationSession:
         l_norm: float | Literal["fro", "nuc"] | None = np.inf,
         matrix_norm: float | Literal["fro", "nuc"] | None = 2,
     ) -> None:
-
         # Extact dataset output values
         df_val = self.Dataset.dataset
         y_values = df_val["OUTPUT"].to_numpy()
@@ -347,7 +345,6 @@ class ValidationSession:
     def _simulation_validation(
         self, sim_name: str, y_names: list[str], y_data: np.ndarray
     ) -> None:
-
         if len(y_names) != len(set(y_names)):
             raise ValueError("Signals name must be unique.")
         if (
