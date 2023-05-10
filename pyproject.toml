@@ -28,7 +28,6 @@ dependencies = [
 "black",
 "flake8",
 "coverage",
-"conda-lock",
 "h5py",
 ]
 
@@ -57,7 +56,6 @@ keywords = [
 
 # For developers
 [project.optional-dependencies]
-
 build = ["hatch"]
 
 
@@ -66,21 +64,6 @@ build = ["hatch"]
 "Documentation" = "https://volvogroup.github.io/dymoval/"
 "Bug Tracker" = "https://github.com/VolvoGroup/dymoval/issues"
 
-# =======================
-# Conda-lock settings
-# =======================
-[tool.conda-lock]
-channels = [
-    'conda-forge', 'defaults'
-]
-platforms = [
-    'osx-arm64',
-    'linux-64',
-    'win-64',
-    'osx-64',
-    # 'linux-aarch64',
-    # 'linux-ppc64le'
-]
 # =======================
 # Hatch settings
 # =======================
