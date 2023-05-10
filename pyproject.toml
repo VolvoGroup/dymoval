@@ -90,7 +90,7 @@ exclude = [
 target-version = ['py310']
 line-length = 80
 # exclude = ["scripts", "docs"]
-exclude = /(scripts|docs)/
+exclude = '''/(scripts|docs)/'''
 
 # mypy
 [tool.mypy]
