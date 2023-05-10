@@ -815,12 +815,8 @@ class ValidationSession:
         )
 
         # Concatenate df_sim with the current sim results
-        # TODO it seems that concat is memory inefficient.
-        # Now we use copy=False to not copy data unnecessarily
-        vs_temp.simulations_results = pd.concat(
-            [df_sim, vs_temp.simulations_results],
-            axis="columns",
-            copy=False,
+        vs_temp.simulations_results = vs_temp.simulations_results.join(
+            df_sim, how="right"
         ).rename_axis(df_sim.columns.names, axis=1)
 
         # Update residuals auto-correlation and cross-correlation attributes
