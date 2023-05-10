@@ -185,6 +185,7 @@ plt.pause(0.0001)
 #
 # To create a dymoval ValidationSession we only need to pass a dymoval Dataset.
 vs = dmv.ValidationSession("my_validation", ds)
+
 # %% Now Pretend that we built two models and we have want to validate them.
 
 sim1_name = "Model 1"
@@ -192,6 +193,7 @@ sim1_labels = ["my_y1", "my_y2"]
 sim1_values = vs.Dataset.dataset["OUTPUT"].values + np.random.rand(
     len(vs.Dataset.dataset["OUTPUT"].values), 2
 )
+
 
 sim2_name = "Model 2"
 sim2_labels = ["your_y1", "your_y2"]
