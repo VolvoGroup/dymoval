@@ -184,7 +184,6 @@ plt.pause(0.0001)
 # ===========================================================================
 #
 # To create a dymoval ValidationSession we only need to pass a dymoval Dataset.
-del vs
 vs = dmv.ValidationSession("my_validation", ds)
 # %% Now Pretend that we built two models and we have want to validate them.
 
