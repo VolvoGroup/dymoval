@@ -140,7 +140,7 @@ jobs:
 
       - name: Build docs (sphinx)
         run: |
-          python -m pip install .
+          python -m pip install .[dev]
           cd docs
           make clean
           sphinx-apidoc -f -n -o ./docs/source ../src/dymoval/
