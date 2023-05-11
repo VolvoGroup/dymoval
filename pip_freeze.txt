@@ -20,7 +20,7 @@ cryptography==40.0.2
 cssutils==2.6.0
 cycler==0.11.0
 dict2css==0.3.0
-docutils==0.19
+docutils==0.18.1
 domdf-python-tools==3.6.1
 dymoval==0.8.3
 exceptiongroup==1.1.1
