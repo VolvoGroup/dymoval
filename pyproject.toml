@@ -57,6 +57,7 @@ dev = [
     "black",
     "flake8",
     "coverage",
+    "grayskull",
 ]
 
 [project.urls]
