@@ -43,7 +43,10 @@ keywords = [
   "data"
 ]
 # dynamic = ["version"] This may be useful once I will learn how to deal with versions
+
+# For developers
 [project.optional-dependencies]
+build = ["hatch"]
 dev = [
     "sphinx",
     "furo",
@@ -55,11 +58,6 @@ dev = [
     "flake8",
     "coverage",
 ]
-
-# For developers
-[project.optional-dependencies]
-build = ["hatch"]
-
 
 [project.urls]
 "Homepage" = "https://github.com/VolvoGroup/dymoval"
