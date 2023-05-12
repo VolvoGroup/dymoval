@@ -101,7 +101,7 @@ jobs:
     # environment_locked.yml the version is specified.
     # We test by downloading ALL the dependencies, including the dev ones.
     #
-    name: Tests with conda/mamba
+    name: Tests with conda dev
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -113,7 +113,6 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v2
         with:
           python-version: ${{ matrix.python-version }}
-          mamba-version: "*"
           channels: conda-forge,defaults
           channel-priority: true
           # environment.yml has no version specified so it will pick the last
