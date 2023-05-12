@@ -1,5 +1,5 @@
 # CI/CD pipeline
-name: pipeline: latest and greatest packages
+name: pipeline for latest and greatest packages
 
 on:
   push:
