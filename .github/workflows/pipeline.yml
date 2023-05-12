@@ -100,7 +100,6 @@ jobs:
     # In environment.yml no version is specified whereas in
     # environment_locked.yml the version is specified.
     # We test by downloading ALL the dependencies, including the dev ones.
-    #
     name: Tests with conda dev
     runs-on: ${{ matrix.os }}
     strategy:
@@ -160,6 +159,9 @@ jobs:
           make clean
           sphinx-apidoc -f -n -o ./docs/source ../src/dymoval/
           make html
+
+    # TODO conda user test: build the .bz2, install it through conda and run
+    # pytest
 
   docs:
     # Build doc and push to gh-pages
