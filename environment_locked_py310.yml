@@ -38,6 +38,7 @@ dependencies:
   - fonttools=4.39.4=py310h2aa6e3c_0
   - freetype=2.12.1=hd633e50_1
   - furo=2023.3.27=pyhd8ed1ab_0
+  - grayskull=2.3.0=pyhd8ed1ab_1
   - h5py=3.8.0=nompi_py310h3c889c5_101
   - hdf5=1.14.0=nompi_h6b85c65_103
   - html5lib=1.1=pyh9f0ad1d_0
@@ -103,7 +104,7 @@ dependencies:
   - pillow=9.5.0=py310h07496d3_0
   - pip=23.1.2=pyhd8ed1ab_0
   - pkginfo=1.9.6=pyhd8ed1ab_0
-  - platformdirs=3.5.0=pyhd8ed1ab_0
+  - platformdirs=3.5.1=pyhd8ed1ab_0
   - pluggy=1.0.0=pyhd8ed1ab_5
   - pooch=1.7.0=pyha770c72_3
   - progressbar2=4.2.0=pyhd8ed1ab_0

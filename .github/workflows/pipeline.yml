@@ -22,7 +22,7 @@ jobs:
   # stuff
   # We test by downloading ALL the dependencies, including the dev ones.
   pip_tests_dev:
-    name: Tests with pip (dev)
+    name: Pip install (dev)
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -70,7 +70,7 @@ jobs:
     # packages.
     # If it passes, then it is OK for release.
     # Conda releases must be done manually anyways.
-    name: Tests with pip (user)
+    name: Pip install (user)
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -100,7 +100,7 @@ jobs:
     # In environment.yml no version is specified whereas in
     # environment_locked.yml the version is specified.
     # We test by downloading ALL the dependencies, including the dev ones.
-    name: Tests with conda dev
+    name: Conda install (dev)
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false

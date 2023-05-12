@@ -7,7 +7,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Tests on all platforms
   # Here we use a freeze file so we are 100% sure that if there is any failure
   # is because of dymoval itself and not because of some weird dependency
   # stuff
