@@ -1,5 +1,5 @@
 {% set name = "dymoval" %}
-{% set version = "0.8.3" %}
+{% set version = "0.8.4" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dymoval-{{ version }}.tar.gz
-  sha256: b3268a8d0f9184f08dade40cf68e5470379f4b00c61c4b5384e71b984a5093ba
+  sha256: aca5760d14132d852d4e230178f28218b47fa82d8e1d833c5fda44af1071be3c
 
 build:
   noarch: python
@@ -28,16 +28,6 @@ requirements:
     - pathlib
     - numpy
     - tomli
-    - sphinx=5.1.1
-    - furo
-    - sphinx-toolbox
-    - sphinx-autodoc-typehints
-    - pytest
-    - mypy
-    - black
-    - flake8
-    - coverage
-    - conda-lock
     - h5py
 
 test:
@@ -55,4 +45,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - AddYourGitHubIdHere
+    - ubaldot
