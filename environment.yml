@@ -19,5 +19,4 @@ dependencies:
   - black
   - flake8
   - coverage
-  - grayskull
   - h5py

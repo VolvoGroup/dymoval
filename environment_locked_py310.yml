@@ -38,7 +38,6 @@ dependencies:
   - fonttools=4.39.4=py310h2aa6e3c_0
   - freetype=2.12.1=hd633e50_1
   - furo=2023.3.27=pyhd8ed1ab_0
-  - grayskull=2.3.0=pyhd8ed1ab_1
   - h5py=3.8.0=nompi_py310h3c889c5_101
   - hdf5=1.14.0=nompi_h6b85c65_103
   - html5lib=1.1=pyh9f0ad1d_0

@@ -28,7 +28,7 @@ requirements:
     - pathlib
     - numpy
     - tomli
-    - sphinx
+    - sphinx=5.1.1
     - furo
     - sphinx-toolbox
     - sphinx-autodoc-typehints
