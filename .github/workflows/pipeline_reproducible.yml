@@ -49,10 +49,10 @@ jobs:
           make html
           cd ..
 
-      - name: Build wheel and sdist (hatch)
+      - name: Build wheel and sdist (pdm)
         run: |
           python -m pip install .[build]
-          hatch build
+          pdm build
 
   # conda_tests:
   #   # While pip uses pip freeze, here we tests dymoval with the latest
