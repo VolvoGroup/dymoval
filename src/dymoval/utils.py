@@ -81,7 +81,8 @@ def open_tutorial() -> tuple[Any, Any]:
     print(filename)
     if sys.platform == "win32":
         # shell_process = subprocess.run(["start", filename])
-        shell_process = subprocess.Popen(filename, shell=True)
+        # shell_process = subprocess.Popen(filename, shell=True)
+        shell_process = subprocess.Popen(["start", filename])
     else:
         opener = "open" if sys.platform == "darwin" else "xdg-open"
         shell_process = subprocess.run([opener, filename])
