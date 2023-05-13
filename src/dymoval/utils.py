@@ -9,6 +9,8 @@ import sys
 import os
 import subprocess
 from importlib import resources
+import shutil
+from pathlib import Path
 
 
 def factorize(n: int) -> tuple[int, int]:
@@ -67,25 +69,29 @@ def _get_tutorial() -> Union[str, os.PathLike]:
 
 
 def open_tutorial() -> tuple[Any, Any]:
-    """Open the *Dymoval* tutorial.
+    """It copies a Jupyter notebook named
+    dymoval_tutorial.ipynb from your installation folder
+    to your home folder and it will try to open it.
 
-    To open the tutorial the following commands are used:
-        - /path/to/tutorial/tutorial.ipynb on Windows
-        - open /path/to/tutorial/tutorial.ipynb on MacOSX
-        - xdg-open /path/to/tutorial/tutorial.ipynb on Linux
-
-    Be sure that you can open .ipynb files with such commands.
+    If a dymoval_tutorial.ipynb file already exists in your home
+    folder, it will be overwritten.
     """
 
     filename = str(_get_tutorial())
-    print(filename)
+    home = str(Path.home())
     if sys.platform == "win32":
-        # shell_process = subprocess.run(["start", filename])
         # TODO Find a way to remove shell = True
-        shell_process = subprocess.Popen(filename, shell=True)
-        # shell_process = subprocess.Popen(["start", filename])
+        destination = shutil.copyfile(
+            filename, home + "\\dymoval_tutorial.ipynb"
+        )
+        # shell_process = subprocess.Popen(destination, shell=True)
+        # shell_process = subprocess.Popen(filename, shell=True)
+        shell_process = subprocess.run(["start", str(destination)])
     else:
+        destination = shutil.copyfile(
+            filename, home + "/dymoval_tutorial.ipynb"
+        )
         opener = "open" if sys.platform == "darwin" else "xdg-open"
-        shell_process = subprocess.run([opener, filename])
+        shell_process = subprocess.run([opener, destination])
 
     return shell_process, filename
