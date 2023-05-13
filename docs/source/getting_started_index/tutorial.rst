@@ -11,7 +11,7 @@ The best way to take familiarity with *Dymoval* is to run any tutorial by typing
 
 
 To open the tutorial the following commands are used:
-    - `start /path/to/tutorial/tutorial.ipynb` on Windows
+    - `/path/to/tutorial/tutorial.ipynb` on Windows
     - `open /path/to/tutorial/tutorial.ipynb` on MacOSX
     - `xdg-open /path/to/tutorial/tutorial.ipynb` on Linux
 
