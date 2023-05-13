@@ -59,34 +59,20 @@ def str2list(x: str | list[str]) -> list[str]:
 
 
 def _get_tutorial() -> Union[str, os.PathLike]:
-    with resources.path("dymoval.tutorial", "tutorial.ipynb") as f:
+    with resources.as_file(
+        resources.files("tutorial").joinpath("tutorial.ipynb")
+    ) as f:
         tutorial_file_path = f
     return tutorial_file_path
 
 
 def open_tutorial() -> tuple[Any, Any]:
-    """Open the *Dymoval* tutorial.
+    """Open the *Dymoval* tutorial."""
 
-    More precisely, it copies a IPython notebook named
-    dymoval_tutorial.ipynb from your installation
-    to your home folder and open it.
-
-    If a dymoval_tutorial.ipynb file already exists in your home
-    folder, then it will be overwritten.
-
-    """
-
-    # site_packages = next(p for p in sys.path if "site-packages" in p)
-    # src = site_packages
-    # home = str(Path.home())
     filename = _get_tutorial()
     if sys.platform == "win32":
-        # dst = shutil.copyfile(src + filename, home + "\\dymoval_tutorial.ipynb")
-        # shell_process = subprocess.Popen(filename, shell=True)
-        shell_process = subprocess.Popen(filename)
+        shell_process = subprocess.Popen(filename, shell=True)
     else:
-        # filename = "/dymoval/src/tutorial/tutorial.ipynb"
-        # dst = shutil.copyfile(src + filename, home + "/dymoval_tutorial.ipynb")
         opener = "open" if sys.platform == "darwin" else "xdg-open"
         shell_process = subprocess.call([opener, filename])
 

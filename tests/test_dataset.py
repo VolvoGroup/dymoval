@@ -354,7 +354,6 @@ class Test_Dataset_nominal:
     def test_dump_to_signals(
         self, good_signals_no_nans: list[Signal], tmp_path: str
     ) -> None:
-
         # You should just get a plot.
         (
             signal_list,
@@ -1057,7 +1056,6 @@ class Test_Dataset_raise:
 
 
 class Test_Dataset_plots:
-
     # Use a non-interactive backend
     matplotlib.use("Agg")
 
@@ -1065,7 +1063,6 @@ class Test_Dataset_plots:
     def test_plot_nominal(
         self, good_signals: list[Signal], tmp_path: str
     ) -> None:
-
         # You should just get a plot.
         signal_list, u_names, y_names, u_units, y_units, fixture = good_signals
 

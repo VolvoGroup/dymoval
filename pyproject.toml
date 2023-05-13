@@ -68,14 +68,8 @@ dev = [
 # PDM settings
 # =======================
 
-# [tool.pdm.build]
-# # package-dir = "."
-# includes = [ #"docs",
-#          "src",
-#          # "tests",
-#          "scripts",
-#          # "LICENSE",
-#          ]
+[tool.pdm.build]
+includes = [ "tutorial"]
 
 # ===================================
 # Formatting, type check, unit-test
