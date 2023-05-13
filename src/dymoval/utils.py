@@ -4,7 +4,7 @@
 import numpy as np
 from .config import *  # noqa
 import scipy.signal as signal  # noqa
-from typing import Any
+from typing import Any, Union
 import sys
 import subprocess
 from importlib import resources
@@ -57,7 +57,7 @@ def str2list(x: str | list[str]) -> list[str]:
     return x
 
 
-def _get_tutorial() -> string:
+def _get_tutorial() -> Union[str, os.PathLike]:
     with resources.path("dymoval.tutorial", "tutorial.ipynb") as f:
         tutorial_file_path = f
     return tutorial_file_path
