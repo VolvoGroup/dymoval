@@ -69,11 +69,13 @@ dev = [
 # =======================
 
 [tool.pdm.build]
+# package-dir = "."
 includes = [ "docs",
          "src",
          "tests",
          "scripts",
-         "LICENSE"]
+         "LICENSE",
+         ]
 
 # ===================================
 # Formatting, type check, unit-test
