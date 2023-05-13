@@ -10,7 +10,7 @@
 ![coverage badge](./coverage.svg)
 
 ### Tools
-[![Hatch project](https://img.shields.io/badge/build-hatch-4051b5.svg)](https://github.com/pypa/hatch)
+[![Build - pdm](https://img.shields.io/badge/build-pdm-blueviolet)](https://pdm.fming.dev/latest/)
 [![code check - flake8](https://img.shields.io/badge/checks-flake8-green.svg)](https://pypi.org/project/flake8)
 [![types - Mypy](https://img.shields.io/badge/types-mypy-orange.svg)](https://github.com/python/mypy)
 [![test - pytest](https://img.shields.io/badge/tests-pytest-brightgreen.svg)](https://github.com/pytest-dev/pytest)
