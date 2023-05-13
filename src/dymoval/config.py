@@ -14,6 +14,8 @@ mapping_dict = {
     "color_map": "COLORMAP",
 }
 
+# TODO If you remove python 3.10 remove the dependency (also from pyproject) from tomli as tomlib is
+# part of the standard python package starting from 3.11
 try:
     import tomllib
 except ModuleNotFoundError:

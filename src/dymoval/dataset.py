@@ -18,17 +18,6 @@ from .utils import *  # noqa, Type
 from typing import TypedDict, Any, Literal
 from copy import deepcopy
 
-# %%
-a = 4
-b = 3
-
-
-# %%
-c = 9
-d = 69
-
-# %%
-
 
 class Signal(TypedDict):
     """

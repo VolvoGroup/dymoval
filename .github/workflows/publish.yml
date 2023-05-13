@@ -1,4 +1,6 @@
-# Publish on PyPI and conda-forge
+# Publish on PyPI  only
+# On conda you have to do it manually because you must check the build, etc
+# etc.
 
 name: Publish
 
@@ -28,15 +30,3 @@ jobs:
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
-  conda_publish:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - name: publish-to-conda
-      uses: MichaelsJP/conda-package-publish-action@v1.0.0
-      with:
-        subDir: 'conda'
-        AnacondaToken: ${{ secrets.ANACONDA_TOKEN }}
-        platforms: 'all'
-        override: true
-        dry_run: true
