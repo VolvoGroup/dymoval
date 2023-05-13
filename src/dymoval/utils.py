@@ -57,7 +57,7 @@ def str2list(x: str | list[str]) -> list[str]:
     return x
 
 
-def _get_tutorial():
+def _get_tutorial() -> string:
     with resources.path("dymoval.tutorial", "tutorial.ipynb") as f:
         tutorial_file_path = f
     return tutorial_file_path
