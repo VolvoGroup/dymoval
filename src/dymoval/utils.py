@@ -82,7 +82,8 @@ def open_tutorial() -> tuple[Any, Any]:
     filename = _get_tutorial()
     if sys.platform == "win32":
         # dst = shutil.copyfile(src + filename, home + "\\dymoval_tutorial.ipynb")
-        shell_process = subprocess.Popen(filename, shell=True)
+        # shell_process = subprocess.Popen(filename, shell=True)
+        shell_process = subprocess.Popen(filename)
     else:
         # filename = "/dymoval/src/tutorial/tutorial.ipynb"
         # dst = shutil.copyfile(src + filename, home + "/dymoval_tutorial.ipynb")
