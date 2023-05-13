@@ -69,7 +69,7 @@ dev = [
 # =======================
 
 [tool.pdm.build]
-includes = [ "tutorial"]
+includes = [ "src", "tutorial"]
 
 # ===================================
 # Formatting, type check, unit-test
