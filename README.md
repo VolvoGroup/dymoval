@@ -22,8 +22,8 @@
 
 **Dymoval**  (**Dy**namic **Mo**del **Val**idation) is a Python package for analyzing *datasets* and validate *models*.
 
-It does not matter if your model is a Deep Neural Network, an ODE or something more complex, nor it is important if you use Modelica or Simulink or whatever as modeling tool.
-All you need to do is to feed *Dymoval* with real-world measurements and model-generated data and you will get a model quality evaluation in terms of r-squared fit, residuals norms and coverage region.
+It does not matter if your model is a Deep Neural Network, an ODE or something more complex, nor is important if you use Modelica or Simulink or whatever as modeling tool.
+All you need to do is to feed *Dymoval* with real-world measurements and model-generated data and you will get a model quality evaluation in r-squared fit, residuals norms and coverage region.
 
 
 <div align="center" >
@@ -103,7 +103,7 @@ If you are already familiar with model validation, then the best way to get star
 
 This will copy the `dymoval_tutorial.ipynb` jupyter notebook from your installation folder to your `home` folder.
 
-For more info on what is model validation and what is currently implemented in *dymoval* along with the *dymoval* complete API, you can check the [docs](https://volvogroup.github.io/dymoval/).
+For more info on what is model validation and what is implemented in *dymoval* along with the *dymoval* complete API, you can check the [docs](https://volvogroup.github.io/dymoval/).
 
 > **Note**
 > If your tutorial won't start, you can still download the tutorial IPython notebook from this repo [here.](https://github.com/VolvoGroup/dymoval/blob/main/scripts/tutorial.ipynb)
