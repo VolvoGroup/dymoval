@@ -9,6 +9,7 @@ import sys
 import subprocess
 import shutil
 from pathlib import Path
+from importlib import resources
 
 
 def factorize(n: int) -> tuple[int, int]:
@@ -58,6 +59,12 @@ def str2list(x: str | list[str]) -> list[str]:
     return x
 
 
+def _get_tutorial():
+    with resources.path("dymoval.tutorial", "tutorial.ipynb") as f:
+        tutorial_file_path = f
+    return tutorial_file_path
+
+
 def open_tutorial() -> tuple[Any, Any]:
     """Open the *Dymoval* tutorial.
 
@@ -70,17 +77,17 @@ def open_tutorial() -> tuple[Any, Any]:
 
     """
 
-    site_packages = next(p for p in sys.path if "site-packages" in p)
-    src = site_packages
-    home = str(Path.home())
+    # site_packages = next(p for p in sys.path if "site-packages" in p)
+    # src = site_packages
+    # home = str(Path.home())
+    filename = _get_tutorial()
     if sys.platform == "win32":
-        filename = "\\dymoval\\scripts\\tutorial.ipynb"
-        dst = shutil.copyfile(src + filename, home + "\\dymoval_tutorial.ipynb")
-        shell_process = subprocess.Popen(dst, shell=True)
+        # dst = shutil.copyfile(src + filename, home + "\\dymoval_tutorial.ipynb")
+        shell_process = subprocess.Popen(filename, shell=True)
     else:
-        filename = "/dymoval/scripts/tutorial.ipynb"
-        dst = shutil.copyfile(src + filename, home + "/dymoval_tutorial.ipynb")
+        # filename = "/dymoval/src/tutorial/tutorial.ipynb"
+        # dst = shutil.copyfile(src + filename, home + "/dymoval_tutorial.ipynb")
         opener = "open" if sys.platform == "darwin" else "xdg-open"
-        shell_process = subprocess.call([opener, dst])
+        shell_process = subprocess.call([opener, filename])
 
-    return shell_process, dst
+    return shell_process, filename
