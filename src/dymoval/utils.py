@@ -69,7 +69,8 @@ def _get_tutorial() -> Union[str, os.PathLike]:
 def open_tutorial() -> tuple[Any, Any]:
     """Open the *Dymoval* tutorial."""
 
-    filename = _get_tutorial()
+    filename = str(_get_tutorial())
+    print(filename)
     if sys.platform == "win32":
         shell_process = subprocess.run(["start", filename])
     else:
