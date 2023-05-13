@@ -74,6 +74,6 @@ def open_tutorial() -> tuple[Any, Any]:
         shell_process = subprocess.Popen(filename, shell=True)
     else:
         opener = "open" if sys.platform == "darwin" else "xdg-open"
-        shell_process = subprocess.call([opener, filename])
+        shell_process = subprocess.run([opener, filename])
 
     return shell_process, filename
