@@ -67,12 +67,21 @@ def _get_tutorial() -> Union[str, os.PathLike]:
 
 
 def open_tutorial() -> tuple[Any, Any]:
-    """Open the *Dymoval* tutorial."""
+    """Open the *Dymoval* tutorial.
+
+    To open the tutorial the following commands are used:
+        - start /path/to/tutorial/tutorial.ipynb on Windows
+        - open /path/to/tutorial/tutorial.ipynb on MacOSX
+        - xdg-open /path/to/tutorial/tutorial.ipynb on Linux
+
+    Be sure that you can open .ipynb files with such commands.
+    """
 
     filename = str(_get_tutorial())
     print(filename)
     if sys.platform == "win32":
-        shell_process = subprocess.run(["start", filename])
+        # shell_process = subprocess.run(["start", filename])
+        shell_process = subprocess.Popen(filename, shell=True)
     else:
         opener = "open" if sys.platform == "darwin" else "xdg-open"
         shell_process = subprocess.run([opener, filename])
