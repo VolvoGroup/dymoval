@@ -7,8 +7,6 @@ import scipy.signal as signal  # noqa
 from typing import Any
 import sys
 import subprocess
-import shutil
-from pathlib import Path
 from importlib import resources
 
 
