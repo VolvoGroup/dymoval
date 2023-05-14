@@ -64,13 +64,6 @@ dev = [
 "Documentation" = "https://volvogroup.github.io/dymoval/"
 "Bug Tracker" = "https://github.com/VolvoGroup/dymoval/issues"
 
-# =======================
-# PDM settings
-# =======================
-
-[tool.pdm.build]
-includes = [ "src", "tutorial"]
-
 # ===================================
 # Formatting, type check, unit-test
 # ===================================
