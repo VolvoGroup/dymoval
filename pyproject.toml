@@ -15,6 +15,7 @@ dependencies = [
     "pandas",
     "matplotlib",
     "scipy",
+    "control",
     "pathlib",
     "numpy",
     "tomli",
