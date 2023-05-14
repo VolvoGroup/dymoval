@@ -39,28 +39,32 @@ jobs:
 
     conda_tests:
       name: Tests with conda
-          runs-on: ${{ matrix.os }}
-          strategy:
-            fail-fast: false
-            matrix:
-              os: ["ubuntu-latest", "macos-latest", "windows-latest"]
-          steps:
-            - uses: actions/checkout@v3
-            - uses: conda-incubator/setup-miniconda@v2
-              with:
-                python-version: "3.11"
-                channels: conda-forge,defaults
-                channel-priority: true
-                environment-file: ./conda_freeze_py311.yml
-  #     - name: Install dymoval through pip
-  #       shell: bash -l {0}
-  #       run: |
-  #       # TODO replace pip install with conda install xx.tar.gz built
-  #       # through conda build if possible
-  #         conda install pytest
-  #         python -m pip install .
+      runs-on: ${{ matrix.os }}
+      strategy:
+        fail-fast: false
+        matrix:
+          os: ["ubuntu-latest", "macos-latest", "windows-latest"]
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v3
 
-  #     - name: Run tests (pytest)
-  #       shell: bash -l {0}
-  #       run: |
-  #         pytest .
+        - name: Setup Minoconda
+        - uses: conda-incubator/setup-miniconda@v2
+          with:
+            python-version: "3.11"
+            channels: conda-forge,defaults
+            channel-priority: true
+            environment-file: ./conda_freeze_py311.yml
+
+        - name: Install dymoval through pip
+          shell: bash -l {0}
+          run: |
+            # TODO replace pip install with conda install xx.tar.gz built
+            # through conda build if possible
+            conda install pytest
+            python -m pip install .
+
+        - name: Run tests (pytest)
+          shell: bash -l {0}
+          run: |
+            pytest .
