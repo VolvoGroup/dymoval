@@ -1,4 +1,4 @@
-name: conda_fregna
+name: conda_freeze
 channels:
   - conda-forge
 dependencies:
