@@ -5,7 +5,7 @@ build-backend = "pdm.backend"
 [project]
 # General info
 name = "dymoval"
-version = "0.8.4"
+version = "0.8.5"
 
 # Requirements
 requires-python = ">=3.10"
