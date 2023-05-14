@@ -2,7 +2,6 @@ colorama==0.4.6
 contourpy==1.0.7
 control==0.9.3.post2
 cycler==0.11.0
-dymoval==0.8.6
 exceptiongroup==1.1.1
 fonttools==4.39.4
 h5py==3.8.0
