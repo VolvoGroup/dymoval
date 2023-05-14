@@ -9,7 +9,6 @@ dependencies:
   - c-ares=1.18.1
   - ca-certificates=2023.5.7
   - cached-property=1.5.2
-  - cached_property=1.5.2
   - certifi=2023.5.7
   - cffi=1.15.1
   - charset-normalizer=3.1.0
@@ -85,7 +84,6 @@ dependencies:
   - tk=8.6.12
   - tomli=2.0.1
   - typing-extensions=4.5.0
-  - typing_extensions=4.5.0
   - tzdata=2023c
   - urllib3=1.26.15
   - wheel=0.40.0
