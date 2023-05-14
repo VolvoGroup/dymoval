@@ -11,7 +11,7 @@ iniconfig==2.0.0
 kiwisolver==1.4.4
 matplotlib==3.7.1
 numpy==1.24.3
-packaging=23.1
+packaging==23.1
 pandas==2.0.1
 pathlib==1.0.1
 Pillow==9.5.0
