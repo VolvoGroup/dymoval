@@ -59,7 +59,7 @@ jobs:
         shell: bash -l {0}
         run: |
         # TODO replace pip install with conda install xx.tar.gz built
-        # through conda build
+        # through conda build if possible
           conda install pytest
           python -m pip install .
 
