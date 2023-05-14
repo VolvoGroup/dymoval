@@ -69,11 +69,8 @@ Although the tool has been thought with engineers in mind, no one prevents you t
 
 
 ## Installation
-Dymoval exists on both `pip` and `conda`, so you can choose between the
-following:
 
     pip install dymoval
-    conda install -c ubaldot dymoval
 
 <!-- comment
 #### Installation From this repo
