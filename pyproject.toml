@@ -5,7 +5,7 @@ build-backend = "pdm.backend"
 [project]
 # General info
 name = "dymoval"
-version = "0.8.5"
+version = "0.8.6"
 
 # Requirements
 requires-python = ">=3.10"
@@ -64,6 +64,13 @@ dev = [
 "Homepage" = "https://github.com/VolvoGroup/dymoval"
 "Documentation" = "https://volvogroup.github.io/dymoval/"
 "Bug Tracker" = "https://github.com/VolvoGroup/dymoval/issues"
+
+# ===================================
+# PDM settings
+# ===================================
+# [tool.pdm.build]
+# includes = ["src", "tutorial"]
+
 
 # ===================================
 # Formatting, type check, unit-test
