@@ -53,7 +53,7 @@ jobs:
           mamba-version: "*"
           channels: conda-forge,defaults
           channel-priority: true
-          environment-file: ./pip_freeze_py311.yml
+          environment-file: ./conda_freeze_py311.yml
 
       - name: Install dymoval through pip
         shell: bash -l {0}
