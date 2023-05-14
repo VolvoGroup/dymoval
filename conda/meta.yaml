@@ -1,5 +1,5 @@
 {% set name = "dymoval" %}
-{% set version = "0.8.5" %}
+{% set version = "0.8.6" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dymoval-{{ version }}.tar.gz
-  sha256: b3d1ce3f482a23d0848cd78a8063a25834c3e28a50c6841ff58f02cb15d791f3
+  sha256: cde77c3b2baaf6303d6f36d4b69049f1d669bf9a208742eeb698a16b3faacb12
 
 build:
   noarch: python
@@ -24,6 +24,7 @@ requirements:
     - pandas
     - matplotlib-base
     - scipy
+    - control
     - pathlib
     - numpy
     - tomli
