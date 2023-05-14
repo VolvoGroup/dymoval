@@ -49,10 +49,10 @@ jobs:
           make html
           cd ..
 
-      - name: Build wheel and sdist (hatch)
+      - name: Build wheel and sdist (pdm)
         run: |
           python -m pip install .[build]
-          hatch build
+          pdm build
 
   # conda_tests:
   #   # While pip uses pip freeze, here we tests dymoval with the latest
@@ -74,11 +74,13 @@ jobs:
   #         mamba-version: "*"
   #         channels: conda-forge,defaults
   #         channel-priority: true
-  #         environment-file: ./environment_locked_py310.yml
+  #         environment-file: ./env_test.yml
 
   #     - name: (bash) Install dymoval through pip (unfortunately)
   #       shell: bash -l {0}
   #       run: |
+  #       # TODO replace pip install with conda install xx.tar.gz built
+  #       through conda build
   #         python -m pip install .
 
   #     - name: Formatting source code (black)

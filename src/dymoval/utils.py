@@ -4,9 +4,11 @@
 import numpy as np
 from .config import *  # noqa
 import scipy.signal as signal  # noqa
-from typing import Any
+from typing import Any, Union
 import sys
+import os
 import subprocess
+from importlib import resources
 import shutil
 from pathlib import Path
 
@@ -58,29 +60,36 @@ def str2list(x: str | list[str]) -> list[str]:
     return x
 
 
-def open_tutorial() -> tuple[Any, Any]:
-    """Open the *Dymoval* tutorial.
+def _get_tutorial() -> Union[str, os.PathLike]:
+    with resources.as_file(
+        resources.files("tutorial").joinpath("tutorial.ipynb")
+    ) as f:
+        tutorial_file_path = f
+    return tutorial_file_path
 
-    More precisely, it copies a IPython notebook named
-    dymoval_tutorial.ipynb from your installation
-    to your home folder and open it.
+
+def open_tutorial() -> tuple[Any, Any]:
+    """It copies a Jupyter notebook named
+    dymoval_tutorial.ipynb from your installation folder
+    to your home folder and it will try to open it.
 
     If a dymoval_tutorial.ipynb file already exists in your home
-    folder, then it will be overwritten.
-
+    folder, it will be overwritten.
     """
 
-    site_packages = next(p for p in sys.path if "site-packages" in p)
-    src = site_packages
+    filename = str(_get_tutorial())
     home = str(Path.home())
     if sys.platform == "win32":
-        filename = "\\dymoval\\scripts\\tutorial.ipynb"
-        dst = shutil.copyfile(src + filename, home + "\\dymoval_tutorial.ipynb")
-        shell_process = subprocess.Popen(dst, shell=True)
+        # TODO Find a way to remove shell = True
+        destination = shutil.copyfile(
+            filename, home + "\\dymoval_tutorial.ipynb"
+        )
+        shell_process = subprocess.Popen(destination, shell=True)
     else:
-        filename = "/dymoval/scripts/tutorial.ipynb"
-        dst = shutil.copyfile(src + filename, home + "/dymoval_tutorial.ipynb")
+        destination = shutil.copyfile(
+            filename, home + "/dymoval_tutorial.ipynb"
+        )
         opener = "open" if sys.platform == "darwin" else "xdg-open"
-        shell_process = subprocess.call([opener, dst])
+        shell_process = subprocess.run([opener, destination])
 
-    return shell_process, dst
+    return shell_process, filename

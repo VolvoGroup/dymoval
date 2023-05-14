@@ -19,7 +19,6 @@ dataset_type = ["MIMO", "SISO", "SIMO", "MISO"]
 
 @pytest.fixture(params=dataset_type)
 def good_signals(request):  # type: ignore
-
     fixture_type = request.param
     # General case (MIMO)
     nan_thing = np.empty(200)
@@ -126,7 +125,6 @@ def good_signals(request):  # type: ignore
 
 @pytest.fixture(params=dataset_type)
 def good_signals_no_nans(request):  # type: ignore
-
     fixture_type = request.param
     # General case (MIMO)
 
@@ -212,7 +210,6 @@ def good_signals_no_nans(request):  # type: ignore
 # ============================================
 @pytest.fixture(params=dataset_type)
 def good_dataframe(request):  # type: ignore
-
     fixture_type = request.param
     # Create a dummy dataframe
     num_samples = 100
@@ -263,7 +260,6 @@ def good_dataframe(request):  # type: ignore
 
 @pytest.fixture(params=dataset_type)
 def sine_dataframe(request):  # type: ignore
-
     fixture_type = request.param
 
     Ts = 0.1
