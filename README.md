@@ -98,12 +98,12 @@ If you are already familiar with model validation, then the best way to get star
 	dmv.open_tutorial()
 
 
-This will copy the `dymoval_tutorial.ipynb` jupyter notebook from your installation folder to your `home` folder.
+This will copy the `dymoval_tutorial.ipynb` Jupyter notebook from your installation folder to your `home` folder.
 
 For more info on what is model validation and what is implemented in *dymoval* along with the *dymoval* complete API, you can check the [docs](https://volvogroup.github.io/dymoval/).
 
 > **Note**
-> If your tutorial won't start, you can still download the tutorial IPython notebook from this repo [here.](https://github.com/VolvoGroup/dymoval/blob/main/scripts/tutorial.ipynb)
+> If your tutorial won't start, you can manually download the tutorial Jupyter notebook from this repo.
 
 ## License
 Dymoval is licensed under [BSD 3](https://github.com/VolvoGroup/dymoval/blob/main/LICENSE) license.
