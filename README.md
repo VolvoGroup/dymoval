@@ -81,20 +81,6 @@ If you also want to install `dev` and `build` tools, run
 The build tool included in `pyproject.toml` is `pdm` but you can use the build
 tool that you prefer (to be installed separately).
 
-<!-- comment
-#### Installation From this repo
-Clone this repo and run
-
-	cd /path/to/where/you/cloned/this/repo
-	conda env update --name env_name --file environment.yml
-    conda actiate env_name
-	pip install .
-
-or
-
-	cd /path/to/where/you/cloned/this/repo
-	pip install .
--->
 
 ## Getting started
 
@@ -109,7 +95,9 @@ This will copy the `dymoval_tutorial.ipynb` Jupyter notebook from your installat
 For more info on what is model validation and what is implemented in *dymoval* along with the *dymoval* complete API, you can check the [docs](https://volvogroup.github.io/dymoval/).
 
 > **Note**
-> If your tutorial won't start, you can manually download the tutorial Jupyter notebook from this repo.
+> If your system don't have a default app for opening `.ipynb` files, then the
+> tutorial won't automatically open. However, you have a copy of it in your
+> home folder that you can manually open with your preferred app.
 
 ## License
 Dymoval is licensed under [BSD 3](https://github.com/VolvoGroup/dymoval/blob/main/LICENSE) license.
