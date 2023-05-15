@@ -69,8 +69,17 @@ Although the tool has been thought with engineers in mind, no one prevents you t
 
 
 ## Installation
+Clone this repo, go on the `dymoval` folder and type:
 
-    pip install dymoval
+    pip istall .
+
+If you also want to install `dev` and `build` tools, run
+
+    pip istall ".[dev]"
+    pip istall ".[build]"
+
+The build tool included in `pyproject.toml` is `pdm` but you can use the build
+tool that you prefer (to be installed separately).
 
 <!-- comment
 #### Installation From this repo
