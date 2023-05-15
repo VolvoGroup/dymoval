@@ -84,7 +84,7 @@ def open_tutorial() -> tuple[Any, Any]:
         destination = shutil.copyfile(
             filename, home + "\\dymoval_tutorial.ipynb"
         )
-        shell_process = subprocess.Popen(destination, shell=True)
+        shell_process = subprocess.run(["explorer.exe", destination])
     else:
         destination = shutil.copyfile(
             filename, home + "/dymoval_tutorial.ipynb"
