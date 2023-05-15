@@ -80,7 +80,6 @@ def open_tutorial() -> tuple[Any, Any]:
     filename = str(_get_tutorial())
     home = str(Path.home())
     if sys.platform == "win32":
-        # TODO Find a way to remove shell = True
         destination = shutil.copyfile(
             filename, home + "\\dymoval_tutorial.ipynb"
         )
