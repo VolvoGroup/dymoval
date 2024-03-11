@@ -1,0 +1,472 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Model Validation" href="validation.html" /><link rel="prev" title="Reference Manual" href="../reference.html" />
+
+    <!-- Generated with Sphinx 7.2.6 and Furo 2024.01.29 -->
+        <title>Dataset handling - dymoval 0.6.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=36a5483c" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">dymoval 0.6.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../_static/DymovalLogo_Layer 2_Small.svg" alt="Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">dymoval 0.6.1 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation &amp; configuration</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../getting_started.html">Getting started</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Getting started</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started_index/model_validation.html">What is model validation?</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../getting_started_index/more_on_model_validation.html">More on model validation</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of More on model validation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../getting_started_index/doe.html">1. Design of Experiments (DoE)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../getting_started_index/create_dataset.html">2. Create, analyze and manipulate a dataset</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../getting_started_index/simulate_model.html">3. Simulate your model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../getting_started_index/validation_session.html">4. Validate your model</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started_index/tutorial.html">Tutorial</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../integration.html">CI/CD integration</a></li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="../reference.html">Reference Manual</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Reference Manual</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Dataset handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="validation.html">Model Validation</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api.html">Dymoval’s api</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of Dymoval’s api</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api_index/api.html">dymoval.dataset module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api_index/api.html#module-dymoval.validation">dymoval.validation module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api_index/api.html#module-dymoval.utils">dymoval.utils module</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="dataset-handling">
+<h1>Dataset handling<a class="headerlink" href="#dataset-handling" title="Link to this heading">#</a></h1>
+<p>Measurement datasets are a central part in model validation and therefore we designed
+the <a class="reference internal" href="#dataset"><span class="std std-ref">Dataset class</span></a> that offer a number of useful <a class="reference internal" href="#datasetmethods"><span class="std std-ref">methods</span></a> to deal with them.</p>
+<p>A typical workflow consists in casting your log-data into <a class="reference internal" href="#signal"><span class="std std-ref">Signal</span></a> objects and then use
+the created <a class="reference internal" href="#signal"><span class="std std-ref">Signals</span></a> to instantiate a <a class="reference internal" href="#dataset"><span class="std std-ref">Dataset</span></a> object.</p>
+<section id="signals">
+<span id="signal"></span><h2>Signals<a class="headerlink" href="#signals" title="Link to this heading">#</a></h2>
+<p><a class="reference internal" href="#signal"><span class="std std-ref">Signal</span></a> are used to represent real-world signals.</p>
+<p><em>Dymoval</em> <a class="reference internal" href="#signal"><span class="std std-ref">Signals</span></a> are <em>Typeddict</em> with the following keys</p>
+<p class="rubric">Keys</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Signal.name" title="dymoval.dataset.Signal.name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Signal.name</span></code></a></p></td>
+<td><p>Signal name.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Signal.values" title="dymoval.dataset.Signal.values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Signal.values</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Signal.signal_unit" title="dymoval.dataset.Signal.signal_unit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Signal.signal_unit</span></code></a></p></td>
+<td><p>Signal unit.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Signal.sampling_period" title="dymoval.dataset.Signal.sampling_period"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Signal.sampling_period</span></code></a></p></td>
+<td><p>Signal sampling period.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Signal.time_unit" title="dymoval.dataset.Signal.time_unit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Signal.time_unit</span></code></a></p></td>
+<td><p>Signal sampling period.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Functions</p>
+<p><em>Dymoval</em> offers few function for dealing with <a class="reference internal" href="#signal"><span class="std std-ref">Signals</span></a>.
+Such functions are the following</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.validate_signals" title="dymoval.dataset.validate_signals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_signals</span></code></a>(*signals)</p></td>
+<td><p>Perform a number of checks to verify that the passed list of <a class="reference internal" href="../api_index/api.html#dymoval.dataset.Signal" title="dymoval.dataset.Signal"><code class="xref py py-class docutils literal notranslate"><span class="pre">Signals</span></code></a> can be used to create a Dataset.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.plot_signals" title="dymoval.dataset.plot_signals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_signals</span></code></a>(*signals)</p></td>
+<td><p>Plot <a class="reference internal" href="../api_index/api.html#dymoval.dataset.Signal" title="dymoval.dataset.Signal"><code class="xref py py-class docutils literal notranslate"><span class="pre">Signals</span></code></a>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="dataset-class">
+<span id="dataset"></span><h2>Dataset class<a class="headerlink" href="#dataset-class" title="Link to this heading">#</a></h2>
+<p>The <a class="reference internal" href="#dataset"><span class="std std-ref">Dataset class</span></a>  is used to store and manipulate datasets.</p>
+<p>Since to validate a model you need a datasets, objects of this class are used also to instantiate
+<a class="reference internal" href="validation.html#validationsession"><span class="std std-ref">ValidationSession</span></a> objects, and the passed <a class="reference internal" href="#dataset"><span class="std std-ref">Dataset</span></a> object
+becomes an attribute of the newly created <a class="reference internal" href="validation.html#validationsession"><span class="std std-ref">ValidationSession</span></a> object.</p>
+<p>A <a class="reference internal" href="#dataset"><span class="std std-ref">Dataset</span></a> object can be instantiated in two ways</p>
+<ol class="arabic simple">
+<li><p>Through a list of dymoval <a class="reference internal" href="#signal"><span class="std std-ref">Signals</span></a> (see <a class="reference internal" href="../api_index/api.html#dymoval.dataset.validate_signals" title="dymoval.dataset.validate_signals"><code class="xref py py-meth docutils literal notranslate"><span class="pre">validate_signals()</span></code></a> )</p></li>
+<li><p>Through a <em>pandas</em> DataFrame with a specific structure (see <a class="reference internal" href="../api_index/api.html#dymoval.dataset.validate_dataframe" title="dymoval.dataset.validate_dataframe"><code class="xref py py-meth docutils literal notranslate"><span class="pre">validate_dataframe()</span></code></a>)</p></li>
+</ol>
+<p class="rubric">Constructor</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset" title="dymoval.dataset.Dataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset</span></code></a>(name, signal_list, u_names, y_names)</p></td>
+<td><p>The <a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset" title="dymoval.dataset.Dataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> class stores the candidate signals to be used as a dataset and it provides methods for analyzing and manipulating them.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Attributes</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.name</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.dataset</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.coverage</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.information_level</span></code></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric" id="datasetmethods">Manipulation methods</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset.add_input" title="dymoval.dataset.Dataset.add_input"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.add_input</span></code></a>(*signals)</p></td>
+<td><p>Add input signals to the <a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset" title="dymoval.dataset.Dataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> object.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset.add_output" title="dymoval.dataset.Dataset.add_output"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.add_output</span></code></a>(*signals)</p></td>
+<td><p>Add output signals to the <a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset" title="dymoval.dataset.Dataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> object.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset.remove_signals" title="dymoval.dataset.Dataset.remove_signals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.remove_signals</span></code></a>(*signals)</p></td>
+<td><p>Remove signals from the <a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset" title="dymoval.dataset.Dataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset.remove_means" title="dymoval.dataset.Dataset.remove_means"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.remove_means</span></code></a>(*signals)</p></td>
+<td><p>Remove the mean value to the specified signals.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset.remove_offset" title="dymoval.dataset.Dataset.remove_offset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.remove_offset</span></code></a>(*signals_values)</p></td>
+<td><p>Remove specified offsets to the specified signals.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset.remove_NaNs" title="dymoval.dataset.Dataset.remove_NaNs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.remove_NaNs</span></code></a>(**kwargs)</p></td>
+<td><p>Replace <em>NaN:s</em> values in the <a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset" title="dymoval.dataset.Dataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset.apply" title="dymoval.dataset.Dataset.apply"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.apply</span></code></a>(*signal_function, **kwargs)</p></td>
+<td><p>Apply a function to specified signals and change their unit.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset.low_pass_filter" title="dymoval.dataset.Dataset.low_pass_filter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.low_pass_filter</span></code></a>(*signals_values)</p></td>
+<td><p>Low-pass filter a list of specified signals.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset.fft" title="dymoval.dataset.Dataset.fft"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.fft</span></code></a>(*signals)</p></td>
+<td><p>Return the <em>FFT</em> of the dataset as pandas DataFrame.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset.trim" title="dymoval.dataset.Dataset.trim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.trim</span></code></a>(*signals[, tin, tout, verbosity])</p></td>
+<td><p>Trim the Dataset <a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset" title="dymoval.dataset.Dataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> object.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Plotting methods</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset.plot" title="dymoval.dataset.Dataset.plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.plot</span></code></a>(*signals[, overlap, ...])</p></td>
+<td><p>Plot the <a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset" title="dymoval.dataset.Dataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset.plotxy" title="dymoval.dataset.Dataset.plotxy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.plotxy</span></code></a>(*signal_pairs[, layout, ...])</p></td>
+<td><p>Plot a signal against another signal in a plane (XY-plot).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset.plot_coverage" title="dymoval.dataset.Dataset.plot_coverage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.plot_coverage</span></code></a>(*signals[, nbins, ...])</p></td>
+<td><p>Plot the dataset <a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset" title="dymoval.dataset.Dataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> coverage in histograms.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset.plot_spectrum" title="dymoval.dataset.Dataset.plot_spectrum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.plot_spectrum</span></code></a>(*signals[, kind, ...])</p></td>
+<td><p>Plot the spectrum of the specified signals in the dataset in different format.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.change_axes_layout" title="dymoval.dataset.change_axes_layout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">change_axes_layout</span></code></a>(fig, nrows, ncols)</p></td>
+<td><p>Change <em>Axes</em> layout of an existing Matplotlib <em>Figure</em>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Other methods</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset.dump_to_signals" title="dymoval.dataset.Dataset.dump_to_signals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.dump_to_signals</span></code></a>()</p></td>
+<td><p>Dump a <a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset" title="dymoval.dataset.Dataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> object into a list of <a class="reference internal" href="../api_index/api.html#dymoval.dataset.Signal" title="dymoval.dataset.Signal"><code class="xref py py-class docutils literal notranslate"><span class="pre">Signals</span></code></a> objects.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset.dataset_values" title="dymoval.dataset.Dataset.dataset_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.dataset_values</span></code></a>()</p></td>
+<td><p>Return the dataset values as a tuple <em>(t,u,y)</em> of <em>numpy ndarrays</em>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset.export_to_mat" title="dymoval.dataset.Dataset.export_to_mat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.export_to_mat</span></code></a>(filename)</p></td>
+<td><p>Write the dataset in a <em>.mat</em> file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset.dataset_values" title="dymoval.dataset.Dataset.dataset_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.dataset_values</span></code></a>()</p></td>
+<td><p>Return the dataset values as a tuple <em>(t,u,y)</em> of <em>numpy ndarrays</em>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset.signal_list" title="dymoval.dataset.Dataset.signal_list"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dataset.signal_list</span></code></a>()</p></td>
+<td><p>Return the list of signals in form <em>([&quot;INPUT&quot; | &quot;OUTPUT&quot;], name, unit)</em></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.validate_dataframe" title="dymoval.dataset.validate_dataframe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validate_dataframe</span></code></a>(df)</p></td>
+<td><p>Check if a <em>pandas DataFrame</em> is suitable for instantiating a <a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset" title="dymoval.dataset.Dataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> object.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api_index/api.html#dymoval.dataset.compare_datasets" title="dymoval.dataset.compare_datasets"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compare_datasets</span></code></a>(*datasets[, kind, layout, ...])</p></td>
+<td><p>Compare different <a class="reference internal" href="../api_index/api.html#dymoval.dataset.Dataset" title="dymoval.dataset.Dataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">Datasets</span></code></a> graphically by overlapping them.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="validation.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Model Validation</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="../reference.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Reference Manual</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2022, U. Tiberi
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Dataset handling</a><ul>
+<li><a class="reference internal" href="#signals">Signals</a></li>
+<li><a class="reference internal" href="#dataset-class">Dataset class</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=2bd037f0"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=32e29ea5"></script>
+    </body>
+</html>
