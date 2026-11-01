@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="1920"
+   height="1080"
+   viewBox="0 0 508 285.75"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.1.2 (b8e25be833, 2022-02-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:document-units="mm"
+     showgrid="true"
+     units="px"
+     inkscape:showpageshadow="2"
+     inkscape:deskcolor="#d1d1d1">
+    <inkscape:grid
+       type="xygrid"
+       id="grid5072" />
+  </sodipodi:namedview>
+  <defs
+     id="defs2" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <circle
+       style="fill:#d67212;fill-opacity:1;stroke:#000000;stroke-width:0.25"
+       id="path5126"
+       cx="242.00325"
+       cy="138.99675"
+       r="81.495117" />
+    <circle
+       style="fill:#f7d476;fill-opacity:1;stroke:#000000;stroke-width:0.25"
+       id="path5130"
+       cx="242.00325"
+       cy="141.06514"
+       r="54.192181" />
+    <ellipse
+       style="fill:#cdcdcd;stroke:#000000;stroke-width:0.25"
+       id="path5130-3"
+       cx="242.62378"
+       cy="141.68568"
+       rx="28.750813"
+       ry="27.92345" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.46667px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="219.25082"
+       y="139.8241"
+       id="text5208"><tspan
+         sodipodi:role="line"
+         id="tspan5687"
+         x="219.25082"
+         y="139.8241">  pandas</tspan><tspan
+         sodipodi:role="line"
+         id="tspan5689"
+         x="219.25082"
+         y="150.40744">DataFrame</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.46667px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="213.05679"
+       y="109.32973"
+       id="text5208-6"><tspan
+         sodipodi:role="line"
+         id="tspan5289"
+         x="213.05679"
+         y="109.32973">Dataset</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.46667px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="197.136"
+       y="81.613121"
+       id="text5208-6-8"><tspan
+         sodipodi:role="line"
+         id="tspan5322"
+         x="197.136"
+         y="81.613121">ValidationSession</tspan></text>
+  </g>
+</svg>
