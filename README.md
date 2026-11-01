@@ -20,7 +20,7 @@
 
 ## Repo unmaintained.
 
-The repo is currently unmaintained and therefore it is archived. 
+The repo is currently archived. 
 Please, use any of the forked versions if you want to keep using dymoval. 
 
 ## What is it?
