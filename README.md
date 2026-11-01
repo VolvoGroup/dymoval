@@ -18,6 +18,11 @@
 [![docs - sphinx](https://img.shields.io/badge/docs-sphinx-blue.svg)](https://github.com/sphinx-doc/sphinx)
 -----
 
+## Repo unmaintained.
+
+The repo is currently unmaintained and therefore it is archived. 
+Please, use any of the forked versions if you want to keep using dymoval. 
+
 ## What is it?
 
 **Dymoval**  (**Dy**namic **Mo**del **Val**idation) is a Python package for analyzing *datasets* and validate *models*.
